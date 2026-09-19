@@ -1,10 +1,6 @@
-# Hướng Dẫn Cấu Trúc Dự Án Frontend (shop-web)
+# Shop app
 
-Dự án Frontend website bán hàng trực tuyến xây dựng trên nền tảng **React (JavaScript)** sử dụng **Vite**, tích hợp thư viện giao diện **Ant Design (antd)**.
-
----
-
-## 1. Công Nghệ Sử Dụng (Tech Stack)
+## Tech Stack
 
 - **Build Tool:** [Vite](https://vite.dev/)
 - **UI Framework:** [React 19+](https://react.dev/)
