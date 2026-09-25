@@ -1,0 +1,26 @@
+// Thay đổi thông tin cửa hàng tại đây; không gắn giao diện với một ngành hàng.
+export const shopConfig = {
+  name: "ABC Shop",
+  description: "Cửa hàng trực tuyến",
+  storagePrefix: "abc-shop-v1",
+  contact: { address: "", phone: "", email: "", mapUrl: "", socialLinks: [] },
+  commerce: {
+    freeShippingFrom: 500000,
+    shippingFee: 30000,
+    depositRate: 0.2,
+    coupon: { code: "ABC10", rate: 0.1, maxDiscount: 100000 },
+  },
+};
+export const orderStatuses = [
+  "Chờ xác nhận",
+  "Đã xác nhận",
+  "Đã cọc",
+  "Đang chuẩn bị hàng",
+  "Đã đóng gói",
+  "Đang giao hàng",
+  "Giao thành công",
+  "Đã hoàn thành",
+  "Đã hủy",
+  "Hoàn hàng",
+  "Hoàn tiền",
+];
