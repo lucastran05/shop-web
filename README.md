@@ -1,5 +1,7 @@
 # ABC Shop — giao diện Customer
 
+Phần **Manager/Admin** chạy tại `/management`. Xem [Manager/Admin — Note](./MANAGER-ADMIN.md) để biết cách chạy, tài khoản thử và phạm vi chức năng.
+
 Mã nguồn giao diện bán hàng tổng quát bằng **React + Vite + Ant Design**, phát triển trên khung `shop-web-main` được cung cấp. Không định hướng theo một ngành hàng. Catalog dùng tên `Sản phẩm 01...08`, `Danh mục 1...3`, hình placeholder và phân loại mẫu để có thể thay thế bằng bất kỳ dữ liệu bán hàng nào.
 
 ## 1. Chạy dự án trên Windows

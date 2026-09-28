@@ -1,6 +1,7 @@
 import { ConfigProvider, App as AntApp } from "antd";
 import viVN from "antd/locale/vi_VN";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ManagementApp from "./management/ManagementApp";
 import { ShopProvider } from "./context/ShopContext";
 import { antThemeConfig } from "./styles/theme";
 import CustomerRoutes from "./routes/CustomerRoutes";
@@ -11,7 +12,10 @@ export default function App() {
       <AntApp>
         <BrowserRouter>
           <ShopProvider>
-            <CustomerRoutes />
+            <Routes>
+              <Route path="/management/*" element={<ManagementApp />} />
+              <Route path="*" element={<CustomerRoutes />} />
+            </Routes>
           </ShopProvider>
         </BrowserRouter>
       </AntApp>
