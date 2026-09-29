@@ -1,7 +1,11 @@
-import { ManagementContext } from "./context";
+import { ManagementContext } from "./management";
 import { useSaved } from "../hooks/useSaved";
 import { useShop } from "../hooks/useShop";
-import { initialProducts, initialUsers, seedOrders } from "./model";
+import {
+  initialProducts,
+  initialUsers,
+  seedOrders,
+} from "../constants/management";
 
 export function ManagementProvider({ children }) {
   const shop = useShop();

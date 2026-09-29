@@ -1,7 +1,8 @@
+import Button from "../../components/management/ManagementButton";
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import {
   App,
-  Button,
   Form,
   Input,
   Modal,
@@ -12,10 +13,10 @@ import {
   Table,
   Tag,
 } from "antd";
-import { useManagement } from "../context";
-import { PageTitle } from "../PageTitle";
+import { useManagement } from "../../hooks/useManagement";
+import { PageTitle } from "../../components/management/PageTitle";
 
-export function UsersPage() {
+export default function UsersPage() {
   const s = useManagement(),
     { message } = App.useApp(),
     [form] = Form.useForm();
@@ -72,14 +73,22 @@ export function UsersPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <Button type="primary" onClick={() => edit(null)}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined aria-hidden="true" />}
+          onClick={() => edit(null)}
+        >
           Thêm tài khoản
         </Button>
         <Popconfirm
           title="Xóa các tài khoản đã chọn?"
           onConfirm={() => remove(selected)}
         >
-          <Button danger disabled={!selected.length}>
+          <Button
+            icon={<DeleteOutlined aria-hidden="true" />}
+            danger
+            disabled={!selected.length}
+          >
             Xóa đã chọn
           </Button>
         </Popconfirm>
@@ -110,16 +119,30 @@ export function UsersPage() {
           },
           {
             title: "Thao tác",
+            align: "center",
+            width: 112,
+            className: "mg-action-cell",
             render: (_, u) => (
               <Space>
-                <Button onClick={() => edit(u)}>Sửa</Button>
+                <Button
+                  icon={<EditOutlined aria-hidden="true" />}
+                  onClick={() => edit(u)}
+                  aria-label="Sửa"
+                  title="Sửa"
+                  className="mg-icon-action"
+                />
                 <Popconfirm
                   title="Xóa tài khoản này?"
                   onConfirm={() => remove([u.id])}
                 >
-                  <Button danger disabled={u.id === s.session.id}>
-                    Xóa
-                  </Button>
+                  <Button
+                    icon={<DeleteOutlined aria-hidden="true" />}
+                    danger
+                    disabled={u.id === s.session.id}
+                    aria-label="Xóa"
+                    title="Xóa"
+                    className="mg-icon-action"
+                  />
                 </Popconfirm>
               </Space>
             ),
@@ -165,144 +188,6 @@ export function UsersPage() {
             <Switch disabled={editing?.id === s.session.id} />
           </Form.Item>
         </Form>
-      </Modal>
-    </>
-  );
-}
-
-export function RolesPage() {
-  const rows = [
-    ["Quản lý sản phẩm, danh mục", true, true],
-    ["Điều chỉnh kho và xem lịch sử", true, true],
-    ["Xử lý đơn hàng, vận chuyển", true, true],
-    ["Xác nhận thanh toán, hoàn tiền", true, true],
-    ["Chat với khách hàng", true, true],
-    ["Xem báo cáo", true, true],
-    ["Quản lý tài khoản, khóa, phân vai trò", false, true],
-  ];
-  return (
-    <>
-      <PageTitle
-        title="Phân quyền"
-        description="Ma trận quyền của hai vai trò theo yêu cầu nghiệp vụ."
-      />
-      <Table
-        rowKey="name"
-        pagination={false}
-        dataSource={rows.map(([name, manager, admin]) => ({
-          name,
-          manager,
-          admin,
-        }))}
-        columns={[
-          { title: "Chức năng", dataIndex: "name" },
-          {
-            title: "Manager",
-            dataIndex: "manager",
-            render: (value) => (value ? "✓ Có quyền" : "— Không có quyền"),
-          },
-          { title: "Admin", dataIndex: "admin", render: () => "✓ Có quyền" },
-        ]}
-      />
-    </>
-  );
-}
-
-export function MessagesPage() {
-  const s = useManagement(),
-    { message } = App.useApp();
-  const [owner, setOwner] = useState(null),
-    [draft, setDraft] = useState(""),
-    [query, setQuery] = useState("");
-  const owners = [...new Set(s.messages.map((m) => m.owner))];
-  function send() {
-    if (!draft.trim()) return;
-    s.reply(owner, draft.trim());
-    setDraft("");
-    message.success("Đã gửi phản hồi");
-  }
-  return (
-    <>
-      <PageTitle
-        title="Tin nhắn khách hàng"
-        description="Chọn một cuộc hội thoại để xem và trả lời trong popup."
-      />
-      <div className="mg-toolbar">
-        <Input.Search
-          placeholder="Tìm email khách hàng"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
-      <Table
-        rowKey="owner"
-        dataSource={owners
-          .filter((o) => o.toLowerCase().includes(query.toLowerCase()))
-          .map((owner) => ({
-            owner,
-            last: s.messages.filter((m) => m.owner === owner).at(-1)?.text,
-          }))}
-        columns={[
-          { title: "Khách hàng", dataIndex: "owner" },
-          { title: "Tin nhắn gần nhất", dataIndex: "last", ellipsis: true },
-          {
-            title: "Thao tác",
-            render: (_, r) => (
-              <Button
-                onClick={() => {
-                  setOwner(r.owner);
-                  setDraft("");
-                }}
-              >
-                Xem / Trả lời
-              </Button>
-            ),
-          },
-        ]}
-      />
-      <Modal
-        title={`Hội thoại · ${owner || ""}`}
-        open={!!owner}
-        onCancel={() => setOwner(null)}
-        footer={null}
-        width={650}
-      >
-        <div className="mg-chat" role="log" aria-label="Lịch sử hội thoại">
-          {s.messages
-            .filter((m) => m.owner === owner)
-            .map((m) => (
-              <div
-                key={m.id}
-                className={
-                  m.from === "shop"
-                    ? "mg-message mg-message-shop"
-                    : "mg-message"
-                }
-              >
-                <strong>{m.from === "shop" ? "Cửa hàng" : "Khách hàng"}</strong>
-                <p>{m.text}</p>
-              </div>
-            ))}
-        </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            send();
-          }}
-        >
-          <Space.Compact block>
-            <Input
-              aria-label="Nội dung trả lời"
-              placeholder="Nhập nội dung trả lời..."
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              maxLength={2000}
-            />
-            <Button type="primary" htmlType="submit" disabled={!draft.trim()}>
-              Gửi
-            </Button>
-          </Space.Compact>
-        </form>
       </Modal>
     </>
   );

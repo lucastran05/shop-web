@@ -1,110 +1,16 @@
+import Button from "../../components/management/ManagementButton";
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  Button,
-  Card,
-  Input,
-  Progress,
-  Select,
-  Space,
-  Statistic,
-  Table,
-} from "antd";
-import { useManagement } from "../context";
-import { PageTitle } from "../PageTitle";
-import { orderColumns } from "../orderColumns";
+import { DownloadOutlined } from "@ant-design/icons";
+import ReportCharts from "../../components/management/ReportCharts";
+
+import { Input, Select, Table } from "antd";
+import { useManagement } from "../../hooks/useManagement";
+import { PageTitle } from "../../components/management/PageTitle";
+
 import { money } from "../../utils/format";
 
-function Stats({ orders, products }) {
-  const completed = orders.filter((o) => o.status === "Đã hoàn thành");
-  return (
-    <div className="mg-stats">
-      <Card>
-        <Statistic
-          title="Doanh thu đơn hoàn thành"
-          value={completed.reduce((sum, o) => sum + o.total, 0)}
-          formatter={money}
-        />
-      </Card>
-      <Card>
-        <Statistic title="Tổng đơn hàng" value={orders.length} />
-      </Card>
-      <Card>
-        <Statistic
-          title="Chờ xác nhận"
-          value={orders.filter((o) => o.status === "Chờ xác nhận").length}
-        />
-      </Card>
-      <Card>
-        <Statistic
-          title="Biến thể sắp hết hàng (≤ 5)"
-          value={
-            products.flatMap((p) => p.variants).filter((v) => v.stock <= 5)
-              .length
-          }
-        />
-      </Card>
-    </div>
-  );
-}
-export function DashboardPage() {
-  const s = useManagement();
-  return (
-    <>
-      <PageTitle
-        title="Tổng quan"
-        description="Theo dõi nhanh tình hình cửa hàng."
-      />
-      <Stats orders={s.orders} products={s.products} />
-      <div className="mg-section">
-        <Space className="mg-toolbar">
-          <h2>Đơn hàng gần đây</h2>
-          <Link to="/management/orders">
-            <Button>Quản lý đơn hàng</Button>
-          </Link>
-        </Space>
-        <Table
-          rowKey="id"
-          columns={orderColumns}
-          scroll={{ x: 700 }}
-          dataSource={[...s.orders]
-            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-            .slice(0, 6)}
-          pagination={false}
-        />
-      </div>
-      <div className="mg-section">
-        <h2>Tình trạng đơn hàng</h2>
-        <div className="mg-status-grid">
-          {[
-            "Chờ xác nhận",
-            "Đang chuẩn bị hàng",
-            "Đang giao hàng",
-            "Đã hoàn thành",
-          ].map((status) => {
-            const count = s.orders.filter((o) => o.status === status).length;
-            return (
-              <div key={status}>
-                <span>
-                  {status} ({count})
-                </span>
-                <Progress
-                  percent={
-                    s.orders.length
-                      ? Math.round((count / s.orders.length) * 100)
-                      : 0
-                  }
-                  strokeColor="#1677ff"
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </>
-  );
-}
-export function ReportsPage() {
+import Stats from "../../components/management/Stats";
+export default function ReportsPage() {
   const s = useManagement(),
     [year, setYear] = useState(new Date().getFullYear()),
     [period, setPeriod] = useState("month");
@@ -176,9 +82,12 @@ export function ReportsPage() {
             { value: "year", label: "Theo năm" },
           ]}
         />
-        <Button onClick={download}>Xuất CSV</Button>
+        <Button icon={<DownloadOutlined />} onClick={download}>
+          Xuất CSV
+        </Button>
       </div>
       <Stats orders={orders} products={s.products} />
+      <ReportCharts rows={rows} orders={orders} />
       <Table
         className="mg-section"
         rowKey="id"

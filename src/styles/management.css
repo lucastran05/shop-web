@@ -1,0 +1,658 @@
+.mg-root {
+  min-height: 100vh;
+  background: #f5f5f5;
+  color: #333;
+}
+.mg-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 220px;
+  background: white;
+  border-right: 1px solid #e8e8e8;
+  padding: 24px 12px;
+  overflow-y: auto;
+}
+.mg-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 22px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1677ff;
+}
+.mg-brand small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #777;
+  font-weight: 400;
+}
+.mg-brand-mark {
+  font-size: 25px;
+  color: #1677ff;
+}
+.mg-nav-label {
+  color: #888;
+  font-size: 11px;
+  padding: 0 12px;
+  margin: 12px 0;
+}
+.mg-sidebar nav a,
+.ant-drawer nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  margin: 3px 0;
+  border-radius: 6px;
+  color: #555;
+}
+.mg-sidebar nav a.active,
+.ant-drawer nav a.active {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+.mg-sidebar nav a:hover,
+.ant-drawer nav a:hover {
+  background: #f0f7ff;
+}
+.mg-sidebar nav small,
+.ant-drawer nav small {
+  margin-left: auto;
+}
+.mg-sidebar-bottom {
+  margin: 30px 12px 0;
+  color: #777;
+  font-size: 12px;
+}
+.mg-sidebar-bottom p {
+  margin-top: 12px;
+}
+.mg-workspace {
+  margin-left: 220px;
+}
+.mg-header {
+  height: 72px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mg-breadcrumb {
+  font-size: 13px;
+  color: #777;
+}
+.mg-breadcrumb span {
+  padding: 0 10px;
+  color: #bbb;
+}
+.mg-breadcrumb strong {
+  color: #333;
+  font-weight: 500;
+}
+.mg-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mg-profile strong,
+.mg-profile small {
+  display: block;
+  font-size: 12px;
+}
+.mg-profile small {
+  margin-top: 3px;
+  color: #777;
+}
+.mg-main {
+  padding: 24px 28px;
+}
+
+.mg-page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  gap: 12px;
+}
+.mg-page-title h1 {
+  font-size: 24px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+.mg-page-title p {
+  margin: 0;
+  color: #777;
+  font-size: 14px;
+}
+.mg-page-title .mg-eyebrow {
+  display: none;
+}
+.mg-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.mg-toolbar > .ant-input-search {
+  max-width: 330px;
+}
+.mg-toolbar > .ant-select {
+  min-width: 190px;
+}
+.mg-toolbar > input {
+  width: 120px;
+}
+.mg-toolbar h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.mg-section {
+  margin-top: 24px;
+}
+.mg-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.mg-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.mg-stats .ant-statistic-content {
+  font-size: 23px;
+}
+.mg-stats .ant-card {
+  border-radius: 8px;
+  box-shadow: none;
+}
+.mg-status-grid {
+  background: white;
+  border: 1px solid #eee;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 30px;
+}
+.mg-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.mg-variant {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.mg-variant .ant-input-number {
+  width: 100%;
+}
+.mg-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.mg-total {
+  text-align: right;
+  padding-top: 16px;
+}
+.mg-icon-action.ant-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mg-action-cell {
+  white-space: nowrap;
+}
+.mg-action-cell .ant-space {
+  gap: 8px !important;
+}
+
+.mg-mobile-toggle {
+  display: none;
+}
+.mg-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f5f5f5;
+}
+.mg-login-card {
+  width: 100%;
+  max-width: 480px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 32px;
+}
+.mg-login .ant-input,
+.mg-login .ant-input-affix-wrapper,
+.mg-login .ant-btn {
+  min-height: 44px;
+}
+.mg-login .ant-input-affix-wrapper .ant-input {
+  min-height: auto;
+}
+.mg-login-card h1 {
+  margin-bottom: 28px;
+}
+.mg-workspace,
+.mg-main {
+  min-width: 0;
+}
+.mg-main > .ant-table-wrapper {
+  max-width: 100%;
+}
+.mg-report-charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 24px;
+}
+.mg-chart-card {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: white;
+}
+.mg-chart-card h2 {
+  font-size: 17px;
+  margin-bottom: 10px;
+}
+.mg-chart-card > p {
+  color: #777;
+  font-size: 12px;
+}
+.mg-bar-chart {
+  display: flex;
+  gap: 10px;
+  height: 240px;
+  margin-top: 32px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid #eee;
+}
+.mg-bar-column {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.mg-chart-bar {
+  position: relative;
+  width: 75%;
+  max-width: 70px;
+  border: 0;
+  border-radius: 4px 4px 0 0;
+  background: #1677ff;
+  cursor: pointer;
+  min-height: 2px;
+}
+.mg-chart-bar:hover,
+.mg-chart-bar:focus-visible {
+  background: #0958d9;
+}
+.mg-bar-value {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #555;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.mg-bar-label {
+  position: absolute;
+  top: calc(100% + 10px);
+  font-size: 10px;
+  text-align: center;
+}
+.mg-horizontal-chart {
+  display: grid;
+  gap: 18px;
+  margin-top: 22px;
+}
+.mg-chart-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.mg-chart-track {
+  background: #f0f5ff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mg-chart-track > div {
+  height: 10px;
+  border-radius: 4px;
+}
+.mg-messenger {
+  height: calc(100dvh - 195px);
+  min-height: 420px;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+.mg-conversations {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid #eee;
+}
+.mg-conversation-search {
+  padding: 16px;
+}
+.mg-conversation-list {
+  overflow-y: auto;
+}
+.mg-conversation {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+  padding: 16px;
+  border: 0;
+  border-left: 3px solid transparent;
+  text-align: left;
+  background: white;
+  cursor: pointer;
+}
+.mg-conversation:hover {
+  background: #fafafa;
+}
+.mg-conversation.active {
+  background: #e6f4ff;
+  border-left-color: #1677ff;
+}
+.mg-chat-avatar {
+  background: #e6f4ff;
+  color: #1677ff;
+  flex-shrink: 0;
+}
+.mg-conversation-text {
+  min-width: 0;
+  flex: 1;
+}
+.mg-conversation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.mg-conversation-heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.mg-conversation-heading time {
+  color: #888;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.mg-last-message {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #888;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.mg-chat-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f7f8fc;
+}
+.mg-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+.mg-chat-header > div {
+  min-width: 0;
+}
+.mg-chat-header strong,
+.mg-chat-header small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.mg-chat-header small {
+  color: #888;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.mg-chat-back {
+  display: none;
+}
+.mg-message-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+}
+.mg-chat-date {
+  text-align: center;
+  color: #888;
+  font-size: 11px;
+  margin: 16px 0;
+}
+.mg-chat-date span {
+  background: #eceef3;
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+.mg-bubble {
+  width: fit-content;
+  max-width: 82%;
+  background: white;
+  border-radius: 14px 14px 14px 2px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px #00000005;
+  overflow-wrap: anywhere;
+}
+.mg-bubble p {
+  white-space: pre-wrap;
+  margin: 0;
+}
+.mg-bubble time {
+  display: block;
+  text-align: right;
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 6px;
+}
+.mg-bubble-out {
+  margin-left: auto;
+  background: #1677ff;
+  color: white;
+  border-radius: 14px 14px 2px 14px;
+}
+.mg-chat-composer {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #eee;
+}
+.mg-chat-composer textarea {
+  border-radius: 18px;
+  padding: 9px 14px;
+}
+.mg-chat-composer .ant-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+.mg-chat-empty {
+  margin: auto;
+}
+@media (max-width: 1100px) {
+  .mg-report-charts {
+    grid-template-columns: 1fr;
+  }
+  .mg-messenger {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .mg-login {
+    min-height: 100dvh;
+    padding: 16px;
+  }
+  .mg-login-card {
+    padding: 28px 24px;
+  }
+  .mg-login-card h1 {
+    font-size: 23px;
+  }
+  .mg-toolbar > .ant-input-search {
+    max-width: none;
+    width: 100%;
+  }
+  .mg-toolbar > .ant-select {
+    flex: 1;
+    min-width: 140px;
+  }
+  .mg-profile strong {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mg-messenger {
+    display: block;
+    height: calc(100dvh - 190px);
+    min-height: 320px;
+  }
+  .mg-conversations,
+  .mg-chat-panel {
+    height: 100%;
+  }
+  .mg-chat-panel {
+    display: none;
+  }
+  .mg-messenger-selected .mg-conversations {
+    display: none;
+  }
+  .mg-messenger-selected .mg-chat-panel {
+    display: flex;
+  }
+  .mg-chat-back {
+    display: inline-flex;
+  }
+  .mg-chat-header {
+    padding: 12px;
+    gap: 8px;
+  }
+  .mg-message-list {
+    padding: 12px;
+  }
+  .mg-chat-composer {
+    padding: 12px;
+  }
+  .mg-chart-card {
+    padding: 18px 12px;
+  }
+  .mg-bar-chart {
+    gap: 3px;
+  }
+  .mg-bar-value {
+    font-size: 8px;
+  }
+  .mg-bar-label {
+    font-size: 9px;
+  }
+}
+.mg-login-card h1 {
+  font-size: 26px;
+}
+.mg-login-card > p {
+  color: #777;
+}
+.mg-login-card > button {
+  margin-top: 14px;
+}
+.mg-login-card > a {
+  display: block;
+  margin-top: 20px;
+  color: #1677ff;
+}
+
+.mg-eyebrow {
+  font-size: 12px;
+  margin-top: 14px;
+}
+
+@media (max-width: 1100px) {
+  .mg-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .mg-sidebar {
+    display: none;
+  }
+  .mg-workspace {
+    margin-left: 0;
+  }
+  .mg-mobile-toggle {
+    display: inline-flex;
+    margin-right: 8px;
+  }
+  .mg-header {
+    padding: 0 12px;
+  }
+  .mg-main {
+    padding: 18px 12px;
+  }
+  .mg-breadcrumb {
+    display: none;
+  }
+  .mg-stats {
+    gap: 10px;
+  }
+  .mg-stats .ant-statistic-content {
+    font-size: 20px;
+  }
+  .mg-status-grid {
+    grid-template-columns: 1fr;
+  }
+  .mg-variant {
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+  }
+  .mg-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

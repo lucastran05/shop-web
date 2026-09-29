@@ -1,6 +1,6 @@
 import { Tag } from "antd";
-import { statusColors } from "./model";
-import { money } from "../utils/format";
+import { statusColors } from "../../constants/management";
+import { money } from "../../utils/format";
 export const statusTag = (status) => (
   <Tag color={statusColors[status]}>{status}</Tag>
 );
