@@ -7,7 +7,6 @@ import { orderColumns } from "../../components/management/orderColumns";
 import { useState } from "react";
 import { App, Button, Input, Modal, Space, Table, Tooltip } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 
 import { money } from "../../utils/format";
 
@@ -64,10 +63,6 @@ export default function PaymentsPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Thanh toán & hoàn tiền"
-        description="Đối soát tiền cọc, thanh toán và hoàn tiền."
-      />
       <div className="mg-toolbar">
         <Input.Search
           allowClear

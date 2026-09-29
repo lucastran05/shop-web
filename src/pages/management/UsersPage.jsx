@@ -14,7 +14,6 @@ import {
   Tag,
 } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 
 export default function UsersPage() {
   const s = useManagement(),
@@ -62,10 +61,6 @@ export default function UsersPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Quản lý tài khoản"
-        description="Thêm tài khoản, cập nhật vai trò và quản lý quyền truy cập."
-      />
       <div className="mg-toolbar">
         <Input.Search
           placeholder="Tìm tên hoặc email"

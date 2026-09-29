@@ -12,6 +12,8 @@ Mở http://localhost:5173/management (Admin và Manager dùng chung đường d
 Note:
 
 - Chỉ frontend, lưu localStorage; chưa gọi API hoặc xác thực mật khẩu.
+- Cấu hình sửa tên, giới thiệu và liên hệ shop, dùng chung với Customer. Ảnh sản phẩm bấm để xem lớn; tải JPG/PNG/WebP tối đa 10 MB, thu nhỏ và lưu trong trình duyệt.
+- Doanh thu hôm nay tính đơn đã hoàn thành theo ngày hoàn thành (giờ Việt Nam); dữ liệu cũ thiếu mốc hoàn thành dùng ngày đặt đơn.
 - Bán/hoàn thành/hủy đơn chưa tự trừ hoặc hoàn tồn kho; hiện điều chỉnh tại Kho hàng.
 - Sản phẩm và tồn kho Manager chưa đồng bộ với catalog Customer.
 - Đơn/tin nhắn Customer dùng chung ShopContext trong cùng ứng dụng; chưa có realtime hoặc thanh toán thật.

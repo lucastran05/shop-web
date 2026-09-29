@@ -1,4 +1,4 @@
-import { shopConfig } from "../constants/shop";
+import { useShopConfig } from "../hooks/useShopConfig";
 import { useSearchParams } from "react-router-dom";
 import {
   Button,
@@ -20,6 +20,7 @@ import {
 import { money } from "../utils/format";
 import ProductCard from "../components/ProductCard";
 export default function Catalog() {
+  const shopConfig = useShopConfig();
   const [params, setParams] = useSearchParams();
   const q = params.get("q") || "",
     category = params.get("category") || "Tất cả",

@@ -3,7 +3,6 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { App, Form, Input, Modal, Popconfirm, Space, Table } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 
 export default function CategoriesPage() {
   const s = useManagement(),
@@ -41,10 +40,6 @@ export default function CategoriesPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Quản lý danh mục"
-        description="Sắp xếp sản phẩm theo nhóm."
-      />
       <div className="mg-toolbar">
         <Button
           type="primary"

@@ -13,7 +13,6 @@ import {
   Tag,
 } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 import { adjustStock } from "../../utils/management";
 
 export default function InventoryPage() {
@@ -56,10 +55,6 @@ export default function InventoryPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Quản lý kho"
-        description="Theo dõi tồn kho theo từng biến thể. Mọi điều chỉnh đều lưu lịch sử."
-      />
       <div className="mg-toolbar">
         <Input.Search
           placeholder="Tìm sản phẩm"

@@ -2,9 +2,10 @@ import Button from "../../components/management/ManagementButton";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { App, Form, Input } from "antd";
 import { ShopOutlined } from "@ant-design/icons";
-import { shopConfig } from "../../constants/shop";
+import { useShopConfig } from "../../hooks/useShopConfig";
 import { useManagement } from "../../hooks/useManagement";
 export default function LoginPage() {
+  const shopConfig = useShopConfig();
   const s = useManagement(),
     navigate = useNavigate(),
     { message } = App.useApp();

@@ -1,9 +1,10 @@
-import { shopConfig } from "../constants/shop";
+import { useShopConfig } from "../hooks/useShopConfig";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../hooks/useShop";
 export default function Auth() {
+  const shopConfig = useShopConfig();
   const [tab, setTab] = useState("login"),
     { setUser, profiles } = useShop(),
     navigate = useNavigate(),

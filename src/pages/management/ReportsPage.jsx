@@ -5,7 +5,6 @@ import ReportCharts from "../../components/management/ReportCharts";
 
 import { Input, Select, Table } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 
 import { money } from "../../utils/format";
 
@@ -59,10 +58,6 @@ export default function ReportsPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Báo cáo kinh doanh"
-        description="Doanh thu tính theo đơn đã hoàn thành, nhóm theo ngày đặt đơn."
-      />
       <div className="mg-toolbar">
         <Input
           type="number"

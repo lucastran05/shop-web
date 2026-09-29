@@ -2,7 +2,6 @@ import Button from "../../components/management/ManagementButton";
 import { Link } from "react-router-dom";
 import { Progress, Space, Table } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 import { orderColumns } from "../../components/management/orderColumns";
 
 import Stats from "../../components/management/Stats";
@@ -10,11 +9,7 @@ export default function DashboardPage() {
   const s = useManagement();
   return (
     <>
-      <PageTitle
-        title="Tổng quan"
-        description="Theo dõi nhanh tình hình cửa hàng."
-      />
-      <Stats orders={s.orders} products={s.products} />
+      <Stats orders={s.orders} products={s.products} showToday />
       <div className="mg-section">
         <Space className="mg-toolbar">
           <h2>Đơn hàng gần đây</h2>

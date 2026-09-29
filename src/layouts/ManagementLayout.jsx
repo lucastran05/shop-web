@@ -14,8 +14,9 @@ import {
   WalletOutlined,
   LogoutOutlined,
   ShopOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
-import { shopConfig } from "../constants/shop";
+import { useShopConfig } from "../hooks/useShopConfig";
 import { useManagement } from "../hooks/useManagement";
 const navigation = [
   ["", "Tổng quan", AppstoreOutlined],
@@ -27,14 +28,18 @@ const navigation = [
   ["messages", "Tin nhắn", MessageOutlined],
   ["reports", "Báo cáo", BarChartOutlined],
   ["users", "Tài khoản", TeamOutlined],
+  ["settings", "Cấu hình", SettingOutlined],
 ];
 export default function ManagementLayout() {
+  const shopConfig = useShopConfig();
   const s = useManagement(),
     location = useLocation();
   const [mobile, setMobile] = useState(false);
   if (!s.session) return <Navigate to="/management/login" replace />;
   const current = navigation.find(
-    ([path]) => location.pathname === `/management${path ? "/" + path : ""}`,
+    ([path]) =>
+      location.pathname.replace(/\/+$/, "") ===
+      `/management${path ? "/" + path : ""}`,
   );
   const nav = (
     <>
@@ -42,12 +47,11 @@ export default function ManagementLayout() {
         <span className="mg-brand-mark">
           <ShopOutlined />
         </span>
-        <span>
-          {shopConfig.name}
+        <span className="mg-brand-text">
+          <span className="mg-brand-name">{shopConfig.name}</span>
           <small>QUẢN LÝ CỬA HÀNG</small>
         </span>
       </Link>
-      <p className="mg-nav-label">ĐIỀU HÀNH CỬA HÀNG</p>
       <nav aria-label="Menu quản trị">
         {navigation
           .filter(
@@ -79,6 +83,7 @@ export default function ManagementLayout() {
     <div className="mg-root">
       <aside className="mg-sidebar">{nav}</aside>
       <Drawer
+        rootClassName="mg-navigation-drawer"
         title="Điều hướng"
         placement="left"
         open={mobile}
@@ -88,17 +93,19 @@ export default function ManagementLayout() {
       </Drawer>
       <div className="mg-workspace">
         <header className="mg-header">
-          <div>
+          <div className="mg-header-location">
             <Button
               className="mg-mobile-toggle"
               icon={<MenuOutlined />}
               aria-label="Mở menu"
               onClick={() => setMobile(true)}
             />
-            <span className="mg-breadcrumb">
-              Không gian quản lý <span>/</span>{" "}
-              <strong>{current?.[1] || "Trang quản trị"}</strong>
-            </span>
+            <div className="mg-breadcrumb">
+              <span className="mg-breadcrumb-prefix">
+                Không gian quản lý <span>/</span>
+              </span>
+              <h1>{current?.[1] || "Trang quản trị"}</h1>
+            </div>
           </div>
           <div className="mg-profile">
             <Avatar style={{ background: "#e6f4ff", color: "#1677ff" }}>
@@ -120,7 +127,9 @@ export default function ManagementLayout() {
             />
           </div>
         </header>
-        <main className="mg-main">
+        <main
+          className={`mg-main ${location.pathname.replace(/\/+$/, "") === "/management/messages" ? "mg-main-messages" : ""}`}
+        >
           <Outlet />
         </main>
       </div>

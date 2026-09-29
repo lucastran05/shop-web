@@ -1,5 +1,5 @@
 import { Link, Route, Routes } from "react-router-dom";
-import { Result } from "antd";
+import { ConfigProvider, Result } from "antd";
 import { ManagementProvider } from "../context/ManagementContext";
 import { useManagement } from "../hooks/useManagement";
 import ManagementLayout from "../layouts/ManagementLayout";
@@ -12,6 +12,7 @@ import OrdersPage from "../pages/management/OrdersPage";
 import PaymentsPage from "../pages/management/PaymentsPage";
 import MessagesPage from "../pages/management/MessagesPage";
 import ReportsPage from "../pages/management/ReportsPage";
+import SettingsPage from "../pages/management/SettingsPage";
 import UsersPage from "../pages/management/UsersPage";
 import "../styles/management.css";
 
@@ -28,31 +29,42 @@ function AccountsRoute() {
 }
 export default function ManagementRoutes() {
   return (
-    <ManagementProvider>
-      <Routes>
-        <Route path="login" element={<LoginPage />} />
-        <Route element={<ManagementLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="categories" element={<CategoriesPage />} />
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="payments" element={<PaymentsPage />} />
-          <Route path="messages" element={<MessagesPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="users" element={<AccountsRoute />} />
-          <Route
-            path="*"
-            element={
-              <Result
-                status="404"
-                title="Không tìm thấy trang"
-                extra={<Link to="/management">Về tổng quan</Link>}
-              />
-            }
-          />
-        </Route>
-      </Routes>
-    </ManagementProvider>
+    <ConfigProvider
+      theme={{
+        token: { fontSize: 15, lineHeight: 1.6 },
+        components: {
+          Input: { controlHeight: 40 },
+          Button: { controlHeight: 40 },
+        },
+      }}
+    >
+      <ManagementProvider>
+        <Routes>
+          <Route path="login" element={<LoginPage />} />
+          <Route element={<ManagementLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="payments" element={<PaymentsPage />} />
+            <Route path="messages" element={<MessagesPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="users" element={<AccountsRoute />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route
+              path="*"
+              element={
+                <Result
+                  status="404"
+                  title="Không tìm thấy trang"
+                  extra={<Link to="/management">Về tổng quan</Link>}
+                />
+              }
+            />
+          </Route>
+        </Routes>
+      </ManagementProvider>
+    </ConfigProvider>
   );
 }

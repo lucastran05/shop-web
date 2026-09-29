@@ -1,7 +1,17 @@
 import { products } from "../services/productService";
+import { useEffect } from "react";
 import { Context } from "./shop";
 import { useSaved } from "../hooks/useSaved";
+import { shopConfig } from "../constants/shop";
 export function ShopProvider({ children }) {
+  const [shopInfo, setShopInfo] = useSaved("shop-info", {
+    name: shopConfig.name,
+    description: shopConfig.description,
+    contact: shopConfig.contact,
+  });
+  useEffect(() => {
+    document.title = shopInfo.name || shopConfig.name;
+  }, [shopInfo.name]);
   const [cart, setCart] = useSaved("cart", []),
     [user, setUser] = useSaved("user", null),
     [orders, setOrders] = useSaved("orders", []),
@@ -54,6 +64,8 @@ export function ShopProvider({ children }) {
   return (
     <Context.Provider
       value={{
+        shopInfo,
+        setShopInfo,
         cart,
         items,
         setCart,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   App,
   Form,
+  Image,
   Input,
   InputNumber,
   Modal,
@@ -15,15 +16,17 @@ import {
   Tag,
 } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 
 import { money } from "../../utils/format";
+import ProductImageInput from "../../components/management/ProductImageInput";
+import { shopConfig } from "../../constants/shop";
 
 export default function ProductsPage() {
   const s = useManagement(),
     { message } = App.useApp(),
     [form] = Form.useForm();
   const [query, setQuery] = useState(""),
+    [imageLoading, setImageLoading] = useState(false),
     [selected, setSelected] = useState([]),
     [editing, setEditing] = useState(null),
     [open, setOpen] = useState(false);
@@ -62,9 +65,21 @@ export default function ProductsPage() {
         id: v.id || crypto.randomUUID(),
       })),
     };
-    s.setProducts((old) =>
-      editing ? old.map((x) => (x.id === editing.id ? p : x)) : [...old, p],
-    );
+    const next = editing
+      ? s.products.map((x) => (x.id === editing.id ? p : x))
+      : [...s.products, p];
+    try {
+      localStorage.setItem(
+        `${shopConfig.storagePrefix}-management-products`,
+        JSON.stringify(next),
+      );
+    } catch {
+      message.error(
+        "Không đủ dung lượng lưu. Hãy chọn ảnh nhỏ hơn hoặc dùng đường dẫn ảnh.",
+      );
+      return;
+    }
+    s.setProducts(next);
     setOpen(false);
     message.success("Đã lưu sản phẩm");
   }
@@ -75,10 +90,6 @@ export default function ProductsPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Quản lý sản phẩm"
-        description="Thêm, sửa, xóa và ghim sản phẩm của cửa hàng."
-      />
       <div className="mg-toolbar">
         <Input.Search
           allowClear
@@ -120,7 +131,13 @@ export default function ProductsPage() {
             dataIndex: "name",
             render: (name, p) => (
               <Space>
-                <img className="mg-thumb" src={p.image} alt="" />
+                <Image
+                  className="mg-thumb"
+                  src={p.image}
+                  alt={name}
+                  width={44}
+                  height={44}
+                />
                 <span>{name}</span>
               </Space>
             ),
@@ -196,6 +213,7 @@ export default function ProductsPage() {
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         okText="Lưu sản phẩm"
+        okButtonProps={{ disabled: imageLoading }}
         cancelText="Hủy"
         destroyOnHidden
       >
@@ -223,8 +241,8 @@ export default function ProductsPage() {
           <Form.Item name="description" label="Mô tả">
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="image" label="Đường dẫn ảnh">
-            <Input placeholder="/products/1.svg hoặc https://..." />
+          <Form.Item name="image" label="Ảnh sản phẩm">
+            <ProductImageInput onLoadingChange={setImageLoading} />
           </Form.Item>
           <Space wrap>
             <Form.Item name="active" label="Đang bán" valuePropName="checked">

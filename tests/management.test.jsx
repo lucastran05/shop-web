@@ -10,7 +10,42 @@ import {
   waitFor,
 } from "@testing-library/react";
 import App from "../src/App";
-import { adjustStock, transitionOrder } from "../src/utils/management";
+import {
+  adjustStock,
+  transitionOrder,
+  todayRevenue,
+} from "../src/utils/management";
+
+test("today revenue uses completion date in Vietnam and excludes unfinished or refunded orders", () => {
+  const now = new Date("2026-09-29T01:00:00Z");
+  const base = {
+    status: "Đã hoàn thành",
+    total: 100,
+    createdAt: "2026-09-28T08:00:00Z",
+  };
+  expect(
+    todayRevenue(
+      [
+        {
+          ...base,
+          history: [{ text: "Đã hoàn thành", at: "2026-09-28T17:30:00Z" }],
+        },
+        { ...base, completedAt: "2026-09-29T00:00:00Z", total: 200 },
+        { ...base, createdAt: "2026-09-29T00:00:00Z", total: 50 },
+        { ...base, completedAt: "2026-09-28T16:59:00Z" },
+        {
+          ...base,
+          createdAt: "2026-09-29T00:00:00Z",
+          status: "Đang giao hàng",
+        },
+        { ...base, createdAt: "2026-09-29T00:00:00Z", status: "Hoàn tiền" },
+        { ...base, createdAt: "invalid" },
+      ],
+      now,
+    ),
+  ).toBe(350);
+  expect(todayRevenue([], now)).toBe(0);
+});
 
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
@@ -205,6 +240,28 @@ test("product popup saves a new product and its variant", async () => {
     ).toBe(true),
   );
 });
+test("shop settings persist and update the customer storefront", async () => {
+  start("/settings");
+  fireEvent.change(await screen.findByLabelText("Tên cửa hàng"), {
+    target: { value: "Cửa hàng Huyền" },
+  });
+  fireEvent.change(screen.getByLabelText("Số điện thoại"), {
+    target: { value: "0912345678" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /Lưu thay đổi/ }));
+  await waitFor(() =>
+    expect(JSON.parse(localStorage.getItem("abc-shop-v1-shop-info")).name).toBe(
+      "Cửa hàng Huyền",
+    ),
+  );
+  await waitFor(() => expect(document.title).toBe("Cửa hàng Huyền"));
+  fireEvent.click(screen.getByRole("link", { name: /Xem cửa hàng/ }));
+  expect((await screen.findAllByText("Cửa hàng Huyền")).length).toBeGreaterThan(
+    0,
+  );
+  expect(await screen.findByText("0912345678")).toBeTruthy();
+});
+
 test("stock adjustment prevents negative/fractional stock without mutating input", () => {
   const changed = adjustStock(initialProducts, 1, "standard", -3);
   expect(changed[0].variants[0].stock).toBe(17);

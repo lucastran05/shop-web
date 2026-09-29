@@ -17,7 +17,6 @@ import {
   Timeline,
 } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 import {
   nextStatuses,
   statusFlow,
@@ -75,10 +74,6 @@ export default function OrdersPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Quản lý đơn hàng"
-        description="Xác nhận đơn, cập nhật vận chuyển và theo dõi xử lý đơn hàng."
-      />
       <div className="mg-toolbar">
         <Input.Search
           placeholder="Tìm mã đơn, tên, email khách hàng"

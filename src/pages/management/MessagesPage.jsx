@@ -7,7 +7,6 @@ import {
   SendOutlined,
 } from "@ant-design/icons";
 import { useManagement } from "../../hooks/useManagement";
-import { PageTitle } from "../../components/management/PageTitle";
 
 function dateOf(value) {
   const date = value ? new Date(value) : null;
@@ -56,10 +55,6 @@ export default function MessagesPage() {
   }
   return (
     <>
-      <PageTitle
-        title="Tin nhắn"
-        description="Trao đổi và hỗ trợ khách hàng."
-      />
       <div
         className={`mg-messenger ${selected ? "mg-messenger-selected" : ""}`}
       >

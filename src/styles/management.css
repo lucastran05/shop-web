@@ -1,4 +1,6 @@
 .mg-root {
+  font-size: 15px;
+  line-height: 1.6;
   min-height: 100vh;
   background: #f5f5f5;
   color: #333;
@@ -6,7 +8,7 @@
 .mg-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
-  width: 220px;
+  width: 260px;
   background: white;
   border-right: 1px solid #e8e8e8;
   padding: 24px 12px;
@@ -16,7 +18,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 12px 22px;
+  padding: 0 8px 22px;
   font-size: 20px;
   font-weight: 700;
   color: #1677ff;
@@ -24,22 +26,30 @@
 .mg-brand small {
   display: block;
   margin-top: 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: #777;
   font-weight: 400;
+  white-space: nowrap;
+}
+.mg-brand-text {
+  min-width: 0;
+  flex: 1;
+}
+.mg-brand-name {
+  display: block;
+  font-size: 18px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  line-height: 1.4;
 }
 .mg-brand-mark {
+  flex-shrink: 0;
   font-size: 25px;
   color: #1677ff;
 }
-.mg-nav-label {
-  color: #888;
-  font-size: 11px;
-  padding: 0 12px;
-  margin: 12px 0;
-}
 .mg-sidebar nav a,
-.ant-drawer nav a {
+.mg-navigation-drawer nav a {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -49,30 +59,34 @@
   color: #555;
 }
 .mg-sidebar nav a.active,
-.ant-drawer nav a.active {
+.mg-navigation-drawer nav a.active {
   background: #e6f4ff;
   color: #1677ff;
 }
 .mg-sidebar nav a:hover,
-.ant-drawer nav a:hover {
+.mg-navigation-drawer nav a:hover {
   background: #f0f7ff;
 }
 .mg-sidebar nav small,
-.ant-drawer nav small {
+.mg-navigation-drawer nav small {
   margin-left: auto;
 }
 .mg-sidebar-bottom {
   margin: 30px 12px 0;
   color: #777;
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: 500;
 }
 .mg-sidebar-bottom p {
   margin-top: 12px;
 }
 .mg-workspace {
-  margin-left: 220px;
+  margin-left: 260px;
 }
 .mg-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   height: 72px;
   background: #fff;
   border-bottom: 1px solid #eee;
@@ -83,16 +97,22 @@
   gap: 12px;
 }
 .mg-breadcrumb {
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
   color: #777;
 }
-.mg-breadcrumb span {
+.mg-breadcrumb-prefix > span {
   padding: 0 10px;
   color: #bbb;
 }
-.mg-breadcrumb strong {
+.mg-breadcrumb h1 {
+  display: inline;
+  margin: 0;
+  font-size: 20px;
   color: #333;
-  font-weight: 500;
+  font-weight: 600;
 }
 .mg-profile {
   display: flex;
@@ -104,6 +124,15 @@
   display: block;
   font-size: 12px;
 }
+.mg-profile strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.mg-sidebar nav a,
+.mg-navigation-drawer nav a {
+  font-size: 15px;
+  line-height: 1.6;
+}
 .mg-profile small {
   margin-top: 3px;
   color: #777;
@@ -112,26 +141,6 @@
   padding: 24px 28px;
 }
 
-.mg-page-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 22px;
-  gap: 12px;
-}
-.mg-page-title h1 {
-  font-size: 24px;
-  margin: 0 0 8px;
-  font-weight: 600;
-}
-.mg-page-title p {
-  margin: 0;
-  color: #777;
-  font-size: 14px;
-}
-.mg-page-title .mg-eyebrow {
-  display: none;
-}
 .mg-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -165,7 +174,24 @@
   gap: 16px;
 }
 .mg-stats .ant-statistic-content {
-  font-size: 23px;
+  font-size: clamp(22px, 1.9vw, 28px);
+  line-height: 1.35;
+  font-weight: 600;
+}
+.mg-stats .ant-statistic-title {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  white-space: nowrap;
+}
+.mg-stats .ant-card-body {
+  padding: 20px;
+}
+.mg-root .ant-table {
+  font-size: 15px;
+}
+.mg-root .ant-tag {
+  font-size: 13px;
 }
 .mg-stats .ant-card {
   border-radius: 8px;
@@ -313,13 +339,13 @@
   left: 50%;
   transform: translateX(-50%);
   color: #555;
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .mg-bar-label {
   position: absolute;
   top: calc(100% + 10px);
-  font-size: 10px;
+  font-size: 12px;
   text-align: center;
 }
 .mg-horizontal-chart {
@@ -328,6 +354,7 @@
   margin-top: 22px;
 }
 .mg-chart-caption {
+  line-height: 1.5;
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -344,12 +371,10 @@
   border-radius: 4px;
 }
 .mg-messenger {
-  height: calc(100dvh - 195px);
-  min-height: 420px;
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
-  border: 1px solid #eee;
-  border-radius: 8px;
   background: white;
   overflow: hidden;
 }
@@ -403,11 +428,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 15px;
 }
 .mg-conversation-heading time {
   color: #888;
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .mg-last-message {
@@ -416,7 +441,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #888;
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 6px;
 }
 .mg-chat-panel {
@@ -424,7 +449,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #f7f8fc;
+  background: white;
 }
 .mg-chat-header {
   display: flex;
@@ -441,6 +466,10 @@
 .mg-chat-header small {
   display: block;
   overflow-wrap: anywhere;
+}
+.mg-chat-header strong {
+  font-size: 16px;
+  font-weight: 600;
 }
 .mg-chat-header small {
   color: #888;
@@ -471,6 +500,7 @@
   width: fit-content;
   max-width: 82%;
   background: white;
+  border: 1px solid #e8edf5;
   border-radius: 14px 14px 14px 2px;
   padding: 12px 16px;
   margin-bottom: 12px;
@@ -478,19 +508,22 @@
   overflow-wrap: anywhere;
 }
 .mg-bubble p {
+  font-size: 15px;
+  line-height: 1.65;
   white-space: pre-wrap;
   margin: 0;
 }
 .mg-bubble time {
   display: block;
   text-align: right;
-  font-size: 10px;
+  font-size: 12px;
   opacity: 0.7;
   margin-top: 6px;
 }
 .mg-bubble-out {
   margin-left: auto;
   background: #1677ff;
+  border-color: #1677ff;
   color: white;
   border-radius: 14px 14px 2px 14px;
 }
@@ -549,8 +582,6 @@
   }
   .mg-messenger {
     display: block;
-    height: calc(100dvh - 190px);
-    min-height: 320px;
   }
   .mg-conversations,
   .mg-chat-panel {
@@ -585,11 +616,18 @@
     gap: 3px;
   }
   .mg-bar-value {
-    font-size: 8px;
+    font-size: 11px;
   }
   .mg-bar-label {
-    font-size: 9px;
+    font-size: 11px;
   }
+}
+.mg-main.mg-main-messages {
+  padding: 0;
+  height: calc(100dvh - 72px);
+  min-height: 0;
+  background: white;
+  overflow: hidden;
 }
 .mg-login-card h1 {
   font-size: 26px;
@@ -633,14 +671,17 @@
   .mg-main {
     padding: 18px 12px;
   }
-  .mg-breadcrumb {
+  .mg-breadcrumb-prefix {
+    display: none;
+  }
+  .mg-profile > span:not(.ant-avatar) {
     display: none;
   }
   .mg-stats {
     gap: 10px;
   }
   .mg-stats .ant-statistic-content {
-    font-size: 20px;
+    font-size: 23px;
   }
   .mg-status-grid {
     grid-template-columns: 1fr;
@@ -655,4 +696,52 @@
     grid-template-columns: 1fr;
     gap: 0;
   }
+}
+@media (max-width: 760px) {
+  .mg-breadcrumb h1 {
+    font-size: 18px;
+  }
+  .mg-root .ant-table {
+    font-size: 14px;
+  }
+  .mg-stats .ant-card-body {
+    padding: 18px 14px;
+  }
+  .mg-root input,
+  .mg-root textarea,
+  .mg-login input {
+    font-size: 16px;
+  }
+}
+
+.mg-header-location {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+.mg-stats-today {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+@media (max-width: 1200px) {
+  .mg-stats-today {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .mg-stats-today {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mg-stats-today > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 360px) {
+  .mg-stats,
+  .mg-stats-today {
+    grid-template-columns: 1fr;
+  }
+}
+.mg-settings {
+  max-width: 760px;
 }

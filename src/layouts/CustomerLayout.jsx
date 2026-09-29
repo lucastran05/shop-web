@@ -1,4 +1,4 @@
-import { shopConfig } from "../constants/shop";
+import { useShopConfig } from "../hooks/useShopConfig";
 import { useState } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ import {
 } from "@ant-design/icons";
 import { useShop } from "../hooks/useShop";
 export default function CustomerLayout() {
+  const shopConfig = useShopConfig();
   const s = useShop(),
     navigate = useNavigate(),
     location = useLocation(),
