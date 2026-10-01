@@ -1,32 +1,36 @@
+import { useTranslation } from "react-i18next";
+import ShopInfoPage from "../pages/ShopInfoPage.jsx";
 import { Routes, Route } from "react-router-dom";
 import CustomerLayout from "../layouts/CustomerLayout";
-import Catalog from "../pages/Catalog";
-import ProductDetail from "../pages/ProductDetail";
-import Cart from "../pages/Cart";
-import Checkout from "../pages/Checkout";
-import Orders from "../pages/Orders";
-import Account from "../pages/Account";
-import Auth from "../pages/Auth";
+import CatalogPage from "../pages/CatalogPage.jsx";
+import ProductDetailPage from "../pages/ProductDetailPage.jsx";
+import CartPage from "../pages/CartPage.jsx";
+import CheckoutPage from "../pages/CheckoutPage.jsx";
+import OrdersPage from "../pages/OrdersPage.jsx";
+import AccountPage from "../pages/AccountPage.jsx";
+import AuthPage from "../pages/AuthPage.jsx";
 import { Result, Button } from "antd";
 
 export default function CustomerRoutes() {
+  const { t } = useTranslation();
   return (
     <Routes>
       <Route element={<CustomerLayout />}>
-        <Route index element={<Catalog />} />
-        <Route path="products/:id" element={<ProductDetail />} />
-        <Route path="cart" element={<Cart />} />
-        <Route path="checkout" element={<Checkout />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="account" element={<Account />} />
-        <Route path="login" element={<Auth />} />
+        <Route index element={<CatalogPage />} />
+        <Route path="shop-info" element={<ShopInfoPage />} />
+        <Route path="products/:id" element={<ProductDetailPage />} />
+        <Route path="cart" element={<CartPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="account" element={<AccountPage />} />
+        <Route path="login" element={<AuthPage />} />
         <Route
           path="*"
           element={
             <Result
               status="404"
-              title="Không tìm thấy trang"
-              extra={<Button href="/">Về cửa hàng</Button>}
+              title={t("Không tìm thấy trang")}
+              extra={<Button href="/">{t("Về cửa hàng")}</Button>}
             />
           }
         />

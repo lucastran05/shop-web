@@ -17,7 +17,8 @@ export function ShopProvider({ children }) {
     [orders, setOrders] = useSaved("orders", []),
     [messages, setMessages] = useSaved("chat", []),
     [notifications, setNotifications] = useSaved("notifications", []),
-    [profiles, setProfiles] = useSaved("profiles", {});
+    [profiles, setProfiles] = useSaved("profiles", {}),
+    [reviews, setReviews] = useSaved("reviews", []);
   function add(p, variantId, quantity) {
     const v = p.variants.find((v) => v.id === variantId);
     if (!v || !v.stock) return null;
@@ -43,9 +44,16 @@ export function ShopProvider({ children }) {
     });
     return key;
   }
-  function notify(text) {
+  function notify(key, params = {}) {
     setNotifications((old) => [
-      { id: crypto.randomUUID(), text, read: false, owner: user.email },
+      {
+        id: crypto.randomUUID(),
+        key,
+        params,
+        createdAt: new Date().toISOString(),
+        read: false,
+        owner: user.email,
+      },
       ...old,
     ]);
   }
@@ -81,6 +89,8 @@ export function ShopProvider({ children }) {
         notify,
         profiles,
         updateProfile,
+        reviews,
+        setReviews,
       }}
     >
       {children}

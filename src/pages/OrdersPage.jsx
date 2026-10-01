@@ -1,3 +1,6 @@
+import { usePreferences } from "../hooks/usePreferences";
+import { formatDateTime } from "../utils/format";
+import { useTranslation } from "react-i18next";
 import { orderStatuses } from "../constants/shop";
 import { useState } from "react";
 import { Navigate, Link } from "react-router-dom";
@@ -14,6 +17,8 @@ import {
 import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
 export default function Orders() {
+  const { t } = useTranslation();
+  const { timeZone } = usePreferences();
   const s = useShop(),
     [tab, setTab] = useState("all"),
     [detail, setDetail] = useState(null),
@@ -33,18 +38,18 @@ export default function Orders() {
           : o,
       ),
     );
-    s.notify("Đơn " + cancel.id + " đã hủy.");
+    s.notify("Đơn {{id}} đã hủy.", { id: cancel.id });
     setCancel(null);
   }
   return (
     <div className="page">
-      <h1>Đơn mua của bạn</h1>
+      <h1>{t("Đơn mua của bạn")}</h1>
       <Tabs
         activeKey={tab}
         onChange={setTab}
         items={["all", ...orderStatuses].map((v) => ({
           key: v,
-          label: v === "all" ? "Tất cả (" + all.length + ")" : v,
+          label: v === "all" ? t("Tất cả") + " (" + all.length + ")" : t(v),
         }))}
       />
       {orders.length ? (
@@ -52,9 +57,9 @@ export default function Orders() {
           <section className="panel order" key={o.id}>
             <div className="order-head">
               <strong>{o.id}</strong>
-              <span>{new Date(o.createdAt).toLocaleString("vi-VN")}</span>
+              <span>{formatDateTime(o.createdAt, timeZone)}</span>
               <Tag color={o.status === "Đã hủy" ? "default" : "orange"}>
-                {o.status}
+                {t(o.status)}
               </Tag>
             </div>
             {o.items.map((p) => (
@@ -63,33 +68,35 @@ export default function Orders() {
                 <div>
                   <Link to={"/products/" + p.id}>{p.name}</Link>
                   <small>
-                    {p.color} / {p.variantLabel} × {p.quantity}
+                    {t(p.color)} / {t(p.variantLabel)} × {p.quantity}
                   </small>
                 </div>
                 <b>{money(p.price * p.quantity)}</b>
               </div>
             ))}
             <div className="order-bottom">
-              <strong>Tổng tiền: {money(o.total)}</strong>
-              <Button onClick={() => setDetail(o)}>Xem chi tiết</Button>
+              <strong>
+                {t("Tổng tiền")}: {money(o.total)}
+              </strong>
+              <Button onClick={() => setDetail(o)}>{t("Xem chi tiết")}</Button>
               {o.status === "Chờ xác nhận" && (
                 <Button danger onClick={() => setCancel(o)}>
-                  Hủy đơn
+                  {t("Hủy đơn")}
                 </Button>
               )}
             </div>
           </section>
         ))
       ) : (
-        <Empty description="Chưa có đơn hàng trong mục này">
-          <Link to="/">Tiếp tục mua sắm</Link>
+        <Empty description={t("Chưa có đơn hàng trong mục này")}>
+          <Link to="/">{t("Tiếp tục mua sắm")}</Link>
         </Empty>
       )}
       <Modal
         open={!!detail}
-        title={"Chi tiết đơn " + (detail?.id || "")}
+        title={t("Chi tiết đơn {{id}}", { id: detail?.id || "" })}
         onCancel={() => setDetail(null)}
-        footer={<Button onClick={() => setDetail(null)}>Đóng</Button>}
+        footer={<Button onClick={() => setDetail(null)}>{t("Đóng")}</Button>}
       >
         {detail && (
           <>
@@ -98,90 +105,90 @@ export default function Orders() {
               items={[
                 {
                   key: "name",
-                  label: "Người nhận",
+                  label: t("Người nhận"),
                   children: detail.recipient.name,
                 },
                 {
                   key: "phone",
-                  label: "Điện thoại",
+                  label: t("Điện thoại"),
                   children: detail.recipient.phone,
                 },
                 {
                   key: "address",
-                  label: "Nhận hàng",
+                  label: t("Nhận hàng"),
                   children:
                     detail.delivery === "pickup"
-                      ? "Tại cửa hàng"
+                      ? t("Tại cửa hàng")
                       : detail.recipient.address,
                 },
                 {
                   key: "note",
-                  label: "Ghi chú",
-                  children: detail.recipient.note || "Không có",
+                  label: t("Ghi chú"),
+                  children: detail.recipient.note || t("Không có"),
                 },
                 {
                   key: "shipping",
-                  label: "Phí giao hàng",
+                  label: t("Phí giao hàng"),
                   children: money(detail.shipping),
                 },
                 {
                   key: "discount",
-                  label: "Giảm giá",
+                  label: t("Giảm giá"),
                   children: money(detail.off),
                 },
                 {
                   key: "total",
-                  label: "Tổng đơn",
+                  label: t("Tổng đơn"),
                   children: money(detail.total),
                 },
                 {
                   key: "deposit",
-                  label: "Cọc dự kiến",
+                  label: t("Cọc dự kiến"),
                   children: money(detail.deposit),
                 },
                 {
                   key: "deposit-status",
-                  label: "Trạng thái cọc",
-                  children: detail.depositStatus || "Không đặt cọc",
+                  label: t("Trạng thái cọc"),
+                  children: t(detail.depositStatus || "Không đặt cọc"),
                 },
                 {
                   key: "deposit-time",
-                  label: "Thời gian cọc",
+                  label: t("Thời gian cọc"),
                   children: detail.depositAt
-                    ? new Date(detail.depositAt).toLocaleString("vi-VN")
-                    : "Chưa có giao dịch",
+                    ? formatDateTime(detail.depositAt, timeZone)
+                    : t("Chưa có giao dịch"),
                 },
                 {
                   key: "carrier",
-                  label: "Đơn vị vận chuyển",
-                  children: detail.carrier || "Chưa có",
+                  label: t("Đơn vị vận chuyển"),
+                  children: detail.carrier || t("Chưa có"),
                 },
                 {
                   key: "sent-at",
-                  label: "Ngày gửi hàng",
+                  label: t("Ngày gửi hàng"),
                   children: detail.shippedAt
-                    ? new Date(detail.shippedAt).toLocaleString("vi-VN")
-                    : "Chưa gửi",
+                    ? formatDateTime(detail.shippedAt, timeZone)
+                    : t("Chưa gửi"),
                 },
                 {
                   key: "paid",
-                  label: "Đã thanh toán",
+                  label: t("Đã thanh toán"),
                   children: money(detail.paid),
                 },
                 {
                   key: "remaining",
-                  label: "Còn phải trả",
+                  label: t("Còn phải trả"),
                   children: money(detail.remaining),
                 },
                 {
                   key: "payment",
-                  label: "Thanh toán",
-                  children: detail.paymentStatus,
+                  label: t("Thanh toán"),
+                  children: t(detail.paymentStatus),
                 },
                 {
                   key: "tracking",
-                  label: "Mã vận đơn",
-                  children: detail.tracking || "Chưa có — chờ shop cập nhật",
+                  label: t("Mã vận đơn"),
+                  children: detail.tracking || t("Chưa có — chờ shop cập nhật"),
                 },
               ]}
             />
@@ -189,11 +196,12 @@ export default function Orders() {
               items={[
                 {
                   content:
-                    "Đã tạo đơn: " +
-                    new Date(detail.createdAt).toLocaleString("vi-VN"),
+                    t("Đã tạo đơn") +
+                    ": " +
+                    formatDateTime(detail.createdAt, timeZone),
                 },
                 {
-                  content: detail.status,
+                  content: t(detail.status),
                   color: detail.status === "Đã hủy" ? "gray" : "green",
                 },
               ]}
@@ -203,17 +211,19 @@ export default function Orders() {
       </Modal>
       <Modal
         open={!!cancel}
-        title="Hủy đơn hàng?"
+        title={t("Hủy đơn hàng?")}
         onCancel={() => setCancel(null)}
         onOk={cancelOrder}
-        okText="Xác nhận hủy"
-        cancelText="Giữ đơn"
+        okText={t("Xác nhận hủy")}
+        cancelText={t("Giữ đơn")}
         okButtonProps={{ danger: true }}
       >
-        <p>Chỉ có thể hủy khi shop chưa xác nhận đơn.</p>
+        <p>{t("Chỉ có thể hủy khi shop chưa xác nhận đơn.")}</p>
         <Alert
           type="info"
-          title="Đây là đơn demo, chưa có giao dịch tiền thật hay hoàn tiền tự động."
+          title={t(
+            "Đây là đơn demo, chưa có giao dịch tiền thật hay hoàn tiền tự động.",
+          )}
         />
       </Modal>
     </div>

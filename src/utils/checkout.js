@@ -5,8 +5,9 @@ export function calculateCheckout(
   couponApplied,
   deposit,
   payment,
+  commerce = shopConfig.commerce,
 ) {
-  const c = shopConfig.commerce;
+  const c = commerce;
   const subtotal = items.reduce((sum, p) => sum + p.price * p.quantity, 0);
   const shipping =
     delivery === "pickup" || subtotal >= c.freeShippingFrom ? 0 : c.shippingFee;

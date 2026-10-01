@@ -1,3 +1,7 @@
+import { Select } from "antd";
+import { usePreferences } from "../hooks/usePreferences";
+import { getDeviceTimeZone } from "../utils/format";
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import {
@@ -13,11 +17,28 @@ import {
   Popconfirm,
 } from "antd";
 import { useShop } from "../hooks/useShop";
-const phoneRules = [
-  { required: true, message: "Nhập số điện thoại" },
-  { pattern: /^(0|\+84)[0-9]{9}$/, message: "Số điện thoại chưa hợp lệ" },
-];
 function AccountContent() {
+  const { t } = useTranslation();
+  const { timeZone, setTimeZone } = usePreferences();
+  const timeZones = [
+    ...new Set([
+      getDeviceTimeZone(),
+      timeZone,
+      "Asia/Ho_Chi_Minh",
+      "Asia/Bangkok",
+      "Asia/Tokyo",
+      "Europe/London",
+      "America/New_York",
+      "America/Los_Angeles",
+      "UTC",
+    ]),
+  ];
+
+  const phoneRules = [
+    { required: true, message: t("Nhập số điện thoại") },
+    { pattern: /^(0|\+84)[0-9]{9}$/, message: t("Số điện thoại chưa hợp lệ") },
+  ];
+
   const { user, updateProfile } = useShop(),
     { message } = App.useApp();
   const [editing, setEditing] = useState(null),
@@ -44,7 +65,7 @@ function AccountContent() {
       address: selected?.address || "",
     });
     setEditing(null);
-    message.success("Đã lưu địa chỉ");
+    message.success(t("Đã lưu địa chỉ"));
   }
   function removeAddress(id) {
     const next = addresses.filter((a) => a.id !== id);
@@ -62,34 +83,36 @@ function AccountContent() {
       initialValues={user}
       onFinish={(v) => {
         updateProfile(v);
-        message.success("Đã lưu thông tin cá nhân");
+        message.success(t("Đã lưu thông tin cá nhân"));
       }}
     >
       <Form.Item
         name="name"
-        label="Họ và tên"
-        rules={[{ required: true, whitespace: true, message: "Nhập họ tên" }]}
+        label={t("Họ và tên")}
+        rules={[
+          { required: true, whitespace: true, message: t("Nhập họ tên") },
+        ]}
       >
         <Input maxLength={80} />
       </Form.Item>
-      <Form.Item label="Email">
+      <Form.Item label={t("Email")}>
         <Input value={user.email} disabled />
       </Form.Item>
-      <Form.Item name="phone" label="Số điện thoại" rules={phoneRules}>
+      <Form.Item name="phone" label={t("Số điện thoại")} rules={phoneRules}>
         <Input />
       </Form.Item>
       <Button type="primary" htmlType="submit">
-        Lưu thay đổi
+        {t("Lưu thay đổi")}
       </Button>
     </Form>
   );
   const addressPanel = (
     <>
       <Button type="primary" onClick={() => edit(null)}>
-        Thêm địa chỉ
+        {t("Thêm địa chỉ")}
       </Button>
       {!addresses.length ? (
-        <Empty description="Chưa có địa chỉ đã lưu" />
+        <Empty description={t("Chưa có địa chỉ đã lưu")} />
       ) : (
         addresses.map((a) => (
           <div className="panel" style={{ marginTop: 16 }} key={a.id}>
@@ -98,19 +121,19 @@ function AccountContent() {
             </strong>
             {a.id === user.defaultAddressId && (
               <Tag color="blue" style={{ marginLeft: 10 }}>
-                Mặc định
+                {t("Mặc định")}
               </Tag>
             )}
             <p style={{ marginTop: 12 }}>{a.address}</p>
             <div className="address-actions">
-              <Button onClick={() => edit(a)}>Sửa</Button>
+              <Button onClick={() => edit(a)}>{t("Sửa")}</Button>
               <Popconfirm
-                title="Xóa địa chỉ này?"
+                title={t("Xóa địa chỉ này?")}
                 onConfirm={() => removeAddress(a.id)}
-                okText="Xóa"
-                cancelText="Đóng"
+                okText={t("Xóa")}
+                cancelText={t("Đóng")}
               >
-                <Button danger>Xóa</Button>
+                <Button danger>{t("Xóa")}</Button>
               </Popconfirm>
               {a.id !== user.defaultAddressId && (
                 <Button
@@ -121,7 +144,7 @@ function AccountContent() {
                     })
                   }
                 >
-                  Đặt làm mặc định
+                  {t("Đặt làm mặc định")}
                 </Button>
               )}
             </div>
@@ -135,8 +158,10 @@ function AccountContent() {
       <Alert
         type="info"
         showIcon
-        title="Đổi mật khẩu cần kết nối dịch vụ xác thực"
-        description="Đây là biểu mẫu frontend. Không nhập mật khẩu thật; bản demo không xác thực hoặc thay đổi mật khẩu."
+        title={t("Đổi mật khẩu cần kết nối dịch vụ xác thực")}
+        description={t(
+          "Đây là biểu mẫu frontend. Không nhập mật khẩu thật; bản demo không xác thực hoặc thay đổi mật khẩu.",
+        )}
       />
       <Form
         form={passwordForm}
@@ -144,39 +169,39 @@ function AccountContent() {
         style={{ marginTop: 20 }}
         onFinish={() => {
           message.info(
-            "Thông tin hợp lệ. Chưa có API xác thực để đổi mật khẩu.",
+            t("Thông tin hợp lệ. Chưa có API xác thực để đổi mật khẩu."),
           );
           passwordForm.resetFields();
         }}
       >
         <Form.Item
           name="current"
-          label="Mật khẩu hiện tại (demo)"
-          rules={[{ required: true, message: "Nhập mật khẩu hiện tại" }]}
+          label={t("Mật khẩu hiện tại (demo)")}
+          rules={[{ required: true, message: t("Nhập mật khẩu hiện tại") }]}
         >
           <Input.Password autoComplete="off" />
         </Form.Item>
         <Form.Item
           name="next"
-          label="Mật khẩu mới (demo)"
+          label={t("Mật khẩu mới (demo)")}
           rules={[
-            { required: true, message: "Nhập mật khẩu mới" },
-            { min: 8, message: "Tối thiểu 8 ký tự" },
+            { required: true, message: t("Nhập mật khẩu mới") },
+            { min: 8, message: t("Tối thiểu 8 ký tự") },
           ]}
         >
           <Input.Password autoComplete="off" />
         </Form.Item>
         <Form.Item
           name="confirm"
-          label="Nhập lại mật khẩu mới"
+          label={t("Nhập lại mật khẩu mới")}
           dependencies={["next"]}
           rules={[
-            { required: true, message: "Nhập lại mật khẩu" },
+            { required: true, message: t("Nhập lại mật khẩu") },
             ({ getFieldValue }) => ({
               validator(_, value) {
                 return !value || value === getFieldValue("next")
                   ? Promise.resolve()
-                  : Promise.reject(new Error("Mật khẩu không khớp"));
+                  : Promise.reject(new Error(t("Mật khẩu không khớp")));
               },
             }),
           ]}
@@ -184,48 +209,68 @@ function AccountContent() {
           <Input.Password autoComplete="off" />
         </Form.Item>
         <Button type="primary" htmlType="submit">
-          Kiểm tra biểu mẫu đổi mật khẩu
+          {t("Kiểm tra biểu mẫu đổi mật khẩu")}
         </Button>
       </Form>
     </>
   );
   return (
     <div className="page">
-      <h1>Tài khoản của bạn</h1>
+      <h1>{t("Tài khoản của bạn")}</h1>
+      <div className="panel region-settings">
+        <h2>{t("Múi giờ hiển thị")}</h2>
+        <Select
+          aria-label={t("Múi giờ hiển thị")}
+          value={timeZone}
+          onChange={setTimeZone}
+          options={timeZones.map((z) => ({ value: z, label: z }))}
+          style={{ minWidth: 220 }}
+        />
+        <Button type="link" onClick={() => setTimeZone(getDeviceTimeZone())}>
+          {t("Dùng múi giờ thiết bị")}
+        </Button>
+        <p className="muted">{t("Múi giờ độc lập với ngôn ngữ VI/EN.")}</p>
+      </div>
       <Alert
         type="info"
-        title="Phiên demo — dữ liệu lưu trên trình duyệt, chưa kết nối tài khoản thật"
+        title={t(
+          "Phiên demo — dữ liệu lưu trên trình duyệt, chưa kết nối tài khoản thật",
+        )}
       />
       <div className="panel" style={{ marginTop: 24 }}>
         <Tabs
           items={[
-            { key: "profile", label: "Thông tin cá nhân", children: profile },
+            {
+              key: "profile",
+              label: t("Thông tin cá nhân"),
+              children: profile,
+            },
             {
               key: "addresses",
-              label: "Địa chỉ nhận hàng",
+              label: t("Địa chỉ nhận hàng"),
               children: addressPanel,
             },
-            { key: "password", label: "Đổi mật khẩu", children: password },
+            { key: "password", label: t("Đổi mật khẩu"), children: password },
           ]}
         />
       </div>
       <Modal
         open={!!editing}
-        title={editing?.id ? "Sửa địa chỉ" : "Thêm địa chỉ"}
+        title={t(editing?.id ? "Sửa địa chỉ" : "Thêm địa chỉ")}
         onCancel={() => setEditing(null)}
         onOk={() => addressForm.submit()}
-        okText="Lưu địa chỉ"
-        cancelText="Đóng"
+        okText={t("Lưu địa chỉ")}
+        cancelText={t("Đóng")}
       >
         <Form form={addressForm} layout="vertical" onFinish={saveAddress}>
           <Form.Item
             name="name"
-            label="Tên người nhận"
+            label={t("Tên người nhận")}
             rules={[
               {
                 required: true,
                 whitespace: true,
-                message: "Nhập tên người nhận",
+                message: t("Nhập tên người nhận"),
               },
             ]}
           >
@@ -233,19 +278,19 @@ function AccountContent() {
           </Form.Item>
           <Form.Item
             name="phone"
-            label="Điện thoại người nhận"
+            label={t("Điện thoại người nhận")}
             rules={phoneRules}
           >
             <Input />
           </Form.Item>
           <Form.Item
             name="address"
-            label="Địa chỉ"
+            label={t("Địa chỉ")}
             rules={[
               {
                 required: true,
                 whitespace: true,
-                message: "Nhập địa chỉ đầy đủ",
+                message: t("Nhập địa chỉ đầy đủ"),
               },
             ]}
           >

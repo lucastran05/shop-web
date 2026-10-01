@@ -1,10 +1,11 @@
-import { useShopConfig } from "../hooks/useShopConfig";
+import { useTranslation } from "react-i18next";
+import { shopConfig } from "../constants/shop";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../hooks/useShop";
 export default function Auth() {
-  const shopConfig = useShopConfig();
+  const { t } = useTranslation();
   const [tab, setTab] = useState("login"),
     { setUser, profiles } = useShop(),
     navigate = useNavigate(),
@@ -19,7 +20,7 @@ export default function Auth() {
         address: "",
       },
     );
-    message.success("Đã vào phiên Customer demo");
+    message.success(t("Đã vào phiên Customer demo"));
     const next = params.get("next");
     navigate(
       next && next.startsWith("/") && !next.startsWith("//")
@@ -32,34 +33,40 @@ export default function Auth() {
     <div className="auth-page">
       <div className="auth-art">
         <h1>{shopConfig.name}</h1>
-        <p>Đăng nhập để đặt hàng và theo dõi đơn hàng của bạn.</p>
+        <p>{t("Đăng nhập để đặt hàng và theo dõi đơn hàng của bạn.")}</p>
       </div>
       <div className="auth-form">
-        <h2>Tài khoản khách hàng</h2>
+        <h2>{t("Tài khoản khách hàng")}</h2>
         <p className="muted">
-          Lưu những lựa chọn và theo dõi đơn hàng của bạn.
+          {t("Lưu những lựa chọn và theo dõi đơn hàng của bạn.")}
         </p>
         <Alert
           type="info"
           showIcon
-          title="Phiên trải nghiệm giao diện"
-          description="Chưa có API xác thực. Email chỉ dùng để tạo hồ sơ demo trên trình duyệt; không nhập mật khẩu thật."
+          title={t("Phiên trải nghiệm giao diện")}
+          description={t(
+            "Chưa có API xác thực. Email chỉ dùng để tạo hồ sơ demo trên trình duyệt; không nhập mật khẩu thật.",
+          )}
         />
         <Tabs
           activeKey={tab}
           onChange={setTab}
           items={[
-            { key: "login", label: "Đăng nhập" },
-            { key: "register", label: "Đăng ký" },
+            { key: "login", label: t("Đăng nhập") },
+            { key: "register", label: t("Đăng ký") },
           ]}
         />
         <Form key={tab} layout="vertical" onFinish={submit}>
           {tab === "register" && (
             <Form.Item
               name="name"
-              label="Họ và tên"
+              label={t("Họ và tên")}
               rules={[
-                { required: true, whitespace: true, message: "Nhập họ và tên" },
+                {
+                  required: true,
+                  whitespace: true,
+                  message: t("Nhập họ và tên"),
+                },
               ]}
             >
               <Input maxLength={80} />
@@ -67,26 +74,26 @@ export default function Auth() {
           )}
           <Form.Item
             name="email"
-            label="Email"
+            label={t("Email")}
             rules={[
-              { required: true, message: "Nhập email" },
-              { type: "email", message: "Email chưa hợp lệ" },
+              { required: true, message: t("Nhập email") },
+              { type: "email", message: t("Email chưa hợp lệ") },
             ]}
           >
-            <Input placeholder="ban@example.com" />
+            <Input placeholder={t("ban@example.com")} />
           </Form.Item>
           <Form.Item
             name="password"
-            label="Mật khẩu demo (không lưu)"
+            label={t("Mật khẩu demo (không lưu)")}
             rules={[
-              { required: true, message: "Nhập mật khẩu demo" },
-              { min: 6, message: "Tối thiểu 6 ký tự" },
+              { required: true, message: t("Nhập mật khẩu demo") },
+              { min: 6, message: t("Tối thiểu 6 ký tự") },
             ]}
           >
             <Input.Password autoComplete="off" />
           </Form.Item>
           <Button htmlType="submit" type="primary" block>
-            {tab === "login" ? "Đăng nhập demo" : "Tạo hồ sơ demo"}
+            {t(tab === "login" ? "Đăng nhập demo" : "Tạo hồ sơ demo")}
           </Button>
         </Form>
       </div>

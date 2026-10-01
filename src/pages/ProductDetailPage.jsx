@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+import ExpandableText from "../components/ExpandableText";
+import ProductReviews from "../components/ProductReviews";
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
@@ -18,6 +21,7 @@ import { useShop } from "../hooks/useShop";
 import { shopConfig } from "../constants/shop";
 import ProductCard from "../components/ProductCard";
 function ProductView({ p }) {
+  const { t } = useTranslation();
   const [variantId, setVariantId] = useState(p.variants[0].id),
     [qty, setQty] = useState(1),
     [picture, setPicture] = useState(0);
@@ -29,14 +33,14 @@ function ProductView({ p }) {
     const key = add(p, v.id, qty);
     if (!key) return;
     if (now) navigate("/checkout?buy=" + encodeURIComponent(key));
-    else message.success("Đã thêm vào giỏ hàng");
+    else message.success(t("Đã thêm vào giỏ hàng"));
   }
   return (
     <div className="page">
       <Breadcrumb
         items={[
-          { title: <Link to="/">Trang chủ</Link> },
-          { title: p.category },
+          { title: <Link to="/">{t("Trang chủ")}</Link> },
+          { title: t(p.category) },
           { title: p.name },
         ]}
       />
@@ -47,32 +51,36 @@ function ProductView({ p }) {
             {p.images.map((image, i) => (
               <button
                 key={image}
-                aria-label={"Xem ảnh " + (i + 1)}
+                aria-label={t("Xem ảnh {{number}}", { number: i + 1 })}
                 aria-pressed={picture === i}
                 className={picture === i ? "selected" : ""}
                 onClick={() => setPicture(i)}
               >
-                <img src={image} alt={"Ảnh sản phẩm " + (i + 1)} />
+                <img src={image} alt={p.name + " · " + (i + 1)} />
               </button>
             ))}
           </div>
         </div>
         <div>
-          <Tag>{p.category}</Tag>
+          <Tag>{t(p.category)}</Tag>
           <h1>{p.name}</h1>
           <div className="detail-price">
             {money(v.price)} {v.oldPrice && <del>{money(v.oldPrice)}</del>}
           </div>
-          <p className="muted">{p.description}</p>
+          <ExpandableText text={p.description} />
           <Tag color={v.stock ? "success" : "default"}>
-            {v.stock ? "Còn " + v.stock + " sản phẩm" : "Tạm hết hàng"}
+            {v.stock
+              ? t("Còn {{count}} sản phẩm", { count: v.stock })
+              : t("Tạm hết hàng")}
           </Tag>
           {p.deposit && (
             <Tag color="blue">
-              Hỗ trợ đặt cọc {shopConfig.commerce.depositRate * 100}%
+              {t("Hỗ trợ đặt cọc {{percent}}%", {
+                percent: shopConfig.commerce.depositRate * 100,
+              })}
             </Tag>
           )}
-          <h4>Phân loại sản phẩm</h4>
+          <h4>{t("Phân loại sản phẩm")}</h4>
           <Radio.Group
             value={variantId}
             onChange={(e) => {
@@ -81,13 +89,13 @@ function ProductView({ p }) {
             }}
             options={p.variants.map((v) => ({
               value: v.id,
-              label: v.label + (v.color ? " · " + v.color : ""),
+              label: t(v.label) + (v.color ? " · " + t(v.color) : ""),
             }))}
             optionType="button"
           />
-          <h4>Số lượng</h4>
+          <h4>{t("Số lượng")}</h4>
           <InputNumber
-            aria-label="Số lượng"
+            aria-label={t("Số lượng")}
             min={1}
             max={Math.max(v.stock, 1)}
             value={qty}
@@ -98,11 +106,11 @@ function ProductView({ p }) {
             <Button
               size="large"
               icon={<ShoppingCartOutlined aria-hidden="true" />}
-              aria-label="Thêm vào giỏ"
+              aria-label={t("Thêm vào giỏ")}
               disabled={!v.stock}
               onClick={() => buy(false)}
             >
-              Thêm vào giỏ
+              {t("Thêm vào giỏ")}
             </Button>
             <Button
               size="large"
@@ -110,10 +118,10 @@ function ProductView({ p }) {
               disabled={!v.stock}
               onClick={() => buy(true)}
             >
-              Mua ngay
+              {t("Mua ngay")}
             </Button>
           </div>
-          <h3>Thông tin sản phẩm</h3>
+          <h3>{t("Thông tin sản phẩm")}</h3>
           <Descriptions
             bordered
             size="small"
@@ -121,17 +129,18 @@ function ProductView({ p }) {
             items={[
               ...p.attributes.map((a, i) => ({
                 key: i,
-                label: a.label,
-                children: a.value,
+                label: t(a.label),
+                children: t(a.value),
               })),
               ...(v.color
-                ? [{ key: "color", label: "Màu sắc", children: v.color }]
+                ? [{ key: "color", label: t("Màu sắc"), children: t(v.color) }]
                 : []),
             ]}
           />
         </div>
       </div>
-      <h2>Sản phẩm khác</h2>
+      <ProductReviews productId={p.id} />
+      <h2>{t("Sản phẩm khác")}</h2>
       <div className="product-grid related">
         {products
           .filter((x) => x.id !== p.id)
@@ -144,6 +153,7 @@ function ProductView({ p }) {
   );
 }
 export default function ProductDetail() {
+  const { t } = useTranslation();
   const { id } = useParams(),
     p = products.find((x) => x.id === Number(id));
   return p ? (
@@ -151,8 +161,8 @@ export default function ProductDetail() {
   ) : (
     <Result
       status="404"
-      title="Không tìm thấy sản phẩm"
-      extra={<Link to="/">Về trang chủ</Link>}
+      title={t("Không tìm thấy sản phẩm")}
+      extra={<Link to="/">{t("Về trang chủ")}</Link>}
     />
   );
 }
