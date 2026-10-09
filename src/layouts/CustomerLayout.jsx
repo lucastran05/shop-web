@@ -11,7 +11,6 @@ import {
   Space,
   App,
   Popover,
-  Select,
   Tooltip,
 } from "antd";
 import {
@@ -27,7 +26,7 @@ import { usePreferences } from "../hooks/usePreferences";
 import { formatDateTime } from "../utils/format";
 import HeaderSearch from "../components/HeaderSearch";
 export default function CustomerLayout() {
-  const { t, i18n } = useTranslation(),
+  const { t } = useTranslation(),
     shopConfig = useShopConfig(),
     s = useShop(),
     navigate = useNavigate(),
@@ -47,6 +46,7 @@ export default function CustomerLayout() {
     items: [
       { key: "account", label: t("Tài khoản của tôi") },
       { key: "orders", label: t("Đơn mua") },
+      { key: "settings", label: t("Cài đặt") },
       { key: "logout", label: t("Đăng xuất"), danger: true },
     ],
     onClick: ({ key }) => {
@@ -71,22 +71,10 @@ export default function CustomerLayout() {
       },
     ]);
     setDraft("");
-    message.info(t("Đã lưu tin nhắn demo. Chưa kết nối nhân viên shop."));
+    //message.info(t("Đã lưu tin nhắn demo. Chưa kết nối nhân viên shop."));
   }
   const notificationContent = (
     <div className="notification-dropdown">
-      <Button
-        type="link"
-        onClick={() =>
-          s.setNotifications((old) =>
-            old.map((n) =>
-              n.owner === s.user?.email ? { ...n, read: true } : n,
-            ),
-          )
-        }
-      >
-        {t("Đánh dấu tất cả đã đọc")}
-      </Button>
       <div className="notification-list">
         {notices.length ? (
           notices.map((n) => (
@@ -112,6 +100,18 @@ export default function CustomerLayout() {
           <Empty description={t("Chưa có thông báo")} />
         )}
       </div>
+      <Button
+        type="link"
+        onClick={() =>
+          s.setNotifications((old) =>
+            old.map((n) =>
+              n.owner === s.user?.email ? { ...n, read: true } : n,
+            ),
+          )
+        }
+      >
+        {t("Đánh dấu tất cả đã đọc")}
+      </Button>
     </div>
   );
   return (
@@ -124,21 +124,10 @@ export default function CustomerLayout() {
           <Link className={location.pathname === "/" ? "active" : ""} to="/">
             {t("Trang chủ")}
           </Link>
-          <Link to="/?featured=true">{t("Nổi bật")}</Link>
           <Link to="/shop-info">{t("Thông tin shop")}</Link>
         </nav>
         <HeaderSearch />
         <div className="header-actions">
-          <Select
-            aria-label={t("Ngôn ngữ")}
-            className="language-select"
-            value={i18n.resolvedLanguage === "en" ? "en" : "vi"}
-            onChange={(lng) => i18n.changeLanguage(lng)}
-            options={[
-              { value: "vi", label: "VI" },
-              { value: "en", label: "EN" },
-            ]}
-          />
           {s.user ? (
             <>
               <Popover

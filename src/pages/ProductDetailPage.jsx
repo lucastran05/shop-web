@@ -30,10 +30,16 @@ function ProductView({ p }) {
     { message } = App.useApp(),
     navigate = useNavigate();
   function buy(now) {
-    const key = add(p, v.id, qty);
-    if (!key) return;
-    if (now) navigate("/checkout?buy=" + encodeURIComponent(key));
-    else message.success(t("Đã thêm vào giỏ hàng"));
+    if (!v.stock) return;
+    if (now) {
+      navigate(
+        "/checkout?" +
+          new URLSearchParams({
+            buy: `${p.id}-${v.id}`,
+            quantity: String(qty),
+          }),
+      );
+    } else if (add(p, v.id, qty)) message.success(t("Đã thêm vào giỏ hàng"));
   }
   return (
     <div className="page">

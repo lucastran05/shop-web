@@ -1,3 +1,4 @@
+import { products } from "../services/productService";
 import { useState, useRef } from "react";
 import { Navigate, Link, useSearchParams } from "react-router-dom";
 import {
@@ -34,30 +35,52 @@ export default function Checkout() {
     [discount, setDiscount] = useState(false),
     [form] = Form.useForm(),
     submitted = useRef(false);
-  const buy = params.get("buy"),
-    items = s.items.filter((x) => (buy ? x.key === buy : x.selected)),
-    defaultAddress = s.user?.addresses?.find(
-      (a) => a.id === s.user.defaultAddressId,
-    ),
-    canDeposit = !!items.length && items.every((p) => p.deposit),
-    deposit = mode === "deposit" && canDeposit;
+  const buy = params.get("buy");
+  const [items, setItems] = useState(() => {
+    if (!buy) return s.items.filter((x) => x.selected).map((x) => ({ ...x }));
+    for (const p of products) {
+      const v = p.variants.find((v) => `${p.id}-${v.id}` === buy);
+      if (v)
+        return [
+          {
+            ...p,
+            ...v,
+            id: p.id,
+            variantId: v.id,
+            key: buy,
+            variantLabel: v.label,
+            quantity: Math.max(
+              1,
+              Math.min(
+                v.stock || 1,
+                Math.floor(Number(params.get("quantity")) || 1),
+              ),
+            ),
+          },
+        ];
+    }
+    return [];
+  });
+  const defaultAddress = s.user?.addresses?.find(
+    (a) => a.id === s.user.defaultAddressId,
+  );
+  const depositRate =
+    mode === "deposit50" ? 0.5 : mode === "deposit70" ? 0.7 : 0;
+  const deposit = depositRate > 0;
   const totals = calculateCheckout(
       items,
       delivery,
       discount,
       deposit,
       payment,
-      shop.commerce,
+      { ...shop.commerce, depositRate },
     ),
     { subtotal, shipping, off, total, due } = totals;
   if (!s.user)
     return (
       <Navigate
         to={
-          "/login?next=" +
-          encodeURIComponent(
-            "/checkout" + (buy ? "?buy=" + encodeURIComponent(buy) : ""),
-          )
+          "/login?next=" + encodeURIComponent("/checkout?" + params.toString())
         }
         replace
       />
@@ -65,7 +88,7 @@ export default function Checkout() {
   function quantity(key, value, stock) {
     if (value === null) return;
     const next = Math.max(1, Math.min(stock, Math.floor(Number(value) || 1)));
-    s.setCart((old) =>
+    setItems((old) =>
       old.map((x) => (x.key === key ? { ...x, quantity: next } : x)),
     );
   }
@@ -83,7 +106,7 @@ export default function Checkout() {
       items,
       ...totals,
       deposit: deposit ? due : 0,
-      depositRate: deposit ? shop.commerce.depositRate : 0,
+      depositRate,
       depositStatus: deposit ? "Chờ xác nhận" : "Không đặt cọc",
       depositAt: null,
       paid: 0,
@@ -98,7 +121,6 @@ export default function Checkout() {
       recipient,
     };
     s.setOrders((old) => [order, ...old]);
-    s.setCart((old) => old.filter((x) => !items.some((p) => p.key === x.key)));
     s.notify("Đơn {{id}} đã được tạo và đang chờ xác nhận.", { id: order.id });
     setPlaced(order);
     setStep(2);
@@ -265,26 +287,20 @@ export default function Checkout() {
                     value={mode}
                     onChange={(e) => {
                       setMode(e.target.value);
-                      if (e.target.value === "deposit") setPayment("qr");
+                      if (e.target.value !== "full") setPayment("qr");
                     }}
                     options={[
-                      { value: "full", label: t("Toàn bộ giá trị đơn") },
                       {
-                        value: "deposit",
-                        label: t("Đặt cọc {{percent}}%", {
-                          percent: shop.commerce.depositRate * 100,
-                        }),
-                        disabled: !canDeposit,
+                        value: "deposit50",
+                        label: t("Đặt cọc {{percent}}%", { percent: 50 }),
                       },
+                      {
+                        value: "deposit70",
+                        label: t("Đặt cọc {{percent}}%", { percent: 70 }),
+                      },
+                      { value: "full", label: t("Thanh toán toàn bộ") },
                     ]}
                   />
-                  {!canDeposit && (
-                    <p className="muted">
-                      {t(
-                        "Đặt cọc chỉ áp dụng khi mọi sản phẩm trong đơn đều hỗ trợ.",
-                      )}
-                    </p>
-                  )}
                   <h3>{t("Phương thức thanh toán")}</h3>
                   <Radio.Group
                     value={payment}

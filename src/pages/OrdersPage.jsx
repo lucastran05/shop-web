@@ -11,6 +11,7 @@ import {
   Button,
   Modal,
   Descriptions,
+  Table,
   Timeline,
   Alert,
 } from "antd";
@@ -93,6 +94,7 @@ export default function Orders() {
         </Empty>
       )}
       <Modal
+        width={900}
         open={!!detail}
         title={t("Chi tiết đơn {{id}}", { id: detail?.id || "" })}
         onCancel={() => setDetail(null)}
@@ -100,7 +102,28 @@ export default function Orders() {
       >
         {detail && (
           <>
+            <Table
+              rowKey="key"
+              bordered
+              pagination={false}
+              dataSource={detail.items}
+              scroll={{ x: 600 }}
+              columns={[
+                { title: t("Sản phẩm"), dataIndex: "name" },
+                {
+                  title: t("Phân loại"),
+                  render: (_, p) => `${t(p.color)} / ${t(p.variantLabel)}`,
+                },
+                { title: t("Đơn giá"), dataIndex: "price", render: money },
+                { title: t("Số lượng"), dataIndex: "quantity" },
+                {
+                  title: t("Thành tiền"),
+                  render: (_, p) => money(p.price * p.quantity),
+                },
+              ]}
+            />
             <Descriptions
+              bordered
               column={1}
               items={[
                 {

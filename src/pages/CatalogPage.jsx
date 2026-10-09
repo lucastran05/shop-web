@@ -1,6 +1,5 @@
 import { useShopConfig } from "../hooks/useShopConfig";
 import { useSearchParams } from "react-router-dom";
-import { categoryList } from "../constants/categories";
 import {
   Button,
   Input,
@@ -11,7 +10,7 @@ import {
   Pagination,
   Tag,
 } from "antd";
-import { ArrowRightOutlined, ShoppingOutlined } from "@ant-design/icons";
+import { ShoppingOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -66,16 +65,6 @@ export default function Catalog() {
     pageState.query === params.toString() ? pageState.value : 1,
     Math.max(1, Math.ceil(list.length / pageSize)),
   );
-  const featuredCategories = categoryList.filter((c) => c.featured);
-  function selectCategory(name) {
-    const next = new URLSearchParams();
-    next.set("category", name);
-    setPrice(maxCatalogPrice);
-    setStock(false);
-    setSort("popular");
-    setPage({ query: next.toString(), value: 1 });
-    setParams(next);
-  }
   return (
     <>
       <section className="hero">
@@ -88,37 +77,6 @@ export default function Catalog() {
         </div>
         <ShoppingOutlined className="hero-icon" />
       </section>
-      {featuredCategories.length > 0 && (
-        <section className="featured-categories">
-          <h2>{t("Danh mục nổi bật")}</h2>
-          <p>{t("Khám phá sản phẩm theo danh mục.")}</p>
-          <div className="featured-categories-grid">
-            {featuredCategories.map((c) => (
-              <button
-                type="button"
-                key={c.id}
-                className={
-                  "featured-category-card" +
-                  (category === c.name ? " is-selected" : "")
-                }
-                aria-pressed={category === c.name}
-                onClick={() => selectCategory(c.name)}
-              >
-                <span>
-                  <strong>{t(c.name)}</strong>
-                  <small>
-                    {t("{{count}} sản phẩm", {
-                      count: products.filter((p) => p.category === c.name)
-                        .length,
-                    })}
-                  </small>
-                </span>
-                <ArrowRightOutlined aria-hidden="true" />
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
       <section className="collection" id="collection">
         <div className="section-heading">
           <div>

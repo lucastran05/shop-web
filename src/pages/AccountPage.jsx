@@ -1,6 +1,3 @@
-import { Select } from "antd";
-import { usePreferences } from "../hooks/usePreferences";
-import { getDeviceTimeZone } from "../utils/format";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
@@ -19,21 +16,6 @@ import {
 import { useShop } from "../hooks/useShop";
 function AccountContent() {
   const { t } = useTranslation();
-  const { timeZone, setTimeZone } = usePreferences();
-  const timeZones = [
-    ...new Set([
-      getDeviceTimeZone(),
-      timeZone,
-      "Asia/Ho_Chi_Minh",
-      "Asia/Bangkok",
-      "Asia/Tokyo",
-      "Europe/London",
-      "America/New_York",
-      "America/Los_Angeles",
-      "UTC",
-    ]),
-  ];
-
   const phoneRules = [
     { required: true, message: t("Nhập số điện thoại") },
     { pattern: /^(0|\+84)[0-9]{9}$/, message: t("Số điện thoại chưa hợp lệ") },
@@ -217,20 +199,6 @@ function AccountContent() {
   return (
     <div className="page">
       <h1>{t("Tài khoản của bạn")}</h1>
-      <div className="panel region-settings">
-        <h2>{t("Múi giờ hiển thị")}</h2>
-        <Select
-          aria-label={t("Múi giờ hiển thị")}
-          value={timeZone}
-          onChange={setTimeZone}
-          options={timeZones.map((z) => ({ value: z, label: z }))}
-          style={{ minWidth: 220 }}
-        />
-        <Button type="link" onClick={() => setTimeZone(getDeviceTimeZone())}>
-          {t("Dùng múi giờ thiết bị")}
-        </Button>
-        <p className="muted">{t("Múi giờ độc lập với ngôn ngữ VI/EN.")}</p>
-      </div>
       <Alert
         type="info"
         title={t(

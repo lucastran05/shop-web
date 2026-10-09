@@ -8,6 +8,7 @@ import CartPage from "../pages/CartPage.jsx";
 import CheckoutPage from "../pages/CheckoutPage.jsx";
 import OrdersPage from "../pages/OrdersPage.jsx";
 import AccountPage from "../pages/AccountPage.jsx";
+import SettingsPage from "../pages/SettingsPage.jsx";
 import AuthPage from "../pages/AuthPage.jsx";
 import { Result, Button } from "antd";
 
@@ -22,6 +23,7 @@ export default function CustomerRoutes() {
         <Route path="cart" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="orders" element={<OrdersPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="login" element={<AuthPage />} />
         <Route

@@ -937,3 +937,13 @@ hr {
 .ant-btn.chat-trigger .anticon {
   font-size: 26px;
 }
+
+/* Customer refinements */
+.chat-log { display: flex; flex-direction: column; gap: 10px; }
+.chat-log .bubble { margin: 0; align-self: flex-start; }
+.chat-log .bubble.mine { align-self: flex-end; }
+.timezone-select { width: 180px; }
+.header-actions { flex-wrap: wrap; }
+.review-images { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.review-images img { object-fit: cover; border-radius: 8px; }
+.ant-btn.chat-trigger { width: 56px; min-width: 56px; max-width: 56px; height: 56px; min-height: 56px; max-height: 56px; padding: 0; border-radius: 50%; }

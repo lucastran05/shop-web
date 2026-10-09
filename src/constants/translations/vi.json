@@ -1,4 +1,5 @@
 {
+  "Cài đặt": "Cài đặt",
   "Chat với shop": "Chat với shop",
   "Chi tiết đơn {{id}}": "Chi tiết đơn {{id}}",
   "Chào bạn! Shop có thể hỗ trợ gì cho bạn?": "Chào bạn! Shop có thể hỗ trợ gì cho bạn?",
@@ -258,5 +259,14 @@
   "Tùy chọn 2": "Tùy chọn 2",
   "Trắng": "Trắng",
   "Đen": "Đen",
-  "Xem ảnh {{number}}": "Xem ảnh {{number}}"
+  "Xem ảnh {{number}}": "Xem ảnh {{number}}",
+  "Thanh toán toàn bộ": "Thanh toán toàn bộ",
+  "Ảnh đánh giá (không bắt buộc)": "Ảnh đánh giá (không bắt buộc)",
+  "Tối đa 3 ảnh, mỗi ảnh không quá 2 MB": "Tối đa 3 ảnh, mỗi ảnh không quá 2 MB",
+  "Không đọc được ảnh. Chọn JPG, PNG hoặc WebP tối đa 2 MB.": "Không đọc được ảnh. Chọn JPG, PNG hoặc WebP tối đa 2 MB.",
+  "Không đủ dung lượng lưu đánh giá. Hãy giảm số ảnh.": "Không đủ dung lượng lưu đánh giá. Hãy giảm số ảnh.",
+  "Ảnh đánh giá": "Ảnh đánh giá",
+  "Xóa ảnh": "Xóa ảnh",
+  "Đơn giá": "Đơn giá",
+  "Thành tiền": "Thành tiền"
 }
