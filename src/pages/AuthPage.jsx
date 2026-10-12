@@ -92,6 +92,25 @@ export default function Auth() {
           >
             <Input.Password autoComplete="off" />
           </Form.Item>
+          {tab === "register" && (
+            <Form.Item
+              name="confirmPassword"
+              label={t("Xác nhận mật khẩu")}
+              dependencies={["password"]}
+              rules={[
+                { required: true, message: t("Nhập lại mật khẩu") },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    return !value || value === getFieldValue("password")
+                      ? Promise.resolve()
+                      : Promise.reject(new Error(t("Mật khẩu không khớp")));
+                  },
+                }),
+              ]}
+            >
+              <Input.Password autoComplete="off" />
+            </Form.Item>
+          )}
           <Button htmlType="submit" type="primary" block>
             {t(tab === "login" ? "Đăng nhập demo" : "Tạo hồ sơ demo")}
           </Button>

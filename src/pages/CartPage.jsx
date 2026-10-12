@@ -1,18 +1,19 @@
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Button, Checkbox, InputNumber, Empty, App } from "antd";
 import { DeleteOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
 export default function Cart() {
   const { t } = useTranslation();
-  const { items, setCart } = useShop(),
+  const { items, setCart, user } = useShop(),
     navigate = useNavigate(),
     { message } = App.useApp();
   const selected = items.filter((x) => x.selected),
     total = selected.reduce((n, p) => n + p.price * p.quantity, 0);
   const patch = (key, data) =>
     setCart((old) => old.map((x) => (x.key === key ? { ...x, ...data } : x)));
+  if (!user) return <Navigate to="/login?next=/cart" replace />;
   return (
     <div className="page">
       <h1>
@@ -87,7 +88,7 @@ export default function Cart() {
               <b>{money(total)}</b>
             </p>
             <p className="muted">
-              {t("Phí vận chuyển và mã giảm giá được tính ở bước đặt hàng.")}
+              {t("Phí vận chuyển được tính ở bước đặt hàng.")}
             </p>
             <hr />
             <p className="total">

@@ -162,14 +162,16 @@ export default function CustomerLayout() {
               {t("Đăng nhập")}
             </Button>
           )}
-          <Link to="/cart" aria-label={t("Giỏ hàng")}>
-            <Badge
-              count={s.items.reduce((n, i) => n + i.quantity, 0)}
-              size="small"
-            >
-              <ShoppingOutlined style={{ fontSize: 23 }} />
-            </Badge>
-          </Link>
+          {s.user && (
+            <Link to="/cart" aria-label={t("Giỏ hàng")}>
+              <Badge
+                count={s.items.reduce((n, i) => n + i.quantity, 0)}
+                size="small"
+              >
+                <ShoppingOutlined style={{ fontSize: 23 }} />
+              </Badge>
+            </Link>
+          )}
         </div>
       </header>
       <main>

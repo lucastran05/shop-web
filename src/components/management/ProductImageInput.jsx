@@ -2,8 +2,13 @@ import { useState } from "react";
 import { App, Image, Input, Space, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Button from "./ManagementButton";
+import { uploadProductImage } from "../../services/uploadProductImage";
 
-export default function ProductImageInput({ value, onChange, onLoadingChange }) {
+export default function ProductImageInput({
+  value,
+  onChange,
+  onLoadingChange,
+}) {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   async function select(file) {
@@ -27,9 +32,19 @@ export default function ProductImageInput({ value, onChange, onLoadingChange }) 
         .getContext("2d")
         .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       bitmap.close();
-      onChange?.(canvas.toDataURL("image/webp", 0.8));
-    } catch {
-      message.error("Không đọc được ảnh. Vui lòng chọn ảnh khác.");
+      const blob = await new Promise((resolve, reject) =>
+        canvas.toBlob(
+          (result) =>
+            result ? resolve(result) : reject(new Error("Không đọc được ảnh.")),
+          "image/webp",
+          0.8,
+        ),
+      );
+      const url = await uploadProductImage(blob);
+      onChange?.(url);
+      message.success("Đã tải ảnh lên MinIO");
+    } catch (error) {
+      message.error(error.message || "Không tải được ảnh. Vui lòng thử lại.");
     } finally {
       setLoading(false);
       onLoadingChange?.(false);

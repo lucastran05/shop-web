@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import AddressFields, { formatAddress } from "../components/AddressFields";
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import {
@@ -35,6 +36,7 @@ function AccountContent() {
     );
   }
   function saveAddress(values) {
+    values = { ...values, address: formatAddress(values) };
     const id = editing.id || crypto.randomUUID();
     const next = editing.id
       ? addresses.map((a) => (a.id === id ? { ...a, ...values } : a))
@@ -251,19 +253,7 @@ function AccountContent() {
           >
             <Input />
           </Form.Item>
-          <Form.Item
-            name="address"
-            label={t("Địa chỉ")}
-            rules={[
-              {
-                required: true,
-                whitespace: true,
-                message: t("Nhập địa chỉ đầy đủ"),
-              },
-            ]}
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
+          <AddressFields form={addressForm} />
         </Form>
       </Modal>
     </div>

@@ -262,6 +262,61 @@ test("shop settings persist and update the customer storefront", async () => {
   expect(await screen.findByText("0912345678")).toBeTruthy();
 });
 
+test("product image upload uses the API URL and preserves the current image on failure", async () => {
+  const imageUrl =
+    "/api/product-images/11111111-1111-4111-8111-111111111111.webp";
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ url: imageUrl }) })
+    .mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: "MinIO đang tắt" }),
+    });
+  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal(
+    "createImageBitmap",
+    vi.fn(async () => ({ width: 1600, height: 800, close() {} })),
+  );
+  const context = vi
+    .spyOn(HTMLCanvasElement.prototype, "getContext")
+    .mockReturnValue({ drawImage() {} });
+  const blob = vi
+    .spyOn(HTMLCanvasElement.prototype, "toBlob")
+    .mockImplementation((callback) =>
+      callback(new Blob(["webp"], { type: "image/webp" })),
+    );
+  try {
+    start("/products");
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Thêm sản phẩm/ }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(dialog.querySelector('input[type="file"]'), {
+      target: {
+        files: [new File(["image"], "photo.png", { type: "image/png" })],
+      },
+    });
+    await waitFor(() =>
+      expect(within(dialog).getByLabelText("Đường dẫn ảnh").value).toBe(
+        imageUrl,
+      ),
+    );
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/product-images");
+    expect(fetchMock.mock.calls[0][1].body.type).toBe("image/webp");
+    fireEvent.change(dialog.querySelector('input[type="file"]'), {
+      target: {
+        files: [new File(["other"], "other.png", { type: "image/png" })],
+      },
+    });
+    await screen.findByText("MinIO đang tắt");
+    expect(within(dialog).getByLabelText("Đường dẫn ảnh").value).toBe(imageUrl);
+  } finally {
+    vi.unstubAllGlobals();
+    context.mockRestore();
+    blob.mockRestore();
+  }
+}, 15000);
+
 test("stock adjustment prevents negative/fractional stock without mutating input", () => {
   const changed = adjustStock(initialProducts, 1, "standard", -3);
   expect(changed[0].variants[0].stock).toBe(17);

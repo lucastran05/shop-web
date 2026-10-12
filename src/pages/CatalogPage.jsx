@@ -6,6 +6,7 @@ import {
   Select,
   Checkbox,
   Slider,
+  InputNumber,
   Empty,
   Pagination,
   Tag,
@@ -29,7 +30,7 @@ export default function Catalog() {
     search = params.get("search") || "",
     category = params.get("category") || "",
     featured = params.get("featured") === "true";
-  const [price, setPrice] = useState(maxCatalogPrice),
+  const [price, setPrice] = useState([0, maxCatalogPrice]),
     [stock, setStock] = useState(false),
     [sort, setSort] = useState("popular"),
     [pageSize, setPageSize] = useState(6),
@@ -50,7 +51,8 @@ export default function Catalog() {
         (!category || category === "Tất cả" || p.category === category) &&
         matchesProduct(p, q) &&
         matchesProduct(p, search, true) &&
-        p.price <= price &&
+        p.price >= price[0] &&
+        p.price <= price[1] &&
         (!stock || p.stock > 0) &&
         (!featured || p.featured),
     )
@@ -111,7 +113,8 @@ export default function Catalog() {
             <hr />
             <h3>{t("Khoảng giá")}</h3>
             <Slider
-              aria-label={t("Giá tối đa")}
+              range
+              aria-label={t("Khoảng giá")}
               min={0}
               max={maxCatalogPrice}
               step={1000}
@@ -122,9 +125,38 @@ export default function Catalog() {
               }}
             />
             <p className="price-range">
-              {money(0)}
-              <span>{money(price)}</span>
+              {money(price[0])}
+              <span>{money(price[1])}</span>
             </p>
+            <div className="price-inputs">
+              <InputNumber
+                aria-label={t("Giá từ")}
+                min={0}
+                max={price[1]}
+                precision={0}
+                value={price[0]}
+                onChange={(v) => {
+                  if (v !== null) {
+                    setPrice([Math.min(v, price[1]), price[1]]);
+                    changePage(1);
+                  }
+                }}
+              />
+              <span>–</span>
+              <InputNumber
+                aria-label={t("Giá đến")}
+                min={price[0]}
+                max={maxCatalogPrice}
+                precision={0}
+                value={price[1]}
+                onChange={(v) => {
+                  if (v !== null) {
+                    setPrice([price[0], Math.max(v, price[0])]);
+                    changePage(1);
+                  }
+                }}
+              />
+            </div>
             <hr />
             <h3>{t("Lựa chọn khác")}</h3>
             <Checkbox
@@ -149,7 +181,7 @@ export default function Catalog() {
               type="link"
               onClick={() => {
                 setParams({});
-                setPrice(maxCatalogPrice);
+                setPrice([0, maxCatalogPrice]);
                 setStock(false);
                 setSort("popular");
                 setPage({ query: "", value: 1 });

@@ -26,11 +26,16 @@ function ProductView({ p }) {
     [qty, setQty] = useState(1),
     [picture, setPicture] = useState(0);
   const v = p.variants.find((v) => v.id === variantId),
-    { add } = useShop(),
+    { add, user } = useShop(),
     { message } = App.useApp(),
     navigate = useNavigate();
   function buy(now) {
     if (!v.stock) return;
+    if (!user && !now) {
+      message.info(t("Vui lòng đăng nhập để thêm vào giỏ hàng"));
+      navigate("/login?next=" + encodeURIComponent("/products/" + p.id));
+      return;
+    }
     if (now) {
       navigate(
         "/checkout?" +

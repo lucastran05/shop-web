@@ -17,13 +17,16 @@ import {
 } from "antd";
 import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
+import PaymentPanel from "../components/PaymentPanel";
 export default function Orders() {
   const { t } = useTranslation();
   const { timeZone } = usePreferences();
   const s = useShop(),
     [tab, setTab] = useState("all"),
-    [detail, setDetail] = useState(null),
+    [selectedDetail, setDetail] = useState(null),
     [cancel, setCancel] = useState(null);
+  const detail =
+    selectedDetail && s.orders.find((o) => o.id === selectedDetail.id);
   if (!s.user) return <Navigate to="/login?next=/orders" replace />;
   const all = s.orders.filter((o) => o.owner === s.user.email),
     orders = all.filter((o) => tab === "all" || o.status === tab);
@@ -102,6 +105,7 @@ export default function Orders() {
       >
         {detail && (
           <>
+            {detail.paymentExpiresAt && <PaymentPanel order={detail} />}
             <Table
               rowKey="key"
               bordered
