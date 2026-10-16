@@ -9,7 +9,6 @@ import {
   Empty,
   Tag,
   Space,
-  App,
   Popover,
   Tooltip,
 } from "antd";
@@ -31,7 +30,6 @@ export default function CustomerLayout() {
     s = useShop(),
     navigate = useNavigate(),
     location = useLocation(),
-    { message } = App.useApp(),
     { timeZone } = usePreferences();
   const [chat, setChat] = useState(false),
     [notice, setNotice] = useState(false),
@@ -71,7 +69,6 @@ export default function CustomerLayout() {
       },
     ]);
     setDraft("");
-    //message.info(t("Đã lưu tin nhắn demo. Chưa kết nối nhân viên shop."));
   }
   const notificationContent = (
     <div className="notification-dropdown">
