@@ -1,28 +1,47 @@
+import BulkSelectAll from "../../components/management/BulkSelectAll";
 import {
   CheckCircleOutlined,
   WalletOutlined,
   UndoOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
-import { orderColumns } from "../../components/management/orderColumns";
+import { statusTag } from "../../components/management/orderColumns";
 import { useState } from "react";
 import { App, Button, Input, Modal, Space, Table, Tooltip } from "antd";
 import { useManagement } from "../../hooks/useManagement";
 
 import { money } from "../../utils/format";
+import BulkActions from "../../components/management/BulkActions";
 
 export default function PaymentsPage() {
   const s = useManagement(),
     { message } = App.useApp();
   const [action, setAction] = useState(null),
+    [selected, setSelected] = useState([]),
+    [note, setNote] = useState(""),
     [query, setQuery] = useState("");
+  const rows = s.orders.filter(
+    (o) =>
+      !s.hiddenPayments.includes(o.id) &&
+      `${o.id} ${o.recipient?.name}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
   function confirm() {
     const order = s.orders.find((o) => o.id === action.id);
     if (!order) return;
+    if (action.type === "note") {
+      s.updateOrder({ ...order, paymentNote: note.trim() });
+      setAction(null);
+      message.success("Đã lưu ghi chú thanh toán");
+      return;
+    }
     if (action.type === "refund") {
       if (!["Đã hủy", "Hoàn hàng"].includes(order.status) || !order.paid)
         return message.error("Đơn hàng không đủ điều kiện hoàn tiền.");
       s.updateOrder({
         ...order,
+        paymentNote: note.trim(),
         status: "Hoàn tiền",
         refunded: order.paid,
         paid: 0,
@@ -45,6 +64,7 @@ export default function PaymentsPage() {
           : order.total;
       s.updateOrder({
         ...order,
+        paymentNote: note.trim(),
         paid,
         remaining: order.total - paid,
         depositStatus: order.deposit ? "Đã xác nhận" : "Không đặt cọc",
@@ -70,31 +90,101 @@ export default function PaymentsPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {!!s.hiddenPayments.length && (
+          <Button onClick={() => s.setHiddenPayments([])}>
+            Khôi phục danh sách thanh toán
+          </Button>
+        )}
+        <BulkActions
+          keys={rows.map((o) => o.id)}
+          selected={selected}
+          onSelect={setSelected}
+          onDelete={(ids) =>
+            s.setHiddenPayments((old) => [...new Set([...old, ...ids])])
+          }
+          description="Chỉ xóa khỏi danh sách thanh toán; giữ nguyên đơn hàng, số tiền và doanh thu. Có thể khôi phục danh sách."
+        />
       </div>
       <Table
         rowKey="id"
-        rowSelection={{}}
-        scroll={{ x: 1050 }}
-        dataSource={s.orders.filter((o) =>
-          `${o.id} ${o.recipient?.name}`
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-        )}
+        tableLayout="fixed"
+        rowSelection={{
+          selectedRowKeys: selected,
+          onChange: setSelected,
+          columnTitle: (
+            <BulkSelectAll
+              keys={rows.map((o) => o.id)}
+              selected={selected}
+              onSelect={setSelected}
+            />
+          ),
+        }}
+        scroll={{ x: 1230 }}
+        dataSource={rows}
         columns={[
-          ...orderColumns.filter((c) => c.dataIndex !== "createdAt"),
-          { title: "Đã trả", dataIndex: "paid", render: (n) => money(n || 0) },
+          { title: "Mã đơn", dataIndex: "id", width: 100 },
+          {
+            title: "Khách hàng",
+            render: (_, o) => o.recipient?.name || o.owner,
+            width: 170,
+          },
+          {
+            title: "Tổng tiền",
+            dataIndex: "total",
+            render: money,
+            width: 130,
+            align: "right",
+          },
+          {
+            title: "Trạng thái",
+            dataIndex: "status",
+            render: statusTag,
+            width: 150,
+          },
+          {
+            title: "Đã trả",
+            dataIndex: "paid",
+            render: (n) => money(n || 0),
+            width: 130,
+            align: "right",
+          },
           {
             title: "Đã hoàn",
             dataIndex: "refunded",
             render: (n) => money(n || 0),
+            width: 130,
+            align: "right",
+          },
+          {
+            title: "Ghi chú",
+            dataIndex: "paymentNote",
+            width: 230,
+            render: (value) => (
+              <span
+                style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+              >
+                {value || "—"}
+              </span>
+            ),
           },
           {
             title: "Thao tác",
-            width: 152,
+            width: 190,
             align: "center",
             className: "mg-action-cell",
             render: (_, o) => (
               <Space size={8}>
+                <Tooltip title="Ghi chú thanh toán">
+                  <Button
+                    className="mg-icon-action"
+                    aria-label={`Ghi chú ${o.id}`}
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      setNote(o.paymentNote || "");
+                      setAction({ id: o.id, type: "note" });
+                    }}
+                  />
+                </Tooltip>
                 <Tooltip title="Xác nhận cọc">
                   <span>
                     <Button
@@ -108,7 +198,10 @@ export default function PaymentsPage() {
                         !o.deposit ||
                         o.paid >= o.deposit
                       }
-                      onClick={() => setAction({ id: o.id, type: "deposit" })}
+                      onClick={() => {
+                        setNote(o.paymentNote || "");
+                        setAction({ id: o.id, type: "deposit" });
+                      }}
                     />
                   </span>
                 </Tooltip>
@@ -123,7 +216,10 @@ export default function PaymentsPage() {
                           o.status,
                         ) || o.paid >= o.total
                       }
-                      onClick={() => setAction({ id: o.id, type: "full" })}
+                      onClick={() => {
+                        setNote(o.paymentNote || "");
+                        setAction({ id: o.id, type: "full" });
+                      }}
                     />
                   </span>
                 </Tooltip>
@@ -137,7 +233,10 @@ export default function PaymentsPage() {
                       disabled={
                         !["Đã hủy", "Hoàn hàng"].includes(o.status) || !o.paid
                       }
-                      onClick={() => setAction({ id: o.id, type: "refund" })}
+                      onClick={() => {
+                        setNote(o.paymentNote || "");
+                        setAction({ id: o.id, type: "refund" });
+                      }}
                     />
                   </span>
                 </Tooltip>
@@ -148,9 +247,11 @@ export default function PaymentsPage() {
       />
       <Modal
         title={
-          action?.type === "refund"
-            ? "Xác nhận hoàn tiền"
-            : "Xác nhận thanh toán"
+          action?.type === "note"
+            ? "Ghi chú thanh toán"
+            : action?.type === "refund"
+              ? "Xác nhận hoàn tiền"
+              : "Xác nhận thanh toán"
         }
         open={!!action}
         onCancel={() => setAction(null)}
@@ -161,11 +262,22 @@ export default function PaymentsPage() {
         <p>
           Đơn hàng: <strong>{action?.id}</strong>
         </p>
-        <p>
-          {action?.type === "refund"
-            ? "Bạn xác nhận đã hoàn tiền cho khách hàng?"
-            : "Bạn xác nhận đã nhận tiền thanh toán cho đơn hàng này?"}
-        </p>
+        {action?.type !== "note" && (
+          <p>
+            {action?.type === "refund"
+              ? "Bạn xác nhận đã hoàn tiền cho khách hàng?"
+              : "Bạn xác nhận đã nhận tiền thanh toán cho đơn hàng này?"}
+          </p>
+        )}
+        <label htmlFor="payment-note">Ghi chú thanh toán</label>
+        <Input.TextArea
+          id="payment-note"
+          rows={3}
+          maxLength={1000}
+          showCount
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+        />
       </Modal>
     </>
   );

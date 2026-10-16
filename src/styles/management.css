@@ -77,9 +77,6 @@
   font-size: 15px;
   font-weight: 500;
 }
-.mg-sidebar-bottom p {
-  margin-top: 12px;
-}
 .mg-workspace {
   margin-left: 260px;
 }
@@ -142,11 +139,21 @@
 }
 
 .mg-toolbar {
+  --mg-control-font-size: 15px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
+}
+.mg-toolbar .ant-input,
+.mg-toolbar .ant-input-number-input,
+.mg-toolbar .ant-select,
+.mg-toolbar .ant-select-input,
+.mg-toolbar .ant-select-selection-item,
+.mg-toolbar .ant-select-selection-placeholder,
+.mg-toolbar .ant-btn {
+  font-size: var(--mg-control-font-size);
 }
 .mg-toolbar > .ant-input-search {
   max-width: 330px;
@@ -390,6 +397,45 @@
 .mg-conversation-list {
   overflow-y: auto;
 }
+.mg-chat-filters {
+  padding: 0 16px 12px;
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid #edf2fa;
+}
+.mg-conversation-row {
+  position: relative;
+}
+.mg-conversation-row .mg-conversation {
+  padding-right: 44px;
+}
+.mg-conversation-more {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.mg-conversation-unread .mg-last-message {
+  color: #175ac1;
+  font-weight: 600;
+}
+.mg-conversation-heading .anticon {
+  color: #1677ff;
+  font-size: 12px;
+}
+.mg-chat-header .mg-chat-header-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.mg-message-list {
+  background:
+    radial-gradient(ellipse at top right, #eaf3ff 0, transparent 60%), #f8faff;
+}
 .mg-conversation {
   display: flex;
   gap: 12px;
@@ -546,6 +592,157 @@
 }
 .mg-chat-empty {
   margin: auto;
+}
+.mg-inbox-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 8px;
+}
+.mg-inbox-symbol {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(135deg, #438bff, #165bd4);
+  box-shadow: 0 6px 14px #1677ff24;
+  font-size: 21px;
+}
+.mg-inbox-heading strong {
+  display: block;
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  color: #17365d;
+}
+.mg-inbox-heading small {
+  display: block;
+  color: #73839b;
+  margin-top: 3px;
+  font-size: 12px;
+}
+.mg-messenger .mg-conversations {
+  background: #fbfcff;
+  border-color: #e6edf8;
+}
+.mg-messenger .mg-conversation-search {
+  display: grid;
+  gap: 12px;
+}
+.mg-messenger .mg-conversation-search > .ant-btn {
+  border-radius: 12px;
+  height: 40px;
+  box-shadow: 0 4px 10px #1677ff18;
+}
+.mg-messenger .mg-conversation-search .ant-input-affix-wrapper {
+  border-radius: 12px;
+  background: #f1f5fb;
+  border-color: transparent;
+  padding: 9px 12px;
+}
+.mg-messenger .mg-conversation-list {
+  padding: 8px;
+  flex: 1;
+}
+.mg-messenger .mg-conversation-row {
+  margin-bottom: 5px;
+}
+.mg-messenger .mg-conversation {
+  border-radius: 14px;
+  background: transparent;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+.mg-messenger .mg-conversation:hover {
+  background: #f0f5fe;
+}
+.mg-messenger .mg-conversation.active {
+  background: #e9f2ff;
+  border-left-color: #3f86f6;
+  box-shadow: inset 0 0 0 1px #d7e7ff;
+}
+.mg-messenger .mg-chat-avatar {
+  border-radius: 15px;
+  background: linear-gradient(145deg, #dfedff, #cbdfff);
+  color: #245faa;
+  font-weight: 700;
+}
+.mg-messenger .mg-chat-header {
+  border-color: #e6edf8;
+  box-shadow: 0 3px 15px #193f7505;
+  z-index: 1;
+}
+.mg-messenger .mg-chat-header-actions .ant-tag {
+  border-radius: 20px;
+  border: 0;
+  padding: 3px 10px;
+}
+.mg-messenger .mg-message-list {
+  padding: 20px 28px;
+  background:
+    radial-gradient(ellipse at top right, #e9f2ff 0, transparent 65%), #f6f9fe;
+}
+.mg-messenger .mg-chat-date span {
+  background: #e9eff8;
+  color: #6a7f9c;
+  padding: 5px 14px;
+  border: 1px solid #dfe8f5;
+}
+.mg-messenger .mg-bubble {
+  border-color: #e5ebf5;
+  box-shadow: 0 3px 10px #223c6606;
+}
+.mg-messenger .mg-bubble-out {
+  background: linear-gradient(120deg, #287df0, #2166d6);
+  border-color: transparent;
+  box-shadow: 0 4px 12px #2166d61a;
+}
+.mg-messenger .mg-chat-composer {
+  margin: 0 20px 18px;
+  padding: 10px;
+  gap: 8px;
+  border: 1px solid #dce7f7;
+  border-radius: 20px;
+  box-shadow: 0 6px 24px #153a6910;
+}
+.mg-messenger .mg-chat-composer:focus-within {
+  border-color: #86b4f9;
+  box-shadow: 0 0 0 3px #1677ff0a;
+}
+.mg-messenger .mg-chat-composer textarea {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  resize: none;
+}
+.mg-messenger .mg-chat-composer .ant-btn-primary:not(:disabled) {
+  background: linear-gradient(135deg, #408cff, #2166d6);
+  box-shadow: 0 4px 10px #2166d626;
+}
+@media (min-width: 1101px) {
+  .mg-messenger {
+    grid-template-columns: 330px minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .mg-messenger .mg-message-list {
+    padding: 12px;
+  }
+  .mg-messenger .mg-chat-composer {
+    margin: 0 10px 10px;
+    padding: 8px;
+  }
+  .mg-messenger .mg-chat-header-actions .ant-tag {
+    display: none;
+  }
+  .mg-messenger .mg-chat-header > div:not(.mg-chat-header-actions) {
+    flex: 1;
+  }
 }
 @media (max-width: 1100px) {
   .mg-report-charts {
@@ -712,6 +909,9 @@
   .mg-login input {
     font-size: 16px;
   }
+  .mg-toolbar {
+    --mg-control-font-size: 16px;
+  }
 }
 
 .mg-header-location {
@@ -743,5 +943,26 @@
   }
 }
 .mg-settings {
-  max-width: 760px;
+  width: 100%;
+  min-height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.mg-main.mg-main-settings {
+  padding: 0;
+  min-height: calc(100dvh - 72px);
+  background: #fff;
+}
+.mg-conversation-search > .ant-btn {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.mg-chat-header > .ant-btn:last-child {
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .mg-chat-header {
+    flex-wrap: wrap;
+  }
 }

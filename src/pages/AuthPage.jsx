@@ -4,14 +4,35 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../hooks/useShop";
+import { useSaved } from "../hooks/useSaved";
+import { initialUsers } from "../constants/management";
+import { matchesPassword } from "../utils/password";
 export default function Auth() {
   const { t } = useTranslation();
+  const [managedUsers] = useSaved("management-users", initialUsers);
   const [tab, setTab] = useState("login"),
     { setUser, profiles } = useShop(),
     navigate = useNavigate(),
     [params] = useSearchParams(),
     { message } = App.useApp();
-  function submit(values) {
+  async function submit(values) {
+    const managed = managedUsers.find(
+      (user) => user.email === values.email.trim().toLowerCase(),
+    );
+    if (managed) {
+      if (!managed.active) return message.error("Tài khoản đã bị khóa.");
+      if (tab === "register") return message.error("Email đã tồn tại.");
+      if (managed.credential) {
+        try {
+          if (!(await matchesPassword(values.password, managed.credential)))
+            return message.error("Mật khẩu không đúng.");
+        } catch {
+          return message.error(
+            "Không thể kiểm tra mật khẩu. Vui lòng thử lại.",
+          );
+        }
+      }
+    }
     setUser(
       profiles[values.email.trim().toLowerCase()] || {
         name: values.name || values.email.split("@")[0],

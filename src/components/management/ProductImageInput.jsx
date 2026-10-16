@@ -42,7 +42,7 @@ export default function ProductImageInput({
       );
       const url = await uploadProductImage(blob);
       onChange?.(url);
-      message.success("Đã tải ảnh lên MinIO");
+      message.success("Đã tải ảnh sản phẩm");
     } catch (error) {
       message.error(error.message || "Không tải được ảnh. Vui lòng thử lại.");
     } finally {

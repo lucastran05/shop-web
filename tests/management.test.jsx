@@ -10,10 +10,15 @@ import {
   waitFor,
 } from "@testing-library/react";
 import App from "../src/App";
+import { webcrypto } from "node:crypto";
+import { matchesPassword } from "../src/utils/password";
 import {
   adjustStock,
   transitionOrder,
   todayRevenue,
+  stockStatus,
+  isLowStock,
+  filterInventory,
 } from "../src/utils/management";
 
 test("today revenue uses completion date in Vietnam and excludes unfinished or refunded orders", () => {
@@ -48,6 +53,7 @@ test("today revenue uses completion date in Vietnam and excludes unfinished or r
 });
 
 beforeAll(() => {
+  vi.stubGlobal("crypto", webcrypto);
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn(() => ({
@@ -211,7 +217,7 @@ test("category popup adds, edits and deletes selected rows with persistence", as
   fireEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
   const renamed = await screen.findByText("Phụ kiện sửa");
   fireEvent.click(within(renamed.closest("tr")).getByRole("checkbox"));
-  fireEvent.click(screen.getByRole("button", { name: "Xóa đã chọn" }));
+  fireEvent.click(screen.getByRole("button", { name: "Xóa đã chọn (1)" }));
   fireEvent.click(await screen.findByRole("button", { name: "Đồng ý" }));
   await waitFor(() => expect(screen.queryByText("Phụ kiện sửa")).toBeNull());
 });
@@ -316,6 +322,299 @@ test("product image upload uses the API URL and preserves the current image on f
     blob.mockRestore();
   }
 }, 15000);
+
+test("inventory status boundaries and quantity range are consistent", () => {
+  expect([0, 1, 5, 6].map(stockStatus)).toEqual([
+    "Hết hàng",
+    "Còn hàng",
+    "Còn hàng",
+    "Còn hàng",
+  ]);
+  const rows = [0, 1, 5, 6].map((stock) => ({
+    stock,
+    product: "Áo",
+    label: "Đỏ",
+  }));
+  expect(
+    filterInventory(rows, { status: "Còn hàng", min: 2, max: 5 }).map(
+      (r) => r.stock,
+    ),
+  ).toEqual([5]);
+  expect(filterInventory(rows, { min: 6, max: 2 })).toEqual([]);
+  expect(filterInventory(rows, { query: "đỏ" })).toHaveLength(4);
+  expect([0, 1, 5, 6].map((n) => isLowStock(n, 5))).toEqual([
+    false,
+    true,
+    true,
+    false,
+  ]);
+  expect(isLowStock(6, 10)).toBe(true);
+});
+
+test("select all orders spans pages and deleting updates both order sources", async () => {
+  localStorage.setItem(
+    "abc-shop-v1-orders",
+    JSON.stringify([
+      {
+        id: "CUSTOMER-1",
+        owner: "test@example.com",
+        total: 10,
+        status: "Chờ xác nhận",
+      },
+    ]),
+  );
+  start("/orders");
+  fireEvent.click(
+    await screen.findByRole("checkbox", { name: "Chọn tất cả (13)" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Xóa đã chọn (13)" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Xóa", exact: true }),
+  );
+  await waitFor(() =>
+    expect(
+      JSON.parse(localStorage.getItem("abc-shop-v1-management-orders")),
+    ).toEqual([]),
+  );
+  expect(JSON.parse(localStorage.getItem("abc-shop-v1-orders"))).toEqual([]);
+});
+
+test("payment notes persist and deleting payment rows preserves the order", async () => {
+  start("/payments");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Ghi chú DEMO-1024" }),
+  );
+  fireEvent.change(
+    screen.getByRole("textbox", { name: "Ghi chú thanh toán" }),
+    {
+      target: { value: "Chờ đối soát ngân hàng" },
+    },
+  );
+  fireEvent.click(
+    within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Xác nhận",
+    }),
+  );
+  await waitFor(() =>
+    expect(
+      JSON.parse(localStorage.getItem("abc-shop-v1-management-orders"))[0]
+        .paymentNote,
+    ).toBe("Chờ đối soát ngân hàng"),
+  );
+  fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả (12)" }));
+  fireEvent.click(screen.getByRole("button", { name: "Xóa đã chọn (12)" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Xóa", exact: true }),
+  );
+  await waitFor(() =>
+    expect(
+      JSON.parse(
+        localStorage.getItem("abc-shop-v1-management-hidden-payments"),
+      ),
+    ).toHaveLength(12),
+  );
+  expect(
+    JSON.parse(localStorage.getItem("abc-shop-v1-management-orders")),
+  ).toHaveLength(12);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Khôi phục danh sách thanh toán" }),
+  );
+  expect(
+    await screen.findByText("Chờ đối soát ngân hàng", { selector: "td span" }),
+  ).toBeTruthy();
+});
+
+test("inventory bulk deletion preserves stock and can be restored", async () => {
+  const products = initialProducts.map((p) => ({
+    ...p,
+    variants: p.variants.map((v) => ({ ...v, stock: 3 })),
+  }));
+  localStorage.setItem(
+    "abc-shop-v1-management-products",
+    JSON.stringify(products),
+  );
+  start("/inventory");
+  const count = products.flatMap((p) => p.variants).length;
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: `Chọn tất cả (${count})` }),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: `Xóa đã chọn (${count})` }),
+  );
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Xóa", exact: true }),
+  );
+  await waitFor(() =>
+    expect(
+      JSON.parse(
+        localStorage.getItem("abc-shop-v1-management-hidden-inventory"),
+      ),
+    ).toHaveLength(count),
+  );
+  expect(
+    JSON.parse(localStorage.getItem("abc-shop-v1-management-products")),
+  ).toEqual(products);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Khôi phục danh sách kho" }),
+  );
+  expect(
+    screen.getByRole("checkbox", { name: `Chọn tất cả (${count})` }).disabled,
+  ).toBe(false);
+});
+
+test("staff conversation menu persists unread, pin, delete and restore without removing customer history", async () => {
+  start("/messages");
+  const openMenu = async () =>
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Tùy chọn hội thoại" }),
+    );
+  const preferences = () =>
+    JSON.parse(localStorage.getItem("abc-shop-v1-management-chat-preferences"))[
+      "admin-demo"
+    ]["khach1@example.com"];
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Đánh dấu đã đọc" }),
+  );
+  await openMenu();
+  fireEvent.click(await screen.findByText("Đánh dấu chưa đọc"));
+  await waitFor(() => expect(preferences().unread).toBe(true));
+  await openMenu();
+  fireEvent.click(await screen.findByText("Ghim hội thoại"));
+  await waitFor(() => expect(preferences().pinned).toBe(true));
+  await openMenu();
+  fireEvent.click(await screen.findByText("Xóa hội thoại"));
+  fireEvent.click(
+    within(await screen.findByRole("dialog")).getByRole("button", {
+      name: "Xóa hội thoại",
+    }),
+  );
+  await waitFor(() => expect(preferences().hidden).toBe(true));
+  expect(screen.queryByRole("log")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Khôi phục hội thoại" }));
+  fireEvent.click(
+    await screen.findByRole("menuitem", { name: /Nguyễn Minh Anh/ }),
+  );
+  expect(
+    await within(await screen.findByRole("log")).findByText(
+      "Shop ơi, cho mình hỏi đơn hàng bao giờ được giao ạ?",
+    ),
+  ).toBeTruthy();
+  await waitFor(() => expect(preferences().hidden).toBe(false));
+});
+
+test("conversation keeps a way back when marking the last unread conversation read", async () => {
+  start("/messages");
+  fireEvent.click(await screen.findByRole("radio", { name: "Chưa đọc" }));
+  const list = screen.getByRole("complementary", {
+    name: "Danh sách hội thoại",
+  });
+  fireEvent.click(within(list).getByRole("button", { pressed: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Đánh dấu đã đọc" }));
+  expect(screen.queryByRole("log")).toBeNull();
+  expect(document.querySelector(".mg-messenger-selected")).toBeTruthy();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Về danh sách hội thoại" }),
+  );
+  expect(document.querySelector(".mg-messenger-selected")).toBeNull();
+  expect(within(list).getByText("Không có hội thoại")).toBeTruthy();
+});
+
+test("staff can start a conversation and mark incoming messages read", async () => {
+  start("/messages");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Đánh dấu đã đọc" }),
+  );
+  await waitFor(() =>
+    expect(
+      JSON.parse(localStorage.getItem("abc-shop-v1-management-read-messages"))[
+        "admin-demo"
+      ],
+    ).toContain("hello"),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Thêm hội thoại" }));
+  fireEvent.change(screen.getByLabelText("Email khách hàng"), {
+    target: { value: "new@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText("Tin nhắn đầu tiên"), {
+    target: { value: "Shop xin chào bạn" },
+  });
+  fireEvent.click(
+    within(screen.getByRole("dialog")).getByRole("button", {
+      name: "Gửi tin nhắn",
+    }),
+  );
+  expect(
+    await within(screen.getByRole("log")).findByText("Shop xin chào bạn"),
+  ).toBeTruthy();
+  expect(JSON.parse(localStorage.getItem("abc-shop-v1-chat"))).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        owner: "new@example.com",
+        from: "shop",
+        text: "Shop xin chào bạn",
+      }),
+    ]),
+  );
+});
+
+test("setting a staff password persists a hash and enforces it at login", async () => {
+  start("/users");
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: "Đặt hoặc reset mật khẩu manager@example.com",
+    }),
+  );
+  fireEvent.change(screen.getByLabelText("Mật khẩu mới"), {
+    target: { value: "NewPassword123" },
+  });
+  fireEvent.change(screen.getByLabelText("Nhập lại mật khẩu"), {
+    target: { value: "NewPassword123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Lưu mật khẩu" }));
+  await waitFor(() =>
+    expect(
+      JSON.parse(localStorage.getItem("abc-shop-v1-management-users")).find(
+        (u) => u.id === "manager-demo",
+      ).credential,
+    ).toBeTruthy(),
+  );
+  const saved = localStorage.getItem("abc-shop-v1-management-users");
+  expect(saved).not.toContain("NewPassword123");
+  const credential = JSON.parse(saved).find(
+    (u) => u.id === "manager-demo",
+  ).credential;
+  expect(await matchesPassword("NewPassword123", credential)).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Đăng xuất quản trị" }));
+  fireEvent.change(await screen.findByLabelText("Email"), {
+    target: { value: "manager@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText("Mật khẩu"), {
+    target: { value: "WrongPassword" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
+  expect(await screen.findByText("Mật khẩu không đúng.")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Mật khẩu"), {
+    target: { value: "NewPassword123" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Đăng nhập" }));
+  expect(
+    await screen.findByRole("heading", { name: "Tổng quan" }),
+  ).toBeTruthy();
+});
+
+test("pinning a product moves it before unpinned products", async () => {
+  const products = initialProducts.map((p) => ({ ...p, featured: false }));
+  localStorage.setItem(
+    "abc-shop-v1-management-products",
+    JSON.stringify(products),
+  );
+  start("/products");
+  fireEvent.click(
+    await screen.findByRole("switch", { name: `Ghim ${products[1].name}` }),
+  );
+  const firstRow = document.querySelector(".ant-table-tbody tr.ant-table-row");
+  expect(firstRow.textContent).toContain(products[1].name);
+});
 
 test("stock adjustment prevents negative/fractional stock without mutating input", () => {
   const changed = adjustStock(initialProducts, 1, "standard", -3);

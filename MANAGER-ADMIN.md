@@ -11,11 +11,10 @@ Mở http://localhost:5173/management (Admin và Manager dùng chung đường d
 
 Note:
 
-- Chỉ frontend, lưu localStorage; chưa gọi API hoặc xác thực mật khẩu.
-- Cấu hình sửa tên, giới thiệu và liên hệ shop, dùng chung với Customer. Ảnh sản phẩm bấm để xem lớn; tải JPG/PNG/WebP tối đa 10 MB, thu nhỏ và lưu trong trình duyệt.
-- Doanh thu hôm nay tính đơn đã hoàn thành theo ngày hoàn thành (giờ Việt Nam); dữ liệu cũ thiếu mốc hoàn thành dùng ngày đặt đơn.
-- Bán/hoàn thành/hủy đơn chưa tự trừ hoặc hoàn tồn kho; hiện điều chỉnh tại Kho hàng.
-- Sản phẩm và tồn kho Manager chưa đồng bộ với catalog Customer.
-- Đơn/tin nhắn Customer dùng chung ShopContext trong cùng ứng dụng; chưa có realtime hoặc thanh toán thật.
-- Source: `pages/management` chứa từng page; `components/management` chứa component chung; layout ở `layouts`, state ở `context`/`hooks`, dữ liệu mẫu ở `constants`, nghiệp vụ ở `utils`, CSS ở `styles/management.css`.
-- Router: `routes/AppRoutes.jsx`, `routes/ManagementRoutes.jsx`; test: `tests/management.test.jsx`.
+- Dữ liệu quản lý lưu localStorage, chưa tích hợp `shop-api`. Mật khẩu đặt/reset được băm trong trình duyệt, chưa có xác thực máy chủ. Không xóa, khóa hoặc hạ quyền Admin đang sử dụng.
+- Kho: hết hàng = 0, còn hàng > 0; bộ lọc ở các cột. Sản phẩm/tồn kho quản lý chưa đồng bộ catalog Customer.
+- Đơn hàng/Kho/Thanh toán chọn tất cả kết quả đang lọc. Xóa đơn xóa dữ liệu đơn; xóa Kho/Thanh toán chỉ ẩn dòng và có khôi phục. Hoàn tiền chỉ áp dụng đơn hủy/hoàn hàng có tiền đã thu.
+- Tin nhắn: tạo theo email, trả lời nhanh; menu “…” ghim, đánh dấu đã/chưa đọc, xóa và khôi phục. Tùy chọn lưu riêng theo tài khoản quản lý; xóa giữ lịch sử Customer. Chưa có realtime.
+- Cấu hình dùng chung thông tin shop với Customer. Ảnh JPG/PNG/WebP tối đa 10 MB, tải qua dịch vụ ảnh đã có của dự án; xem `MINIO.md` để chạy dịch vụ.
+- Doanh thu hôm nay tính theo ngày hoàn thành (giờ Việt Nam), thiếu mốc thì dùng ngày đặt. Báo cáo chia kỳ theo ngày đặt đơn.
+- Source: `pages/management`, `components/management`, `layouts`, `routes`, `context`, `hooks`, `utils`, `styles/management.css`. Kiểm thử: `tests/management.test.jsx`.

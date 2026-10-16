@@ -9,6 +9,7 @@ export default function CategoriesPage() {
     { message } = App.useApp(),
     [form] = Form.useForm();
   const [open, setOpen] = useState(false),
+    [query, setQuery] = useState(""),
     [editing, setEditing] = useState(null),
     [selected, setSelected] = useState([]);
   function edit(name) {
@@ -41,6 +42,16 @@ export default function CategoriesPage() {
   return (
     <>
       <div className="mg-toolbar">
+        <Input.Search
+          allowClear
+          aria-label="Tìm danh mục"
+          placeholder="Tìm danh mục"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setSelected([]);
+          }}
+        />
         <Button
           type="primary"
           icon={<PlusOutlined aria-hidden="true" />}
@@ -57,14 +68,18 @@ export default function CategoriesPage() {
             danger
             disabled={!selected.length}
           >
-            Xóa đã chọn
+            Xóa đã chọn ({selected.length})
           </Button>
         </Popconfirm>
       </div>
       <Table
         rowKey="name"
         rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
-        dataSource={s.categories.map((name) => ({ name }))}
+        dataSource={s.categories
+          .filter((name) =>
+            name.toLowerCase().includes(query.trim().toLowerCase()),
+          )
+          .map((name) => ({ name }))}
         columns={[
           { title: "Tên danh mục", dataIndex: "name" },
           {

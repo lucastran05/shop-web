@@ -4,20 +4,31 @@ import { App, Form, Input } from "antd";
 import { ShopOutlined } from "@ant-design/icons";
 import { useShopConfig } from "../../hooks/useShopConfig";
 import { useManagement } from "../../hooks/useManagement";
+import { matchesPassword } from "../../utils/password";
 export default function LoginPage() {
   const shopConfig = useShopConfig();
   const s = useManagement(),
     navigate = useNavigate(),
     { message } = App.useApp();
   if (s.session) return <Navigate to="/management" replace />;
-  function submit(values) {
+  async function submit(values) {
     const email = values.email.trim().toLowerCase();
     const user = s.users.find((user) => user.email.toLowerCase() === email);
     if (!user || !user.active || !["admin", "manager"].includes(user.role)) {
       message.error("Tài khoản không có quyền truy cập trang quản lý.");
       return;
     }
-    // Frontend-only session, following the Customer form. Password is not stored.
+    if (user.credential) {
+      try {
+        if (!(await matchesPassword(values.password, user.credential))) {
+          message.error("Mật khẩu không đúng.");
+          return;
+        }
+      } catch {
+        message.error("Không thể kiểm tra mật khẩu. Vui lòng thử lại.");
+        return;
+      }
+    }
     s.setSession({ id: user.id });
     navigate("/management", { replace: true });
   }

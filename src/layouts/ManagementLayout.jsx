@@ -35,11 +35,15 @@ export default function ManagementLayout() {
   const s = useManagement(),
     location = useLocation();
   const [mobile, setMobile] = useState(false);
+  const pathname = location.pathname.replace(/\/+$/, "");
+  const contentClass =
+    {
+      "/management/messages": "mg-main-messages",
+      "/management/settings": "mg-main-settings",
+    }[pathname] || "";
   if (!s.session) return <Navigate to="/management/login" replace />;
   const current = navigation.find(
-    ([path]) =>
-      location.pathname.replace(/\/+$/, "") ===
-      `/management${path ? "/" + path : ""}`,
+    ([path]) => pathname === `/management${path ? "/" + path : ""}`,
   );
   const nav = (
     <>
@@ -127,9 +131,7 @@ export default function ManagementLayout() {
             />
           </div>
         </header>
-        <main
-          className={`mg-main ${location.pathname.replace(/\/+$/, "") === "/management/messages" ? "mg-main-messages" : ""}`}
-        >
+        <main className={`mg-main ${contentClass}`}>
           <Outlet />
         </main>
       </div>

@@ -31,10 +31,12 @@ export default function ManagementRoutes() {
   return (
     <ConfigProvider
       theme={{
-        token: { fontSize: 15, lineHeight: 1.6 },
+        token: { fontSize: 15, lineHeight: 1.6, controlHeight: 40 },
         components: {
-          Input: { controlHeight: 40 },
-          Button: { controlHeight: 40 },
+          Input: { controlHeight: 40, inputFontSize: 15 },
+          InputNumber: { controlHeight: 40, inputFontSize: 15 },
+          Select: { controlHeight: 40, fontSize: 15 },
+          Button: { controlHeight: 40, contentFontSize: 15 },
         },
       }}
     >

@@ -1,4 +1,22 @@
 import { statusFlow } from "../constants/management";
+export const LOW_STOCK_LIMIT = 5;
+export function stockStatus(stock) {
+  return stock <= 0 ? "Hết hàng" : "Còn hàng";
+}
+export function isLowStock(stock, limit = LOW_STOCK_LIMIT) {
+  return stock > 0 && stock <= limit;
+}
+export function filterInventory(rows, { query = "", status, min, max }) {
+  return rows.filter(
+    (row) =>
+      `${row.product} ${row.label} ${row.color}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()) &&
+      (!status || stockStatus(row.stock) === status) &&
+      (min == null || row.stock >= min) &&
+      (max == null || row.stock <= max),
+  );
+}
 export function todayRevenue(orders, now = new Date()) {
   const formatDay = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",

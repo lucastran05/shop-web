@@ -26,6 +26,7 @@ export default function ProductsPage() {
     { message } = App.useApp(),
     [form] = Form.useForm();
   const [query, setQuery] = useState(""),
+    [page, setPage] = useState(1),
     [imageLoading, setImageLoading] = useState(false),
     [selected, setSelected] = useState([]),
     [editing, setEditing] = useState(null),
@@ -120,11 +121,11 @@ export default function ProductsPage() {
       <Table
         rowKey="id"
         rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
-        dataSource={s.products.filter((p) =>
-          p.name.toLowerCase().includes(query.toLowerCase()),
-        )}
+        dataSource={s.products
+          .filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+          .sort((a, b) => Number(!!b.featured) - Number(!!a.featured))}
         scroll={{ x: 850 }}
-        pagination={{ pageSize: 8 }}
+        pagination={{ pageSize: 8, current: page, onChange: setPage }}
         columns={[
           {
             title: "Sản phẩm",
@@ -159,11 +160,12 @@ export default function ProductsPage() {
                 size="small"
                 aria-label={`Ghim ${p.name}`}
                 checked={p.featured}
-                onChange={(featured) =>
+                onChange={(featured) => {
+                  setPage(1);
                   s.setProducts((old) =>
                     old.map((x) => (x.id === p.id ? { ...x, featured } : x)),
-                  )
-                }
+                  );
+                }}
               />
             ),
           },

@@ -1,7 +1,9 @@
 import { Card, Statistic, Tooltip } from "antd";
 import { money } from "../../utils/format";
-import { todayRevenue } from "../../utils/management";
+import { todayRevenue, isLowStock } from "../../utils/management";
+import { useManagement } from "../../hooks/useManagement";
 export default function Stats({ orders, products, showToday = false }) {
+  const { lowStockLimit } = useManagement();
   const completed = orders.filter((o) => o.status === "Đã hoàn thành");
   return (
     <div className={`mg-stats ${showToday ? "mg-stats-today" : ""}`}>
@@ -33,13 +35,16 @@ export default function Stats({ orders, products, showToday = false }) {
       <Card>
         <Statistic
           title={
-            <Tooltip title="Số biến thể có tồn kho từ 0 đến 5">
+            <Tooltip
+              title={`Số biến thể còn từ 1 đến ${lowStockLimit} sản phẩm; không tính biến thể hết hàng`}
+            >
               <span tabIndex={0}>Sắp hết hàng</span>
             </Tooltip>
           }
           value={
-            products.flatMap((p) => p.variants).filter((v) => v.stock <= 5)
-              .length
+            products
+              .flatMap((p) => p.variants)
+              .filter((v) => isLowStock(v.stock, lowStockLimit)).length
           }
         />
       </Card>

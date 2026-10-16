@@ -1,3 +1,4 @@
+import BulkSelectAll from "../../components/management/BulkSelectAll";
 import Button from "../../components/management/ManagementButton";
 import {
   orderColumns,
@@ -23,16 +24,25 @@ import {
   transitionOrder,
 } from "../../utils/management";
 import { money } from "../../utils/format";
+import BulkActions from "../../components/management/BulkActions";
 
 export default function OrdersPage() {
   const s = useManagement(),
     { message } = App.useApp(),
     [form] = Form.useForm();
   const [query, setQuery] = useState(""),
+    [selected, setSelected] = useState([]),
     [status, setStatus] = useState(),
     [detailId, setDetailId] = useState(null),
     [mode, setMode] = useState("view");
   const detail = s.orders.find((o) => o.id === detailId);
+  const rows = s.orders.filter(
+    (o) =>
+      (!status || o.status === status) &&
+      `${o.id} ${o.recipient?.name} ${o.owner}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
   function show(o, nextMode) {
     setMode(nextMode);
     setDetailId(o.id);
@@ -90,18 +100,29 @@ export default function OrdersPage() {
             (value) => ({ value }),
           )}
         />
+        <BulkActions
+          keys={rows.map((o) => o.id)}
+          selected={selected}
+          onSelect={setSelected}
+          onDelete={s.deleteOrders}
+          description="Xóa đơn hàng và dòng thanh toán tương ứng. Thao tác không thể hoàn tác."
+        />
       </div>
       <Table
         rowKey="id"
-        rowSelection={{}}
+        rowSelection={{
+          selectedRowKeys: selected,
+          onChange: setSelected,
+          columnTitle: (
+            <BulkSelectAll
+              keys={rows.map((o) => o.id)}
+              selected={selected}
+              onSelect={setSelected}
+            />
+          ),
+        }}
         scroll={{ x: 850 }}
-        dataSource={s.orders.filter(
-          (o) =>
-            (!status || o.status === status) &&
-            `${o.id} ${o.recipient?.name} ${o.owner}`
-              .toLowerCase()
-              .includes(query.toLowerCase()),
-        )}
+        dataSource={rows}
         columns={[
           ...orderColumns,
           {
