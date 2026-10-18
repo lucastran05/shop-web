@@ -1,101 +1,95 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, QRCode, Result } from "antd";
+import { Alert, QRCode, Result } from "antd";
 import { useTranslation } from "react-i18next";
-import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
-import { expireOrders } from "../utils/orderLifecycle";
+import { api, ApiError } from "../services/api";
 
-export default function PaymentPanel({ order }) {
+export default function PaymentPanel({ order, paymentSession }) {
   const { t } = useTranslation();
-  const { setOrders } = useShop();
-  const [now, setNow] = useState(Date.now());
+  const [session, setSession] = useState(paymentSession);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  if (order.payment === "cash")
+    if (!session?.id || ["succeeded", "failed", "expired", "cancelled"].includes(session.status))
+      return;
+    let active = true;
+    const timer = setInterval(() => {
+      api.payments
+        .get(session.id)
+        .then(({ data }) => {
+          if (active && "order" in data && "expires_at" in data) {
+            setSession(data);
+            setError(null);
+          }
+        })
+        .catch((requestError) => {
+          if (active)
+            setError(
+              requestError instanceof ApiError
+                ? requestError.message
+                : t("Không thể kiểm tra trạng thái thanh toán"),
+            );
+        });
+    }, 5000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [session?.id, session?.status, t]);
+
+  if (order.payment_method === "cod")
     return (
       <Alert
         type="info"
         showIcon
-        title={t("Thanh toán khi nhận hàng tại shop")}
+        title={t("Thanh toán khi nhận hàng")}
       />
     );
-  const seconds = Math.max(
-    0,
-    Math.ceil((Date.parse(order.paymentExpiresAt) - now) / 1000),
-  );
-  if (order.status === "Đã hủy" || (seconds === 0 && order.paid < order.due))
+  if (!session)
+    return (
+      <Alert
+        type="error"
+        showIcon
+        title={t("Đơn hàng đã được tạo nhưng chưa khởi tạo được thanh toán")}
+      />
+    );
+  if (session.status === "succeeded")
+    return <Alert type="success" showIcon title={t("Thanh toán thành công")} />;
+  if (["failed", "expired", "cancelled"].includes(session.status))
     return (
       <Result
         status="warning"
-        title={t("Đơn hàng đã hủy")}
-        subTitle={t(order.paymentStatus)}
+        title={t("Phiên thanh toán không còn hiệu lực")}
+        subTitle={session.failure_code || session.status}
       />
     );
-  if (order.paid >= order.due)
-    return (
-      <Alert type="success" showIcon title={t("Đã xác nhận thanh toán demo")} />
-    );
-  function simulatePayment() {
-    setOrders((old) =>
-      expireOrders(old).map((o) =>
-        o.id === order.id && o.status !== "Đã hủy" && o.paid < o.due
-          ? {
-              ...o,
-              paid: o.due,
-              remaining: o.total - o.due,
-              paymentStatus: "Đã xác nhận thanh toán demo",
-              depositStatus: o.deposit ? "Đã cọc" : o.depositStatus,
-              depositAt: o.deposit ? new Date().toISOString() : null,
-            }
-          : o,
-      ),
-    );
-  }
+
   return (
     <section className="payment-panel" aria-label={t("Thanh toán đơn hàng")}>
-      <h3>
-        {t(
-          order.payment === "qr"
-            ? "Quét mã QR (demo)"
-            : "Thanh toán thẻ (demo)",
-        )}
-      </h3>
+      <h3>{t("Thanh toán qua {{provider}}", { provider: session.provider })}</h3>
       <p>
-        {t("Số tiền thanh toán")}: <strong>{money(order.due)}</strong>
+        {t("Số tiền thanh toán")}: <strong>{money(session.amount)}</strong>
       </p>
-      {order.payment === "qr" ? (
-        <QRCode
-          type="svg"
-          value={`DEMO-NO-PAYMENT:${order.id}:${order.due}`}
-          size={220}
+      {session.qr_image_url ? (
+        <img
+          src={session.qr_image_url}
+          alt={t("Mã QR thanh toán")}
+          width="220"
+          height="220"
         />
-      ) : (
-        <div className="demo-card">
-          <strong>DEMO CARD</strong>
-          <p>•••• •••• •••• 4242</p>
-          <small>{t("Thẻ thử nghiệm — không nhập thông tin thẻ thật")}</small>
-        </div>
+      ) : session.qr_payload ? (
+        <QRCode type="svg" value={session.qr_payload} size={220} />
+      ) : null}
+      {session.payment_url && (
+        <p>
+          <a href={session.payment_url} target="_blank" rel="noreferrer">
+            {t("Mở trang thanh toán")}
+          </a>
+        </p>
       )}
-      <p role="timer">
-        {t("Thời gian còn lại")}:{" "}
-        <strong>
-          {String(Math.floor(seconds / 60)).padStart(2, "0")}:
-          {String(seconds % 60).padStart(2, "0")}
-        </strong>
-      </p>
-      <Alert
-        type="info"
-        showIcon
-        title={t("Đơn tự hủy sau 15 phút nếu chưa thanh toán")}
-        description={t(
-          "Thanh toán mô phỏng, không chuyển tiền thật. Khi đóng trình duyệt, trạng thái được cập nhật khi mở lại.",
-        )}
-      />
-      <Button type="primary" onClick={simulatePayment}>
-        {t("Mô phỏng thanh toán thành công")}
-      </Button>
+      <p>{t("Trạng thái")}: {t(session.status)}</p>
+      <p>{t("Hạn thanh toán")}: {new Date(session.expires_at).toLocaleString()}</p>
+      {error && <Alert type="error" showIcon title={error} />}
     </section>
   );
 }

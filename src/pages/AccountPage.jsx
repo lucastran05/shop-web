@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import AddressFields, { formatAddress } from "../components/AddressFields";
-import { useState } from "react";
+import AddressFields from "../components/AddressFields";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import {
   Form,
@@ -15,6 +15,7 @@ import {
   Popconfirm,
 } from "antd";
 import { useShop } from "../hooks/useShop";
+import { api, ApiError } from "../services/api";
 function AccountContent() {
   const { t } = useTranslation();
   const phoneRules = [
@@ -22,53 +23,122 @@ function AccountContent() {
     { pattern: /^(0|\+84)[0-9]{9}$/, message: t("Số điện thoại chưa hợp lệ") },
   ];
 
-  const { user, updateProfile } = useShop(),
+  const { user, updateProfile, setUser } = useShop(),
     { message } = App.useApp();
   const [editing, setEditing] = useState(null),
+    [addresses, setAddresses] = useState([]),
+    [loadingAddresses, setLoadingAddresses] = useState(true),
     [addressForm] = Form.useForm(),
     [passwordForm] = Form.useForm();
-  const addresses = user.addresses || [];
+  useEffect(() => {
+    let active = true;
+    api.addresses
+      .list()
+      .then(({ data }) => {
+        if (active) setAddresses(data);
+      })
+      .catch((error) => {
+        if (active)
+          message.error(
+            error instanceof ApiError
+              ? error.message
+              : t("Không thể tải sổ địa chỉ"),
+          );
+      })
+      .finally(() => {
+        if (active) setLoadingAddresses(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [message, t]);
   function edit(address) {
     setEditing(address || { id: "" });
     addressForm.resetFields();
     addressForm.setFieldsValue(
-      address || { name: user.name, phone: user.phone, address: "" },
+      address || {
+        recipient_name: user.name,
+        recipient_phone: user.phone,
+        is_default: addresses.length === 0,
+      },
     );
   }
-  function saveAddress(values) {
-    values = { ...values, address: formatAddress(values) };
-    const id = editing.id || crypto.randomUUID();
-    const next = editing.id
-      ? addresses.map((a) => (a.id === id ? { ...a, ...values } : a))
-      : [...addresses, { id, ...values }];
-    const defaultId = user.defaultAddressId || id;
-    const selected = next.find((a) => a.id === defaultId);
-    updateProfile({
-      addresses: next,
-      defaultAddressId: defaultId,
-      address: selected?.address || "",
-    });
-    setEditing(null);
-    message.success(t("Đã lưu địa chỉ"));
+  async function saveAddress(values) {
+    try {
+      const response = editing.id
+        ? await api.addresses.update(editing.id, values)
+        : await api.addresses.create({
+            ...values,
+            is_default: values.is_default ?? addresses.length === 0,
+          });
+      setAddresses((old) =>
+        editing.id
+          ? old.map((address) =>
+              address.id === editing.id ? response.data : address,
+            )
+          : [...old, response.data],
+      );
+      setEditing(null);
+      message.success(response.message || t("Đã lưu địa chỉ"));
+    } catch (error) {
+      if (error instanceof ApiError) message.error(error.message);
+      else throw error;
+    }
   }
-  function removeAddress(id) {
-    const next = addresses.filter((a) => a.id !== id);
-    const defaultId =
-      user.defaultAddressId === id ? next[0]?.id : user.defaultAddressId;
-    updateProfile({
-      addresses: next,
-      defaultAddressId: defaultId,
-      address: next.find((a) => a.id === defaultId)?.address || "",
-    });
+  async function removeAddress(id) {
+    try {
+      await api.addresses.delete(id);
+      setAddresses((old) => old.filter((address) => address.id !== id));
+      message.success(t("Đã xóa địa chỉ"));
+    } catch (error) {
+      if (error instanceof ApiError) message.error(error.message);
+      else throw error;
+    }
+  }
+  async function setDefaultAddress(id) {
+    try {
+      const { data } = await api.addresses.setDefault(id);
+      setAddresses((old) =>
+        old.map((address) => ({
+          ...address,
+          is_default: address.id === data.id,
+        })),
+      );
+      setUser((old) => ({ ...old, default_address_id: data.default_address_id }));
+    } catch (error) {
+      if (error instanceof ApiError) message.error(error.message);
+      else throw error;
+    }
+  }
+  async function saveProfile(values) {
+    try {
+      await updateProfile(values);
+      message.success(t("Đã lưu thông tin cá nhân"));
+    } catch (error) {
+      if (error instanceof ApiError) message.error(error.message);
+      else throw error;
+    }
+  }
+  async function changePassword(values) {
+    try {
+      await api.auth.changePassword({
+        current_password: values.current,
+        new_password: values.next,
+        new_password_confirmation: values.confirm,
+      });
+      setUser(null);
+      passwordForm.resetFields();
+      message.success(t("Đổi mật khẩu thành công. Vui lòng đăng nhập lại."));
+    } catch (error) {
+      if (error instanceof ApiError) message.error(error.message);
+      else throw error;
+    }
   }
   const profile = (
     <Form
       layout="vertical"
       initialValues={user}
-      onFinish={(v) => {
-        updateProfile(v);
-        message.success(t("Đã lưu thông tin cá nhân"));
-      }}
+      onFinish={saveProfile}
     >
       <Form.Item
         name="name"
@@ -95,20 +165,22 @@ function AccountContent() {
       <Button type="primary" onClick={() => edit(null)}>
         {t("Thêm địa chỉ")}
       </Button>
-      {!addresses.length ? (
+      {loadingAddresses ? (
+        <p>{t("Đang tải địa chỉ…")}</p>
+      ) : !addresses.length ? (
         <Empty description={t("Chưa có địa chỉ đã lưu")} />
       ) : (
         addresses.map((a) => (
           <div className="panel" style={{ marginTop: 16 }} key={a.id}>
             <strong>
-              {a.name} · {a.phone}
+              {a.recipient_name} · {a.recipient_phone}
             </strong>
-            {a.id === user.defaultAddressId && (
+            {a.is_default && (
               <Tag color="blue" style={{ marginLeft: 10 }}>
                 {t("Mặc định")}
               </Tag>
             )}
-            <p style={{ marginTop: 12 }}>{a.address}</p>
+            <p style={{ marginTop: 12 }}>{a.full_address}</p>
             <div className="address-actions">
               <Button onClick={() => edit(a)}>{t("Sửa")}</Button>
               <Popconfirm
@@ -119,15 +191,8 @@ function AccountContent() {
               >
                 <Button danger>{t("Xóa")}</Button>
               </Popconfirm>
-              {a.id !== user.defaultAddressId && (
-                <Button
-                  onClick={() =>
-                    updateProfile({
-                      defaultAddressId: a.id,
-                      address: a.address,
-                    })
-                  }
-                >
+              {!a.is_default && (
+                <Button onClick={() => setDefaultAddress(a.id)}>
                   {t("Đặt làm mặc định")}
                 </Button>
               )}
@@ -142,32 +207,25 @@ function AccountContent() {
       <Alert
         type="info"
         showIcon
-        title={t("Đổi mật khẩu cần kết nối dịch vụ xác thực")}
-        description={t(
-          "Đây là biểu mẫu frontend. Không nhập mật khẩu thật; bản demo không xác thực hoặc thay đổi mật khẩu.",
-        )}
+        title={t("Thay đổi mật khẩu tài khoản")}
+        description={t("Mật khẩu mới sẽ được lưu trực tiếp trên máy chủ.")}
       />
       <Form
         form={passwordForm}
         layout="vertical"
         style={{ marginTop: 20 }}
-        onFinish={() => {
-          message.info(
-            t("Thông tin hợp lệ. Chưa có API xác thực để đổi mật khẩu."),
-          );
-          passwordForm.resetFields();
-        }}
+        onFinish={changePassword}
       >
         <Form.Item
           name="current"
-          label={t("Mật khẩu hiện tại (demo)")}
+          label={t("Mật khẩu hiện tại")}
           rules={[{ required: true, message: t("Nhập mật khẩu hiện tại") }]}
         >
           <Input.Password autoComplete="off" />
         </Form.Item>
         <Form.Item
           name="next"
-          label={t("Mật khẩu mới (demo)")}
+          label={t("Mật khẩu mới")}
           rules={[
             { required: true, message: t("Nhập mật khẩu mới") },
             { min: 8, message: t("Tối thiểu 8 ký tự") },
@@ -193,7 +251,7 @@ function AccountContent() {
           <Input.Password autoComplete="off" />
         </Form.Item>
         <Button type="primary" htmlType="submit">
-          {t("Kiểm tra biểu mẫu đổi mật khẩu")}
+          {t("Đổi mật khẩu")}
         </Button>
       </Form>
     </>
@@ -201,12 +259,6 @@ function AccountContent() {
   return (
     <div className="page">
       <h1>{t("Tài khoản của bạn")}</h1>
-      <Alert
-        type="info"
-        title={t(
-          "Phiên demo — dữ liệu lưu trên trình duyệt, chưa kết nối tài khoản thật",
-        )}
-      />
       <div className="panel" style={{ marginTop: 24 }}>
         <Tabs
           items={[
@@ -234,7 +286,7 @@ function AccountContent() {
       >
         <Form form={addressForm} layout="vertical" onFinish={saveAddress}>
           <Form.Item
-            name="name"
+          name="recipient_name"
             label={t("Tên người nhận")}
             rules={[
               {
@@ -247,7 +299,7 @@ function AccountContent() {
             <Input />
           </Form.Item>
           <Form.Item
-            name="phone"
+            name="recipient_phone"
             label={t("Điện thoại người nhận")}
             rules={phoneRules}
           >

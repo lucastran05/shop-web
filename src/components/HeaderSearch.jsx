@@ -2,11 +2,12 @@ import { useState } from "react";
 import { AutoComplete, Input } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { products } from "../services/productService";
+import { useShop } from "../hooks/useShop";
 import { matchesProduct } from "../utils/search";
 import { money } from "../utils/format";
 export default function HeaderSearch() {
   const { t } = useTranslation(),
+    { products } = useShop(),
     navigate = useNavigate(),
     [params] = useSearchParams();
   const [value, setValue] = useState(params.get("search") || "");

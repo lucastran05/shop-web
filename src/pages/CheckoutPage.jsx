@@ -1,5 +1,4 @@
-import { products } from "../services/productService";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Navigate, Link, useSearchParams } from "react-router-dom";
 import {
   Form,
@@ -19,10 +18,11 @@ import { useShop } from "../hooks/useShop";
 import { useShopConfig } from "../hooks/useShopConfig";
 import { money } from "../utils/format";
 import { calculateCheckout } from "../utils/checkout";
-import AddressFields, { formatAddress } from "../components/AddressFields";
+import AddressFields from "../components/AddressFields";
 import PaymentPanel from "../components/PaymentPanel";
-import { deductPurchased, PAYMENT_TTL } from "../utils/orderLifecycle";
 import { Modal } from "antd";
+import { api, ApiError } from "../services/api";
+import { mapProductDetail } from "../services/productAdapter";
 export default function Checkout() {
   const { t } = useTranslation(),
     s = useShop(),
@@ -30,56 +30,114 @@ export default function Checkout() {
     [params] = useSearchParams(),
     { message } = App.useApp();
   const [step, setStep] = useState(0),
+    [addresses, setAddresses] = useState([]),
     [recipient, setRecipient] = useState(null),
     [placed, setPlaced] = useState(null),
+    [paymentSession, setPaymentSession] = useState(null),
+    [submitting, setSubmitting] = useState(false),
     [delivery, setDelivery] = useState("ship"),
     [payment, setPayment] = useState("qr"),
     [mode, setMode] = useState("full"),
     [coupon, setCoupon] = useState(""),
-    [discount, setDiscount] = useState(false),
     [addingAddress, setAddingAddress] = useState(false),
-    [addressId, setAddressId] = useState(
-      s.user?.defaultAddressId || s.user?.addresses?.[0]?.id,
-    ),
+    [addressId, setAddressId] = useState(null),
     [addressForm] = Form.useForm(),
     [form] = Form.useForm(),
-    submitted = useRef(false);
-  const buy = params.get("buy");
+    submitted = useRef(false),
+    orderIdempotencyKey = useRef(null);
+  const buyProductId = params.get("product_id");
+  const buyVariantId = params.get("variant_id");
+  const quantityParam = params.get("quantity");
+  useEffect(() => {
+    if (!s.user) return;
+    let active = true;
+    api.addresses
+      .list()
+      .then(({ data }) => {
+        if (!active) return;
+        setAddresses(data);
+        setAddressId(
+          s.user.default_address_id ||
+            data.find((address) => address.is_default)?.id ||
+            data[0]?.id,
+        );
+      })
+      .catch((error) => {
+        if (active)
+          message.error(
+            error instanceof ApiError
+              ? error.message
+              : t("Không thể tải sổ địa chỉ"),
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [s.user, message, t]);
   const [items, setItems] = useState(() => {
-    if (!buy) return s.items.filter((x) => x.selected).map((x) => ({ ...x }));
-    for (const p of products) {
-      const v = p.variants.find((v) => `${p.id}-${v.id}` === buy);
-      if (v)
-        return [
-          {
-            ...p,
-            ...v,
-            id: p.id,
-            variantId: v.id,
-            key: buy,
-            variantLabel: v.label,
-            quantity: Math.max(
-              1,
-              Math.min(
-                v.stock || 1,
-                Math.floor(Number(params.get("quantity")) || 1),
-              ),
-            ),
-          },
-        ];
-    }
-    return [];
+    return buyProductId
+      ? []
+      : s.items.filter((item) => item.selected).map((item) => ({ ...item }));
   });
-  const defaultAddress = s.user?.addresses?.find((a) => a.id === addressId);
-  const currentOrder =
-    placed && (s.orders.find((o) => o.id === placed.id) || placed);
+  useEffect(() => {
+    if (buyProductId) {
+      let active = true;
+      api.products
+        .get(buyProductId)
+        .then(({ data }) => {
+          if (!active) return;
+          const product = mapProductDetail(data);
+          const variant = product.variants.find(
+            (item) => item.id === buyVariantId,
+          );
+          if (!variant) {
+            message.error(t("Không tìm thấy biến thể sản phẩm"));
+            return;
+          }
+          setItems([
+            {
+              ...product,
+              ...variant,
+              id: product.id,
+              variantId: variant.id,
+              key: `${product.id}-${variant.id}`,
+              variantLabel: variant.label,
+              quantity: Math.max(
+                1,
+                Math.min(
+                  variant.stock || 1,
+                  Math.floor(Number(quantityParam) || 1),
+                ),
+              ),
+            },
+          ]);
+        })
+        .catch((error) => {
+          if (active)
+            message.error(
+              error instanceof ApiError
+                ? error.message
+                : t("Không thể tải sản phẩm"),
+            );
+        });
+      return () => {
+        active = false;
+      };
+    }
+  }, [buyProductId, buyVariantId, quantityParam, message, t]);
+  useEffect(() => {
+    if (!buyProductId && !items.length && s.items.length)
+      setItems(s.items.filter((item) => item.selected).map((item) => ({ ...item })));
+  }, [buyProductId, s.items, items.length]);
+  const defaultAddress = addresses.find((a) => a.id === addressId);
+  const currentOrder = placed;
   const depositRate =
     mode === "deposit50" ? 0.5 : mode === "deposit70" ? 0.7 : 0;
   const deposit = depositRate > 0;
   const totals = calculateCheckout(
       items,
       delivery,
-      discount,
+      false,
       deposit,
       payment,
       {
@@ -104,7 +162,7 @@ export default function Checkout() {
       old.map((x) => (x.key === key ? { ...x, quantity: next } : x)),
     );
   }
-  function submitOrder() {
+  async function submitOrder() {
     if (submitted.current || !recipient) return;
     if (payment === "cash" && (delivery !== "pickup" || deposit)) return;
     if (items.some((p) => p.quantity < 1 || p.quantity > p.stock)) {
@@ -112,36 +170,81 @@ export default function Checkout() {
       return;
     }
     submitted.current = true;
-    const order = {
-      id: "ABC-" + crypto.randomUUID().slice(0, 8).toUpperCase(),
-      owner: s.user.email,
-      createdAt: new Date().toISOString(),
-      items,
-      ...totals,
-      deposit: deposit ? due : 0,
-      depositRate,
-      depositStatus: deposit ? "Chờ xác nhận" : "Không đặt cọc",
-      depositAt: null,
-      paid: 0,
-      remaining: total,
-      payment,
-      paymentExpiresAt:
-        payment === "cash"
-          ? null
-          : new Date(Date.now() + PAYMENT_TTL).toISOString(),
-      delivery,
-      status: "Chờ xác nhận",
-      paymentStatus:
-        payment === "cash"
-          ? "Thanh toán khi nhận hàng"
-          : "Chờ xác nhận thanh toán (demo)",
-      recipient,
-    };
-    s.setOrders((old) => [order, ...old]);
-    s.setCart((old) => deductPurchased(old, items));
-    s.notify("Đơn {{id}} đã được tạo và đang chờ xác nhận.", { id: order.id });
-    setPlaced(order);
-    setStep(2);
+    setSubmitting(true);
+    if (!orderIdempotencyKey.current)
+      orderIdempotencyKey.current = crypto.randomUUID();
+    try {
+      const { data: quote } = await api.checkout.quote({
+        ...(buyProductId
+          ? {
+              items: items.map((item) => ({
+                product_id: item.id,
+                variant_id: item.variantId,
+                quantity: item.quantity,
+              })),
+            }
+          : { cart_item_ids: items.map((item) => item.key) }),
+        ...(delivery === "ship" && addressId ? { address_id: addressId } : {}),
+        recipient: {
+          name: recipient.name,
+          phone: recipient.phone,
+          full_address:
+            delivery === "ship" ? recipient.address : t("Nhận tại cửa hàng"),
+        },
+        delivery_method: delivery === "pickup" ? "pickup" : "standard",
+        ...(coupon.trim() ? { coupon_code: coupon.trim() } : {}),
+        payment_method:
+          payment === "cash" ? "cod" : payment === "card" ? "card" : "vietqr",
+        payment_mode: deposit ? "deposit" : "full",
+        ...(deposit ? { deposit_rate: depositRate } : {}),
+        ...(recipient.note ? { note: recipient.note } : {}),
+      });
+      const { data: order } = await api.checkout.createOrder(
+        { quote_id: quote.quote_id, note: recipient.note },
+        { idempotencyKey: orderIdempotencyKey.current },
+      );
+      setPlaced(order);
+      setStep(2);
+      if (payment !== "cash") {
+        try {
+          const { data: session } = await api.payments.createSession(
+            order.id,
+            {
+              method: payment === "card" ? "card" : "vietqr",
+              purpose: deposit ? "deposit" : "full",
+            },
+            { idempotencyKey: crypto.randomUUID() },
+          );
+          setPaymentSession(session);
+        } catch (error) {
+          message.error(
+            error instanceof ApiError
+              ? error.message
+              : t("Không thể khởi tạo phiên thanh toán"),
+          );
+        }
+      }
+      if (!buyProductId) {
+        try {
+          await s.refreshCart();
+        } catch (error) {
+          message.error(
+            error instanceof ApiError
+              ? error.message
+              : t("Đơn đã tạo nhưng không thể làm mới giỏ hàng"),
+          );
+        }
+      }
+    } catch (error) {
+      submitted.current = false;
+      message.error(
+        error instanceof ApiError
+          ? error.message
+          : t("Không thể tạo đơn hàng"),
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
   if (!placed && !items.length)
     return (
@@ -165,27 +268,25 @@ export default function Checkout() {
         <Form
           form={addressForm}
           layout="vertical"
-          onFinish={(values) => {
-            const address = {
-              ...values,
-              id: crypto.randomUUID(),
-              address: formatAddress(values),
-            };
-            const addresses = [...(s.user.addresses || []), address];
-            s.updateProfile({
-              addresses,
-              defaultAddressId: s.user.defaultAddressId || address.id,
-              ...(!s.user.addresses?.length
-                ? { address: address.address }
-                : {}),
-            });
-            setAddressId(address.id);
-            form.setFieldsValue({
-              name: address.name,
-              phone: address.phone,
-              address: address.address,
-            });
-            setAddingAddress(false);
+          onFinish={async (values) => {
+            try {
+              const { data } = await api.addresses.create({
+                ...values,
+                is_default: addresses.length === 0,
+              });
+              setAddresses((old) => [...old, data]);
+              setAddressId(data.id);
+              form.setFieldsValue({
+                name: data.recipient_name,
+                phone: data.recipient_phone,
+                address: data.full_address,
+              });
+              setAddingAddress(false);
+              message.success(t("Đã lưu địa chỉ"));
+            } catch (error) {
+              if (error instanceof ApiError) message.error(error.message);
+              else throw error;
+            }
           }}
         >
           <Form.Item
@@ -228,13 +329,13 @@ export default function Checkout() {
       />
       {placed ? (
         <Result
-          status={currentOrder.status === "Đã hủy" ? "warning" : "success"}
+          status={currentOrder.status === "cancelled" ? "warning" : "success"}
           title={t(
-            currentOrder.status === "Đã hủy"
+            currentOrder.status === "cancelled"
               ? "Đơn hàng đã hủy"
-              : "Đã tạo đơn hàng demo",
+              : "Đơn hàng đã được tạo",
           )}
-          subTitle={t("Mã đơn: {{id}}", { id: placed.id })}
+          subTitle={t("Mã đơn: {{id}}", { id: placed.code })}
           extra={
             <Link to="/orders">
               <Button type="primary">{t("Xem đơn hàng")}</Button>
@@ -242,22 +343,24 @@ export default function Checkout() {
           }
         >
           <p>
-            {t("Tổng cộng")}: <strong>{money(placed.total)}</strong>
+            {t("Tổng cộng")}: <strong>{money(placed.total_amount)}</strong>
           </p>
           <p>
-            {t("Đã thanh toán")}: {money(currentOrder.paid)}
+            {t("Đã thanh toán")}: {money(currentOrder.paid_amount)}
           </p>
-          <PaymentPanel order={currentOrder} />
+          <PaymentPanel
+            key={paymentSession?.id || placed.id}
+            order={currentOrder}
+            paymentSession={paymentSession}
+          />
         </Result>
       ) : (
         <>
           <Alert
-            type="warning"
+            type="info"
             showIcon
-            title={t("Đặt hàng mô phỏng — không phát sinh thanh toán thật")}
-            description={t(
-              "QR và thẻ chưa kết nối cổng thanh toán. Không nhập thông tin thẻ hoặc chuyển tiền.",
-            )}
+            title={t("Đơn hàng được xác nhận qua hệ thống")}
+            description={t("Giá và phương thức thanh toán sẽ được xác nhận từ máy chủ.")}
           />
           <div className="two-column">
             <section className="panel">
@@ -267,9 +370,10 @@ export default function Checkout() {
                   layout="vertical"
                   initialValues={
                     recipient || {
-                      name: defaultAddress?.name || s.user.name,
-                      phone: defaultAddress?.phone || s.user.phone,
-                      address: defaultAddress?.address || s.user.address,
+                      name: defaultAddress?.recipient_name || s.user.name,
+                      phone:
+                        defaultAddress?.recipient_phone || s.user.phone || "",
+                      address: defaultAddress?.full_address || "",
                     }
                   }
                   onFinish={(values) => {
@@ -284,9 +388,9 @@ export default function Checkout() {
                         aria-label={t("Chọn địa chỉ đã lưu")}
                         value={addressId}
                         options={[
-                          ...(s.user.addresses || []).map((a) => ({
+                          ...addresses.map((a) => ({
                             value: a.id,
-                            label: a.name + " — " + a.address,
+                            label: a.recipient_name + " — " + a.full_address,
                           })),
                           { value: "__add__", label: t("Thêm địa chỉ") },
                         ]}
@@ -301,11 +405,11 @@ export default function Checkout() {
                             return;
                           }
                           setAddressId(id);
-                          const a = s.user.addresses.find((a) => a.id === id);
+                          const a = addresses.find((a) => a.id === id);
                           form.setFieldsValue({
-                            name: a.name,
-                            phone: a.phone,
-                            address: a.address,
+                            name: a.recipient_name,
+                            phone: a.recipient_phone,
+                            address: a.full_address,
                           });
                         }}
                       />
@@ -413,8 +517,8 @@ export default function Checkout() {
                         label: t("Khi nhận hàng"),
                         disabled: deposit || delivery !== "pickup",
                       },
-                      { value: "qr", label: t("QR (demo)") },
-                      { value: "card", label: t("Thẻ (demo)") },
+                      { value: "qr", label: t("Chuyển khoản QR") },
+                      { value: "card", label: t("Thẻ") },
                     ]}
                   />
                   {deposit && (
@@ -424,8 +528,12 @@ export default function Checkout() {
                   )}
                   <div className="buy-actions">
                     <Button onClick={() => setStep(0)}>{t("Quay lại")}</Button>
-                    <Button type="primary" onClick={submitOrder}>
-                      {t("Xác nhận đặt hàng demo")}
+                    <Button
+                      type="primary"
+                      onClick={submitOrder}
+                      loading={submitting}
+                    >
+                      {t("Xác nhận đặt hàng")}
                     </Button>
                   </div>
                 </>
@@ -462,26 +570,14 @@ export default function Checkout() {
                 <div className="coupon">
                   <Input
                     aria-label={t("Mã giảm giá")}
-                    placeholder={shop.commerce.coupon.code}
+                    placeholder={t("Nhập mã giảm giá")}
                     value={coupon}
-                    onChange={(e) => {
-                      setCoupon(e.target.value);
-                      setDiscount(false);
-                    }}
+                    onChange={(e) => setCoupon(e.target.value)}
                   />
                   <Button
                     onClick={() => {
-                      const valid =
-                        !!coupon.trim() &&
-                        coupon.trim().toUpperCase() ===
-                          shop.commerce.coupon.code.toUpperCase();
-                      setDiscount(valid);
-                      message[valid ? "success" : "error"](
-                        t(
-                          valid
-                            ? "Đã áp dụng mã giảm giá"
-                            : "Mã giảm giá không hợp lệ",
-                        ),
+                      message.info(
+                        t("Mã giảm giá sẽ được máy chủ xác thực khi đặt hàng"),
                       );
                     }}
                   >

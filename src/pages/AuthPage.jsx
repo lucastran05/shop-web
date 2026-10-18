@@ -4,51 +4,53 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../hooks/useShop";
-import { useSaved } from "../hooks/useSaved";
-import { initialUsers } from "../constants/management";
-import { matchesPassword } from "../utils/password";
+import { api, ApiError } from "../services/api";
 export default function Auth() {
   const { t } = useTranslation();
-  const [managedUsers] = useSaved("management-users", initialUsers);
   const [tab, setTab] = useState("login"),
-    { setUser, profiles } = useShop(),
+    [loading, setLoading] = useState(false),
+    { setUser } = useShop(),
     navigate = useNavigate(),
     [params] = useSearchParams(),
     { message } = App.useApp();
   async function submit(values) {
-    const managed = managedUsers.find(
-      (user) => user.email === values.email.trim().toLowerCase(),
-    );
-    if (managed) {
-      if (!managed.active) return message.error("Tài khoản đã bị khóa.");
-      if (tab === "register") return message.error("Email đã tồn tại.");
-      if (managed.credential) {
-        try {
-          if (!(await matchesPassword(values.password, managed.credential)))
-            return message.error("Mật khẩu không đúng.");
-        } catch {
-          return message.error(
-            "Không thể kiểm tra mật khẩu. Vui lòng thử lại.",
-          );
+    setLoading(true);
+    try {
+      const email = values.email.trim().toLowerCase();
+      let user;
+      if (tab === "register") {
+        const registered = await api.auth.register({
+          name: values.name.trim(),
+          email,
+          password: values.password,
+          password_confirmation: values.confirmPassword,
+        });
+        if (registered.data.accessToken && registered.data.refreshToken) {
+          user = registered.data.user ?? registered.data;
+        } else {
+          user = (await api.auth.login({ email, password: values.password }))
+            .data.user;
         }
+        message.success(t("Đăng ký tài khoản thành công"));
+      } else {
+        user = (await api.auth.login({ email, password: values.password }))
+          .data.user;
+        message.success(t("Đăng nhập thành công"));
       }
+      setUser(user);
+      const next = params.get("next");
+      navigate(
+        next && next.startsWith("/") && !next.startsWith("//")
+          ? next
+          : "/account",
+        { replace: true },
+      );
+    } catch (error) {
+      if (error instanceof ApiError) message.error(error.message);
+      else throw error;
+    } finally {
+      setLoading(false);
     }
-    setUser(
-      profiles[values.email.trim().toLowerCase()] || {
-        name: values.name || values.email.split("@")[0],
-        email: values.email.trim().toLowerCase(),
-        phone: "",
-        address: "",
-      },
-    );
-    message.success(t("Đã vào phiên Customer demo"));
-    const next = params.get("next");
-    navigate(
-      next && next.startsWith("/") && !next.startsWith("//")
-        ? next
-        : "/account",
-      { replace: true },
-    );
   }
   return (
     <div className="auth-page">
@@ -64,9 +66,9 @@ export default function Auth() {
         <Alert
           type="info"
           showIcon
-          title={t("Phiên trải nghiệm giao diện")}
+          title={t("Đăng nhập với tài khoản Shop")}
           description={t(
-            "Chưa có API xác thực. Email chỉ dùng để tạo hồ sơ demo trên trình duyệt; không nhập mật khẩu thật.",
+            "Thông tin đăng nhập được xác thực trực tiếp với máy chủ.",
           )}
         />
         <Tabs
@@ -105,9 +107,9 @@ export default function Auth() {
           </Form.Item>
           <Form.Item
             name="password"
-            label={t("Mật khẩu demo (không lưu)")}
+            label={t("Mật khẩu")}
             rules={[
-              { required: true, message: t("Nhập mật khẩu demo") },
+              { required: true, message: t("Nhập mật khẩu") },
               { min: 6, message: t("Tối thiểu 6 ký tự") },
             ]}
           >
@@ -132,8 +134,8 @@ export default function Auth() {
               <Input.Password autoComplete="off" />
             </Form.Item>
           )}
-          <Button htmlType="submit" type="primary" block>
-            {t(tab === "login" ? "Đăng nhập demo" : "Tạo hồ sơ demo")}
+          <Button htmlType="submit" type="primary" block loading={loading}>
+            {t(tab === "login" ? "Đăng nhập" : "Tạo tài khoản")}
           </Button>
         </Form>
       </div>

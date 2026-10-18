@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import ExpandableText from "../components/ExpandableText";
 import ProductReviews from "../components/ProductReviews";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Breadcrumb,
@@ -13,23 +13,25 @@ import {
   App,
   Result,
   Image,
+  Spin,
 } from "antd";
 import { ShoppingCartOutlined } from "@ant-design/icons";
-import { products } from "../services/productService";
 import { money } from "../utils/format";
 import { useShop } from "../hooks/useShop";
 import { shopConfig } from "../constants/shop";
 import ProductCard from "../components/ProductCard";
-function ProductView({ p }) {
+import { api, ApiError } from "../services/api";
+import { mapProductDetail } from "../services/productAdapter";
+function ProductView({ p, relatedProducts }) {
   const { t } = useTranslation();
-  const [variantId, setVariantId] = useState(p.variants[0].id),
+  const [variantId, setVariantId] = useState(p.variants[0]?.id),
     [qty, setQty] = useState(1),
     [picture, setPicture] = useState(0);
   const v = p.variants.find((v) => v.id === variantId),
     { add, user } = useShop(),
     { message } = App.useApp(),
     navigate = useNavigate();
-  function buy(now) {
+  async function buy(now) {
     if (!v.stock) return;
     if (!user && !now) {
       message.info(t("Vui lòng đăng nhập để thêm vào giỏ hàng"));
@@ -40,11 +42,20 @@ function ProductView({ p }) {
       navigate(
         "/checkout?" +
           new URLSearchParams({
-            buy: `${p.id}-${v.id}`,
+            product_id: p.id,
+            variant_id: v.id,
             quantity: String(qty),
           }),
       );
-    } else if (add(p, v.id, qty)) message.success(t("Đã thêm vào giỏ hàng"));
+    } else {
+      try {
+        await add(p, v.id, qty);
+        message.success(t("Đã thêm vào giỏ hàng"));
+      } catch (error) {
+        if (error instanceof ApiError) message.error(error.message);
+        else throw error;
+      }
+    }
   }
   return (
     <div className="page">
@@ -153,7 +164,7 @@ function ProductView({ p }) {
       <ProductReviews productId={p.id} />
       <h2>{t("Sản phẩm khác")}</h2>
       <div className="product-grid related">
-        {products
+        {relatedProducts
           .filter((x) => x.id !== p.id)
           .slice(0, 3)
           .map((p) => (
@@ -165,14 +176,46 @@ function ProductView({ p }) {
 }
 export default function ProductDetail() {
   const { t } = useTranslation();
-  const { id } = useParams(),
-    p = products.find((x) => x.id === Number(id));
-  return p ? (
-    <ProductView key={p.id} p={p} />
+  const { id } = useParams();
+  const { products: relatedProducts } = useShop();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    api.products
+      .get(id)
+      .then(({ data }) => {
+        if (active) setProduct(mapProductDetail(data));
+      })
+      .catch((cause) => {
+        if (!active) return;
+        setProduct(null);
+        setError(
+          cause instanceof ApiError
+            ? cause.message
+            : t("Không thể tải chi tiết sản phẩm"),
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, t]);
+  if (loading) return <Spin className="page" />;
+  return product ? (
+    <ProductView
+      key={product.id}
+      p={product}
+      relatedProducts={relatedProducts}
+    />
   ) : (
     <Result
       status="404"
-      title={t("Không tìm thấy sản phẩm")}
+      title={error || t("Không tìm thấy sản phẩm")}
       extra={<Link to="/">{t("Về trang chủ")}</Link>}
     />
   );

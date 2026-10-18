@@ -10,31 +10,35 @@ import {
   Empty,
   Pagination,
   Tag,
+  Alert,
 } from "antd";
 import { ShoppingOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  categories,
-  maxCatalogPrice,
-  products,
-} from "../services/productService";
+import { useShop } from "../hooks/useShop";
 import { matchesProduct } from "../utils/search";
 import { money } from "../utils/format";
 import ProductCard from "../components/ProductCard";
 export default function Catalog() {
   const { t } = useTranslation(),
+    { products, categories, catalogLoading, catalogError } = useShop(),
     shopConfig = useShopConfig(),
     [params, setParams] = useSearchParams();
   const q = params.get("q") || "",
     search = params.get("search") || "",
     category = params.get("category") || "",
     featured = params.get("featured") === "true";
-  const [price, setPrice] = useState([0, maxCatalogPrice]),
+  const maxCatalogPrice = Math.max(1, ...products.map((p) => p.price)),
+    [price, setPrice] = useState([0, 1]),
     [stock, setStock] = useState(false),
     [sort, setSort] = useState("popular"),
     [pageSize, setPageSize] = useState(6),
     [pageState, setPage] = useState({ query: params.toString(), value: 1 });
+  useEffect(() => {
+    setPrice((current) =>
+      current[1] === 1 ? [0, maxCatalogPrice] : current,
+    );
+  }, [maxCatalogPrice]);
   function changePage(value) {
     setPage({ query: params.toString(), value });
   }
@@ -96,7 +100,7 @@ export default function Catalog() {
         <div className="catalog-layout">
           <aside className="filters">
             <h3>{t("Danh mục")}</h3>
-            {["", ...categories].map((c) => (
+            {["", ...categories.map((item) => item.name)].map((c) => (
               <button
                 className={category === c ? "category selected" : "category"}
                 key={c || "all"}
@@ -105,7 +109,8 @@ export default function Catalog() {
                 <span>{c ? t(c) : t("Tất cả")}</span>
                 <span>
                   {c
-                    ? products.filter((p) => p.category === c).length
+                    ? categories.find((item) => item.name === c)?.product_count ??
+                      0
                     : products.length}
                 </span>
               </button>
@@ -214,7 +219,15 @@ export default function Catalog() {
                 ]}
               />
             </div>
-            {list.length ? (
+            {catalogLoading ? (
+              <p>{t("Đang tải danh sách sản phẩm…")}</p>
+            ) : catalogError ? (
+              <Alert
+                type="error"
+                showIcon
+                message={t("Không thể tải danh sách sản phẩm")}
+              />
+            ) : list.length ? (
               <div className="product-grid">
                 {list.slice((page - 1) * pageSize, page * pageSize).map((p) => (
                   <ProductCard key={p.id} p={p} />

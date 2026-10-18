@@ -65,7 +65,18 @@ export class AuthService {
     body: RegisterRequest,
     options?: RequestOptions,
   ): Promise<ApiResponse<RegisterResult>> {
-    return this.http.publicPost("/api/v1/auth/register", body, options);
+    return this.http
+      .publicPost<ApiResponse<RegisterResult>>(
+        "/api/v1/auth/register",
+        body,
+        options,
+      )
+      .then((response) => {
+        const { accessToken, refreshToken } = response.data;
+        if (accessToken && refreshToken)
+          this.http.setTokens({ accessToken, refreshToken });
+        return response;
+      });
   }
   async login(
     body: LoginRequest,
