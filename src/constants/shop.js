@@ -1,4 +1,3 @@
-// Thay đổi thông tin cửa hàng tại đây; không gắn giao diện với một ngành hàng.
 export const shopConfig = {
   name: "ABC Shop",
   description: "Cửa hàng trực tuyến",

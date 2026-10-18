@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { shopConfig } from "../constants/shop";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Alert, Button, Form, Input, Tabs, App } from "antd";
+import { Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../hooks/useShop";
 import { api, ApiError } from "../services/api";
 export default function Auth() {
@@ -63,14 +63,6 @@ export default function Auth() {
         <p className="muted">
           {t("Lưu những lựa chọn và theo dõi đơn hàng của bạn.")}
         </p>
-        <Alert
-          type="info"
-          showIcon
-          title={t("Đăng nhập với tài khoản Shop")}
-          description={t(
-            "Thông tin đăng nhập được xác thực trực tiếp với máy chủ.",
-          )}
-        />
         <Tabs
           activeKey={tab}
           onChange={setTab}

@@ -1,5 +1,3 @@
-// Dữ liệu ví dụ trung lập. Thay thế bằng dữ liệu API tại services/productService.js.
-// Mỗi biến thể tự định nghĩa tên, màu, giá, tồn kho, thuộc tính. Không bắt buộc size.
 export const sampleProducts = Array.from({ length: 8 }, (_, i) => {
   const id = i + 1,
     price = [249000, 229000, 459000, 389000, 269000, 489000, 429000, 699000][i];

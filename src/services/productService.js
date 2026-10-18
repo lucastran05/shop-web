@@ -1,5 +1,4 @@
 import { sampleProducts } from "../constants/products";
-// Điểm thay nguồn catalog bằng API khi backend có endpoint sản phẩm.
 export const products = sampleProducts.map((p) => ({
   ...p,
   price: Math.min(...p.variants.map((v) => v.price)),

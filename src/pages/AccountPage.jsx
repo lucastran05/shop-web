@@ -7,7 +7,6 @@ import {
   Input,
   Button,
   App,
-  Alert,
   Tabs,
   Modal,
   Tag,
@@ -204,12 +203,6 @@ function AccountContent() {
   );
   const password = (
     <>
-      <Alert
-        type="info"
-        showIcon
-        title={t("Thay đổi mật khẩu tài khoản")}
-        description={t("Mật khẩu mới sẽ được lưu trực tiếp trên máy chủ.")}
-      />
       <Form
         form={passwordForm}
         layout="vertical"

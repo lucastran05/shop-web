@@ -6,7 +6,6 @@ import {
   InputNumber,
   Radio,
   Button,
-  Alert,
   Empty,
   Steps,
   App,
@@ -356,12 +355,6 @@ export default function Checkout() {
         </Result>
       ) : (
         <>
-          <Alert
-            type="info"
-            showIcon
-            title={t("Đơn hàng được xác nhận qua hệ thống")}
-            description={t("Giá và phương thức thanh toán sẽ được xác nhận từ máy chủ.")}
-          />
           <div className="two-column">
             <section className="panel">
               {step === 0 ? (
@@ -577,7 +570,7 @@ export default function Checkout() {
                   <Button
                     onClick={() => {
                       message.info(
-                        t("Mã giảm giá sẽ được máy chủ xác thực khi đặt hàng"),
+                        t("Mã giảm giá sẽ được áp dụng khi xác nhận đặt hàng"),
                       );
                     }}
                   >

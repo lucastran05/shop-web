@@ -1,5 +1,3 @@
-// Cấu hình Ant Design Theme Tokens
-// Giúp đồng bộ giao diện toàn trang web theo tông màu nhận diện của shop
 export const antThemeConfig = {
   token: {
     colorPrimary: '#1677ff',       // Màu chủ đạo (Primary color)

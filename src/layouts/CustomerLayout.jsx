@@ -7,7 +7,6 @@ import {
   Dropdown,
   Drawer,
   Empty,
-  Tag,
   Space,
   Popover,
   Tooltip,
@@ -239,7 +238,6 @@ export default function CustomerLayout() {
           </Space.Compact>
         }
       >
-        <Tag color="gold">{t("Mô phỏng — chưa có nhân viên trực tuyến")}</Tag>
         <div className="chat-log">
           <p className="bubble">
             {t("Chào bạn! Shop có thể hỗ trợ gì cho bạn?")}

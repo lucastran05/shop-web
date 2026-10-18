@@ -13,7 +13,6 @@ import {
   Descriptions,
   Table,
   Timeline,
-  Alert,
 } from "antd";
 import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
@@ -246,12 +245,6 @@ export default function Orders() {
         okButtonProps={{ danger: true }}
       >
         <p>{t("Chỉ có thể hủy khi shop chưa xác nhận đơn.")}</p>
-        <Alert
-          type="info"
-          title={t(
-            "Đây là đơn demo, chưa có giao dịch tiền thật hay hoàn tiền tự động.",
-          )}
-        />
       </Modal>
     </div>
   );

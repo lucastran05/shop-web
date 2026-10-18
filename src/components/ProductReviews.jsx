@@ -6,7 +6,6 @@ import {
   Input,
   Button,
   Empty,
-  Alert,
   Pagination,
   App,
   Image,
@@ -117,7 +116,7 @@ export default function ProductReviews({ productId }) {
     setImages([]);
     form.resetFields();
     setPage(1);
-    message.success(t("Đã lưu đánh giá demo"));
+    message.success(t("Đã lưu đánh giá"));
   }
   return (
     <section className="panel reviews">
@@ -127,11 +126,6 @@ export default function ProductReviews({ productId }) {
         <Rate disabled allowHalf value={Math.round(average * 2) / 2} />
         <span>{t("{{count}} đánh giá", { count: reviews.length })}</span>
       </div>
-      <Alert
-        type="info"
-        showIcon
-        title={t("Đánh giá demo chỉ lưu trên trình duyệt này")}
-      />
       {s.user ? (
         <Form
           form={form}
