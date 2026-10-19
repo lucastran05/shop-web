@@ -1,3 +1,4 @@
+import { userError } from "../../utils/userError";
 import { useState } from "react";
 import { App, Image, Input, Space, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
@@ -44,7 +45,9 @@ export default function ProductImageInput({
       onChange?.(url);
       message.success("Đã tải ảnh sản phẩm");
     } catch (error) {
-      message.error(error.message || "Không tải được ảnh. Vui lòng thử lại.");
+      message.error(
+        userError(error) || "Không tải được ảnh. Vui lòng thử lại.",
+      );
     } finally {
       setLoading(false);
       onLoadingChange?.(false);

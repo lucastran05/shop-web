@@ -94,15 +94,15 @@ try {
 ```
 
 Các biến `email`, `password`, `name`, `phone` lấy từ form của ứng dụng.
-Frontend hiện tại vẫn dùng các context/catalog demo cũ. Lớp API mới có thể import
-trực tiếp từ JS/JSX qua Vite, nhưng thay nguồn dữ liệu toàn bộ UI là bước tích hợp
-riêng; thêm services không tự thay đổi các màn hình hiện có.
+Catalog, danh sách quản trị và dữ liệu tài khoản đọc từ backend. Danh sách rỗng
+hiển thị trạng thái trống; không lấy lại dữ liệu nghiệp vụ demo trong localStorage.
 
 ## Xác thực và request đồng thời
 
-- Token lưu trong bộ nhớ, mất khi tải lại trang. Nếu ứng dụng có cơ chế khôi phục
-  phiên, truyền cặp token đã khôi phục vào `api.http.setTokens(tokens)` rồi gọi
-  `api.auth.getProfile()`. `register` giữ đúng response; chỉ `login` tự lưu token.
+- Instance dùng trong trình duyệt lưu token vào localStorage và cập nhật khi refresh.
+  Khi tải lại trang, ShopProvider kiểm tra `/me` trước khi mở các trang cần đăng nhập.
+  Role hiển thị lấy từ backend; dữ liệu user cũ trong trình duyệt không cấp quyền quản trị.
+  Logout, đổi mật khẩu và phiên hết hiệu lực xóa token đã lưu.
 - Tạo instance khác bằng `createApi({ baseURL })` nếu khách hàng và quản trị viên
   đăng nhập đồng thời; không dùng chung token giữa hai tài khoản.
 - Khi request mang access token gặp 401, client gọi
@@ -196,10 +196,9 @@ Các điểm sau là giới hạn backend hiện hữu, chưa được sửa b�
    Handler còn có nhánh tạo URL ảnh mẫu. Các service gửi file thật theo docs,
    không gọi nhánh JSON để tạo URL giả. Backend cần middleware upload và lưu file
    thật trước khi luồng upload này hoạt động đúng end-to-end.
-2. **ADP02/04/05:** route quản trị dùng `:product_id`, trong khi controller đọc
-   `req.params.id`. Request service đúng endpoint `/admin/products/:id` nhưng
-   backend có thể trả 404. Backend cần thống nhất tên tham số. `image_ids` khi
-   tạo/sửa sản phẩm cũng chưa được controller liên kết vào images.
+2. **ADP02/04/05:** controller sản phẩm đã nhận cả `product_id` và `id` để khớp
+   các route hiện có. `image_ids` khi tạo/sửa sản phẩm chưa được backend liên kết
+   vào images; form quản trị gửi danh sách `images` chứa URL thật.
 3. **Tỷ lệ cọc và enums:** ví dụ Markdown dùng `0.3` và `vietqr/momo`; repository
    báo giá thật trả `allowed_deposit_rates = [20, 50, 70]` cùng
    `cod/bank_transfer/qr/card`. `deposit_rate` giữ kiểu number và nguyên giá trị;

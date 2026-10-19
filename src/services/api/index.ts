@@ -1,8 +1,18 @@
 import { createApi } from "./create-api";
+import { createSessionStore } from "./session-store";
+
+const sessionStore = (() => {
+  try {
+    return createSessionStore(window.localStorage);
+  } catch {
+    return undefined;
+  }
+})();
 
 export const api = createApi({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
   timeoutMs: Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000),
+  ...(sessionStore ? { tokenStore: sessionStore } : {}),
 });
 
 export * from "./create-api";

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Card, Tag } from "antd";
+import { Card, Tag, Empty } from "antd";
 import { PushpinOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { money } from "../utils/format";
 export default function ProductCard({ p }) {
@@ -11,7 +11,11 @@ export default function ProductCard({ p }) {
         hoverable
         cover={
           <div className="product-image">
-            <img src={p.image} alt={p.name} loading="lazy" />
+            {p.image ? (
+              <img src={p.image} alt={p.name} loading="lazy" />
+            ) : (
+              <Empty description={t("Chưa có ảnh sản phẩm")} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            )}
             <div className="product-tags">
               {!p.stock ? (
                 <Tag>{t("Hết hàng")}</Tag>

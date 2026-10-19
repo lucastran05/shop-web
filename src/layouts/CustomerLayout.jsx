@@ -10,6 +10,8 @@ import {
   Space,
   Popover,
   Tooltip,
+  App,
+  Alert,
 } from "antd";
 import {
   ShoppingOutlined,
@@ -23,6 +25,8 @@ import { useShopConfig } from "../hooks/useShopConfig";
 import { usePreferences } from "../hooks/usePreferences";
 import { formatDateTime } from "../utils/format";
 import HeaderSearch from "../components/HeaderSearch";
+import { userError } from "../utils/userError";
+import { usePolling } from "../hooks/usePolling";
 export default function CustomerLayout() {
   const { t } = useTranslation(),
     shopConfig = useShopConfig(),
@@ -30,10 +34,29 @@ export default function CustomerLayout() {
     navigate = useNavigate(),
     location = useLocation(),
     { timeZone } = usePreferences();
+  const { message } = App.useApp();
+  const perform = async (action) => {
+    try {
+      return await action();
+    } catch (error) {
+      message.error(t(userError(error)));
+    }
+  };
   const [chat, setChat] = useState(false),
     [notice, setNotice] = useState(false),
     [draft, setDraft] = useState(""),
     chatEnd = useRef(null);
+  const [chatError, setChatError] = useState(null);
+  usePolling(
+    async () => {
+      await s.refreshMessages();
+      setChatError(null);
+    },
+    {
+      enabled: chat && !!s.user,
+      onError: (error) => setChatError(t(userError(error))),
+    },
+  );
   const notices = s.notifications.filter((n) => n.owner === s.user?.email),
     messages = s.messages.filter((n) => n.owner === s.user?.email);
   useEffect(() => {
@@ -44,11 +67,14 @@ export default function CustomerLayout() {
       { key: "account", label: t("Tài khoản của tôi") },
       { key: "orders", label: t("Đơn mua") },
       { key: "settings", label: t("Cài đặt") },
+      ...(s.user?.role === "admin" && s.user.is_active !== false
+        ? [{ key: "management", label: t("Quản lý") }]
+        : []),
       { key: "logout", label: t("Đăng xuất"), danger: true },
     ],
-    onClick: ({ key }) => {
+    onClick: async ({ key }) => {
       if (key === "logout") {
-        s.setUser(null);
+        await perform(s.logout);
         setChat(false);
         setNotice(false);
         setDraft("");
@@ -56,18 +82,12 @@ export default function CustomerLayout() {
       } else navigate("/" + key);
     },
   };
-  function send() {
+  async function send() {
     if (!draft.trim() || !s.user) return;
-    s.setMessages((old) => [
-      ...old,
-      {
-        id: crypto.randomUUID(),
-        owner: s.user.email,
-        text: draft.trim(),
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-    setDraft("");
+    await perform(async () => {
+      await s.sendMessage(draft.trim());
+      setDraft("");
+    });
   }
   const notificationContent = (
     <div className="notification-dropdown">
@@ -78,9 +98,7 @@ export default function CustomerLayout() {
               className="notice"
               key={n.id}
               onClick={() => {
-                s.setNotifications((old) =>
-                  old.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
-                );
+                perform(() => s.readNotification(n.id));
                 setNotice(false);
                 navigate("/orders");
               }}
@@ -96,16 +114,7 @@ export default function CustomerLayout() {
           <Empty description={t("Chưa có thông báo")} />
         )}
       </div>
-      <Button
-        type="link"
-        onClick={() =>
-          s.setNotifications((old) =>
-            old.map((n) =>
-              n.owner === s.user?.email ? { ...n, read: true } : n,
-            ),
-          )
-        }
-      >
+      <Button type="link" onClick={() => perform(s.readAllNotifications)}>
         {t("Đánh dấu tất cả đã đọc")}
       </Button>
     </div>
@@ -124,6 +133,11 @@ export default function CustomerLayout() {
         </nav>
         <HeaderSearch />
         <div className="header-actions">
+          {s.user?.role === "admin" && s.user.is_active !== false && (
+            <Button onClick={() => navigate("/management")}>
+              {t("Quản lý")}
+            </Button>
+          )}
           {s.user ? (
             <>
               <Popover
@@ -212,7 +226,10 @@ export default function CustomerLayout() {
             shape="circle"
             icon={<MessageOutlined />}
             aria-label={t("Chat với shop")}
-            onClick={() => setChat(true)}
+            onClick={() => {
+              setChat(true);
+              perform(s.openChat);
+            }}
           />
         </Tooltip>
       )}
@@ -239,11 +256,13 @@ export default function CustomerLayout() {
         }
       >
         <div className="chat-log">
-          <p className="bubble">
-            {t("Chào bạn! Shop có thể hỗ trợ gì cho bạn?")}
-          </p>
+          {chatError && <Alert type="error" showIcon title={chatError} />}
+          {!messages.length && <Empty description={t("Chưa có tin nhắn")} />}
           {messages.map((m) => (
-            <div className="bubble mine" key={m.id}>
+            <div
+              className={m.from === "shop" ? "bubble" : "bubble mine"}
+              key={m.id}
+            >
               <p>{m.text}</p>
               {m.createdAt && (
                 <time dateTime={m.createdAt}>

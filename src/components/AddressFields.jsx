@@ -1,3 +1,4 @@
+import { userError } from "../utils/userError";
 import { Alert, Form, Input, Select } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,7 +27,7 @@ export default function AddressFields({ form }) {
         if (active)
           setError(
             cause instanceof ApiError
-              ? cause.message
+              ? userError(cause)
               : t("Không thể tải danh sách tỉnh/thành phố"),
           );
       })
@@ -54,7 +55,7 @@ export default function AddressFields({ form }) {
         if (active)
           setError(
             cause instanceof ApiError
-              ? cause.message
+              ? userError(cause)
               : t("Không thể tải danh sách phường/xã"),
           );
       })

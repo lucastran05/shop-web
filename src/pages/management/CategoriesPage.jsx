@@ -3,6 +3,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { App, Form, Input, Modal, Popconfirm, Space, Table } from "antd";
 import { useManagement } from "../../hooks/useManagement";
+import { userError } from "../../utils/userError";
 
 export default function CategoriesPage() {
   const s = useManagement(),
@@ -17,25 +18,29 @@ export default function CategoriesPage() {
     form.setFieldsValue({ name: name || "" });
     setOpen(true);
   }
-  function remove(names) {
+  async function remove(names) {
     if (s.products.some((p) => names.includes(p.category)))
       return message.error(
         "Danh mục đang có sản phẩm, hãy chuyển sản phẩm trước khi xóa.",
       );
-    s.setCategories((old) => old.filter((c) => !names.includes(c)));
+    try {
+      await s.removeCategories(names);
+    } catch (error) {
+      message.error(userError(error));
+      return;
+    }
     setSelected([]);
   }
-  function save({ name }) {
+  async function save({ name }) {
     name = name.trim();
     if (s.categories.includes(name) && name !== editing)
       return message.error("Tên danh mục đã tồn tại");
-    s.setCategories((old) =>
-      editing ? old.map((c) => (c === editing ? name : c)) : [...old, name],
-    );
-    if (editing)
-      s.setProducts((old) =>
-        old.map((p) => (p.category === editing ? { ...p, category: name } : p)),
-      );
+    try {
+      await s.saveCategory(name, editing);
+    } catch (error) {
+      message.error(userError(error));
+      return;
+    }
     setSelected([]);
     setOpen(false);
   }

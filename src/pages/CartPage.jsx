@@ -4,6 +4,7 @@ import { Button, Checkbox, InputNumber, Empty, App } from "antd";
 import { DeleteOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
+import { userError } from "../utils/userError";
 export default function Cart() {
   const { t } = useTranslation();
   const { items, setCart, user } = useShop(),
@@ -11,8 +12,10 @@ export default function Cart() {
     { message } = App.useApp();
   const selected = items.filter((x) => x.selected),
     total = selected.reduce((n, p) => n + p.price * p.quantity, 0);
+  const saveCart = (update) =>
+    setCart(update).catch((error) => message.error(t(userError(error))));
   const patch = (key, data) =>
-    setCart((old) => old.map((x) => (x.key === key ? { ...x, ...data } : x)));
+    saveCart((old) => old.map((x) => (x.key === key ? { ...x, ...data } : x)));
   if (!user) return <Navigate to="/login?next=/cart" replace />;
   return (
     <div className="page">
@@ -35,7 +38,7 @@ export default function Cart() {
               }
               checked={selected.length === items.length}
               onChange={(e) =>
-                setCart((old) =>
+                saveCart((old) =>
                   old.map((x) => ({ ...x, selected: e.target.checked })),
                 )
               }
@@ -73,7 +76,7 @@ export default function Cart() {
                   type="text"
                   icon={<DeleteOutlined />}
                   onClick={() =>
-                    setCart((old) => old.filter((x) => x.key !== p.key))
+                    saveCart((old) => old.filter((x) => x.key !== p.key))
                   }
                 />
               </div>

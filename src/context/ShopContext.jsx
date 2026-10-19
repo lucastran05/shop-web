@@ -1,12 +1,18 @@
-import { expireOrders } from "../utils/orderLifecycle";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Context } from "./shop";
-import { useSaved } from "../hooks/useSaved";
+import { Button, Result, Spin } from "antd";
+import { userError } from "../utils/userError";
+import {
+  listAll,
+  mapMessage,
+  mapOrder,
+  mapShop,
+} from "../services/viewAdapters";
 import { shopConfig } from "../constants/shop";
 import { api } from "../services/api";
 import { mapProductSummary } from "../services/productAdapter";
 export function ShopProvider({ children }) {
-  const [shopInfo, setShopInfo] = useSaved("shop-info", {
+  const [shopInfo, setShopInfo] = useState({
     name: shopConfig.name,
     description: shopConfig.description,
     contact: shopConfig.contact,
@@ -14,22 +20,75 @@ export function ShopProvider({ children }) {
   useEffect(() => {
     document.title = shopInfo.name || shopConfig.name;
   }, [shopInfo.name]);
-  const [user, setUser] = useState(null),
-    [orders, setOrders] = useSaved("orders", []),
-    [messages, setMessages] = useSaved("chat", []),
-    [notifications, setNotifications] = useSaved("notifications", []),
-    [profiles, setProfiles] = useSaved("profiles", {}),
-    [reviews, setReviews] = useSaved("reviews", []);
+  const [user, setUser] = useState(null);
+  const chatUser = useRef(null);
+  useEffect(() => {
+    chatUser.current = user?.id;
+    return () => {
+      chatUser.current = null;
+    };
+  }, [user?.id]);
+  const [orders, setOrders] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [sessionError, setSessionError] = useState(null);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+  const [conversationId, setConversationId] = useState(null);
+  useEffect(() => api.http.onSessionCleared(() => setUser(null)), []);
+  useEffect(() => {
+    let active = true;
+    setAuthLoading(true);
+    setSessionError(null);
+    if (!api.http.hasSession()) {
+      setUser(null);
+      setAuthLoading(false);
+      return;
+    }
+    api.auth
+      .getProfile()
+      .then(({ data }) => {
+        if (active) setUser(data);
+      })
+      .catch((error) => {
+        if (!active) return;
+        if ([401, 403].includes(error.status) || !api.http.hasSession()) {
+          api.http.clearTokens();
+          setUser(null);
+        } else setSessionError(error);
+      })
+      .finally(() => {
+        if (active) setAuthLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [sessionAttempt]);
+  useEffect(() => {
+    let active = true;
+    api.shop
+      .get()
+      .then(({ data }) => {
+        if (active) setShopInfo(mapShop(data));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState(null);
   useEffect(() => {
     let active = true;
-    Promise.all([api.products.list({ page: 1, limit: 100 }), api.products.categories()])
+    Promise.all([
+      listAll((query) => api.products.list(query)),
+      api.products.categories(),
+    ])
       .then(([productResponse, categoryResponse]) => {
         if (!active) return;
-        setProducts(productResponse.data.map(mapProductSummary));
+        setProducts(productResponse.map(mapProductSummary));
         setCategories(categoryResponse.data);
         setCatalogError(null);
       })
@@ -45,28 +104,115 @@ export function ShopProvider({ children }) {
       active = false;
     };
   }, []);
+  async function refreshOrders() {
+    const rows = await listAll((query) => api.orders.list(query));
+    const detailed = await Promise.all(
+      rows.map((row) => api.orders.get(row.id)),
+    );
+    const next = detailed.map(({ data }) => mapOrder(data, user?.email));
+    setOrders(next);
+    return next;
+  }
+  async function refreshNotifications() {
+    const rows = await listAll((query) =>
+      api.chatAndNotifications.notifications(query),
+    );
+    setNotifications(
+      rows.map((item) => ({
+        ...item,
+        owner: user?.email,
+        text: item.content,
+        read: item.is_read,
+        createdAt: item.created_at,
+      })),
+    );
+  }
   useEffect(() => {
-    const expire = () => setOrders((old) => expireOrders(old));
-    expire();
-    const timer = setInterval(expire, 1000);
-    window.addEventListener("focus", expire);
+    let active = true;
+    setOrders([]);
+    setNotifications([]);
+    setMessages([]);
+    setConversationId(null);
+    if (!user?.id) return;
+    listAll((query) => api.orders.list(query))
+      .then((rows) => Promise.all(rows.map((row) => api.orders.get(row.id))))
+      .then((rows) => {
+        if (active)
+          setOrders(rows.map(({ data }) => mapOrder(data, user.email)));
+      })
+      .catch(() => {});
+    listAll((query) => api.chatAndNotifications.notifications(query))
+      .then((rows) => {
+        if (active)
+          setNotifications(
+            rows.map((item) => ({
+              ...item,
+              owner: user.email,
+              text: item.content,
+              read: item.is_read,
+              createdAt: item.created_at,
+            })),
+          );
+      })
+      .catch(() => {});
     return () => {
-      clearInterval(timer);
-      window.removeEventListener("focus", expire);
+      active = false;
     };
-  }, [setOrders]);
-  function notify(key, params = {}) {
-    setNotifications((old) => [
-      {
-        id: crypto.randomUUID(),
-        key,
-        params,
-        createdAt: new Date().toISOString(),
-        read: false,
-        owner: user.email,
-      },
-      ...old,
-    ]);
+  }, [user?.id, user?.email]);
+  async function openChat() {
+    if (!user) return;
+    const userId = user.id;
+    const { data } = await api.chatAndNotifications.openConversation();
+    if (chatUser.current !== userId) return;
+    setConversationId(data.id);
+    const { data: rows } = await api.chatAndNotifications.messages(data.id, {
+      limit: 100,
+    });
+    if (chatUser.current === userId)
+      setMessages(rows.map((item) => mapMessage(item, user.email)));
+    return data.id;
+  }
+  async function sendMessage(content) {
+    if (!user) return;
+    const userId = user.id;
+    const id = conversationId || (await openChat());
+    if (!id || chatUser.current !== userId) return;
+    const { data } = await api.chatAndNotifications.sendMessage(id, {
+      content,
+      client_message_id: crypto.randomUUID(),
+    });
+    if (chatUser.current === userId)
+      setMessages((old) =>
+        old.some((item) => item.id === data.id)
+          ? old
+          : [...old, mapMessage(data, user.email)],
+      );
+  }
+  async function refreshMessages() {
+    if (!conversationId || !user) return;
+    const { data: rows } = await api.chatAndNotifications.messages(
+      conversationId,
+      { limit: 100 },
+    );
+    if (chatUser.current !== user.id) return;
+    setMessages((old) => {
+      const byId = new Map(old.map((item) => [item.id, item]));
+      for (const item of rows) byId.set(item.id, mapMessage(item, user.email));
+      return [...byId.values()].sort(
+        (a, b) =>
+          a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
+      );
+    });
+  }
+  async function readNotification(id) {
+    await api.chatAndNotifications.readNotification(id);
+    setNotifications((old) =>
+      old.map((item) => (item.id === id ? { ...item, read: true } : item)),
+    );
+  }
+  async function readAllNotifications() {
+    await api.chatAndNotifications.readAllNotifications();
+    setNotifications((old) => old.map((item) => ({ ...item, read: true })));
   }
   function updateProfile(values) {
     return api.auth
@@ -152,7 +298,9 @@ export function ShopProvider({ children }) {
     return api.cart
       .update(id, { quantity: patch.quantity })
       .then((response) => {
-        const selected = new Map(items.map((item) => [item.key, item.selected]));
+        const selected = new Map(
+          items.map((item) => [item.key, item.selected]),
+        );
         setItems(
           setItemsFromServer(response).map((item) => ({
             ...item,
@@ -162,21 +310,21 @@ export function ShopProvider({ children }) {
       });
   }
   function removeCartItem(id) {
-    return api.cart
-      .remove(id)
-      .then((response) => {
-        const selected = new Map(items.map((item) => [item.key, item.selected]));
-        setItems(
-          setItemsFromServer(response).map((item) => ({
-            ...item,
-            selected: selected.get(item.key) ?? true,
-          })),
-        );
-      });
+    return api.cart.remove(id).then((response) => {
+      const selected = new Map(items.map((item) => [item.key, item.selected]));
+      setItems(
+        setItemsFromServer(response).map((item) => ({
+          ...item,
+          selected: selected.get(item.key) ?? true,
+        })),
+      );
+    });
   }
   function setCart(update) {
     const next = typeof update === "function" ? update(items) : update;
-    const removed = items.filter((item) => !next.some((x) => x.key === item.key));
+    const removed = items.filter(
+      (item) => !next.some((x) => x.key === item.key),
+    );
     const changed = next.filter((item) => {
       const previous = items.find((x) => x.key === item.key);
       return previous && previous.quantity !== item.quantity;
@@ -198,6 +346,19 @@ export function ShopProvider({ children }) {
       ...changed.map((item) => updateCartItem(item.key, item)),
     ]);
   }
+  if (authLoading) return <Spin fullscreen />;
+  if (sessionError)
+    return (
+      <Result
+        status="warning"
+        title={userError(sessionError)}
+        extra={
+          <Button onClick={() => setSessionAttempt((value) => value + 1)}>
+            Thử lại
+          </Button>
+        }
+      />
+    );
   return (
     <Context.Provider
       value={{
@@ -223,11 +384,14 @@ export function ShopProvider({ children }) {
         setMessages,
         notifications,
         setNotifications,
-        notify,
-        profiles,
+        refreshOrders,
+        refreshNotifications,
+        openChat,
+        sendMessage,
+        refreshMessages,
+        readNotification,
+        readAllNotifications,
         updateProfile,
-        reviews,
-        setReviews,
       }}
     >
       {children}

@@ -11,6 +11,7 @@ import {
   Dropdown,
   Segmented,
   Tag,
+  Alert,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -27,6 +28,9 @@ import {
   MessageOutlined,
 } from "@ant-design/icons";
 import { useManagement } from "../../hooks/useManagement";
+import { App } from "antd";
+import { userError } from "../../utils/userError";
+import { usePolling } from "../../hooks/usePolling";
 
 const quickReplies = [
   {
@@ -60,9 +64,21 @@ function timeOf(value) {
 }
 export default function MessagesPage() {
   const s = useManagement();
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [modal, modalContext] = Modal.useModal();
   const [filter, setFilter] = useState("all");
+  const [chatError, setChatError] = useState(null);
+  usePolling(
+    async () => {
+      await s.refreshMessages();
+      setChatError(null);
+    },
+    {
+      enabled: !!s.session,
+      onError: (error) => setChatError(userError(error)),
+    },
+  );
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState(null),
     [query, setQuery] = useState(""),
@@ -101,7 +117,9 @@ export default function MessagesPage() {
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   );
-  const owner = visibleConversations.some((c) => c.owner === selected)
+  const owner = conversations.some(
+    (c) => c.owner === selected && !c.preference.hidden,
+  )
     ? selected
     : visibleConversations[0]?.owner;
   function removeConversation(target) {
@@ -152,17 +170,43 @@ export default function MessagesPage() {
   const messages = s.messages.filter((m) => m.owner === owner);
   const draft = drafts[owner] || "";
   const unread = conversations.find((c) => c.owner === owner)?.unread || 0;
+  const markReadRef = useRef(s.markRead);
+  useEffect(() => {
+    markReadRef.current = s.markRead;
+  }, [s.markRead]);
+  const incomingIds = messages
+    .filter((item) => item.from !== "shop")
+    .map((item) => item.id)
+    .join(",");
+  useEffect(() => {
+    if (!selected || selected !== owner) return;
+    const readVisibleMessages = () => {
+      if (!document.hidden) markReadRef.current(owner);
+    };
+    readVisibleMessages();
+    window.addEventListener("focus", readVisibleMessages);
+    document.addEventListener("visibilitychange", readVisibleMessages);
+    return () => {
+      window.removeEventListener("focus", readVisibleMessages);
+      document.removeEventListener("visibilitychange", readVisibleMessages);
+    };
+  }, [selected, owner, incomingIds]);
   useEffect(() => {
     if (log.current) log.current.scrollTop = log.current.scrollHeight;
   }, [owner, s.messages.length]);
-  function send() {
+  async function send() {
     if (!owner || !draft.trim()) return;
-    s.reply(owner, draft.trim());
-    setDrafts((old) => ({ ...old, [owner]: "" }));
+    try {
+      await s.reply(owner, draft.trim());
+      setDrafts((old) => ({ ...old, [owner]: "" }));
+    } catch (error) {
+      message.error(userError(error));
+    }
   }
   return (
     <>
       {modalContext}
+      {chatError && <Alert type="error" showIcon title={chatError} />}
       <div
         className={`mg-messenger ${selected ? "mg-messenger-selected" : ""}`}
       >
@@ -251,7 +295,10 @@ export default function MessagesPage() {
                 <button
                   key={c.owner}
                   className={`mg-conversation ${owner === c.owner ? "active" : ""}`}
-                  onClick={() => setSelected(c.owner)}
+                  onClick={() => {
+                    setSelected(c.owner);
+                    s.markRead(c.owner);
+                  }}
                   aria-pressed={owner === c.owner}
                 >
                   <Badge
@@ -480,7 +527,9 @@ export default function MessagesPage() {
           layout="vertical"
           onFinish={({ email, text }) => {
             const recipient = email.trim().toLowerCase();
-            s.reply(recipient, text.trim());
+            s.reply(recipient, text.trim()).catch((error) =>
+              message.error(userError(error)),
+            );
             setSelected(recipient);
             setQuery("");
             setFilter("all");

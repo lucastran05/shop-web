@@ -5,12 +5,12 @@ import { useState } from "react";
 import { App, Form, Input, InputNumber, Modal, Table, Tag } from "antd";
 import { useManagement } from "../../hooks/useManagement";
 import {
-  adjustStock,
   filterInventory,
   stockStatus,
   isLowStock,
 } from "../../utils/management";
 import BulkActions from "../../components/management/BulkActions";
+import { userError } from "../../utils/userError";
 
 export default function InventoryPage() {
   const s = useManagement(),
@@ -43,26 +43,18 @@ export default function InventoryPage() {
     ),
     { query, status },
   );
-  function save({ delta, reason }) {
+  async function save({ delta, reason }) {
     try {
-      s.setProducts(
-        adjustStock(s.products, editing.productId, editing.id, delta),
-      );
-      s.setStockHistory((old) => [
-        {
-          id: crypto.randomUUID(),
-          product: editing.product,
-          variant: editing.label,
-          delta,
-          reason: reason.trim(),
-          at: new Date().toISOString(),
-        },
-        ...old,
-      ]);
+      await s.adjustInventory({
+        product_id: editing.productId,
+        variant_id: editing.id,
+        delta,
+        reason: reason.trim(),
+      });
       setEditing(null);
       message.success("Đã điều chỉnh tồn kho");
     } catch (e) {
-      message.error(e.message);
+      message.error(userError(e));
     }
   }
   return (

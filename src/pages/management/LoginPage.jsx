@@ -1,3 +1,4 @@
+import { userError } from "../../utils/userError";
 import Button from "../../components/management/ManagementButton";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { App, Form, Input } from "antd";
@@ -5,7 +6,7 @@ import { ShopOutlined } from "@ant-design/icons";
 import { useShopConfig } from "../../hooks/useShopConfig";
 import { useManagement } from "../../hooks/useManagement";
 import { useState } from "react";
-import { api, ApiError } from "../../services/api";
+import { api } from "../../services/api";
 export default function LoginPage() {
   const shopConfig = useShopConfig();
   const s = useManagement(),
@@ -30,15 +31,10 @@ export default function LoginPage() {
         message.error("Tài khoản đã bị khóa.");
         return;
       }
-      s.setUsers((users) => [
-        ...users.filter((user) => user.id !== data.user.id),
-        { ...data.user, active: data.user.is_active },
-      ]);
-      s.setSession({ id: data.user.id });
+      await s.setSession({ id: data.user.id });
       navigate("/management", { replace: true });
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     } finally {
       setLoading(false);
     }

@@ -267,5 +267,10 @@
   "Tổng tiền hàng": "Items total",
   "Số tiền phải thanh toán": "Total amount payable",
   "Đã lưu đánh giá": "Review saved",
-  "Mã giảm giá sẽ được áp dụng khi xác nhận đặt hàng": "The discount code will be applied when you confirm the order"
+  "Mã giảm giá sẽ được áp dụng khi xác nhận đặt hàng": "The discount code will be applied when you confirm the order",
+  "Quản lý": "Management",
+  "Chưa có tin nhắn": "No messages yet",
+  "Có lỗi xảy ra. Vui lòng thử lại sau.": "Something went wrong. Please try again later.",
+  "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.": "Your session has expired. Please sign in again.",
+  "Bạn không có quyền thực hiện thao tác này.": "You do not have permission to perform this action."
 }

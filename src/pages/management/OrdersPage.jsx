@@ -1,4 +1,4 @@
-import BulkSelectAll from "../../components/management/BulkSelectAll";
+import { userError } from "../../utils/userError";
 import Button from "../../components/management/ManagementButton";
 import {
   orderColumns,
@@ -24,14 +24,12 @@ import {
   transitionOrder,
 } from "../../utils/management";
 import { money } from "../../utils/format";
-import BulkActions from "../../components/management/BulkActions";
 
 export default function OrdersPage() {
   const s = useManagement(),
     { message } = App.useApp(),
     [form] = Form.useForm();
   const [query, setQuery] = useState(""),
-    [selected, setSelected] = useState([]),
     [status, setStatus] = useState(),
     [detailId, setDetailId] = useState(null),
     [mode, setMode] = useState("view");
@@ -56,7 +54,7 @@ export default function OrdersPage() {
       note: detail.note || "",
     });
   }, [detail, mode, form]);
-  function save(values) {
+  async function save(values) {
     try {
       const next = values.status
         ? transitionOrder(detail, values.status, values)
@@ -75,11 +73,11 @@ export default function OrdersPage() {
         throw new Error(
           "Đơn đang giao cần có đơn vị vận chuyển và mã vận đơn.",
         );
-      s.updateOrder(next);
+      await s.updateOrder(next);
       setDetailId(null);
       message.success("Đã cập nhật đơn hàng");
     } catch (e) {
-      message.error(e.message);
+      message.error(userError(e));
     }
   }
   return (
@@ -100,27 +98,9 @@ export default function OrdersPage() {
             (value) => ({ value }),
           )}
         />
-        <BulkActions
-          keys={rows.map((o) => o.id)}
-          selected={selected}
-          onSelect={setSelected}
-          onDelete={s.deleteOrders}
-          description="Xóa đơn hàng và dòng thanh toán tương ứng. Thao tác không thể hoàn tác."
-        />
       </div>
       <Table
         rowKey="id"
-        rowSelection={{
-          selectedRowKeys: selected,
-          onChange: setSelected,
-          columnTitle: (
-            <BulkSelectAll
-              keys={rows.map((o) => o.id)}
-              selected={selected}
-              onSelect={setSelected}
-            />
-          ),
-        }}
         scroll={{ x: 850 }}
         dataSource={rows}
         columns={[

@@ -1,3 +1,4 @@
+import { userError } from "../utils/userError";
 import { useEffect, useState } from "react";
 import { Alert, QRCode, Result } from "antd";
 import { useTranslation } from "react-i18next";
@@ -10,7 +11,10 @@ export default function PaymentPanel({ order, paymentSession }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!session?.id || ["succeeded", "failed", "expired", "cancelled"].includes(session.status))
+    if (
+      !session?.id ||
+      ["succeeded", "failed", "expired", "cancelled"].includes(session.status)
+    )
       return;
     let active = true;
     const timer = setInterval(() => {
@@ -26,7 +30,7 @@ export default function PaymentPanel({ order, paymentSession }) {
           if (active)
             setError(
               requestError instanceof ApiError
-                ? requestError.message
+                ? userError(requestError)
                 : t("Không thể kiểm tra trạng thái thanh toán"),
             );
         });
@@ -38,13 +42,7 @@ export default function PaymentPanel({ order, paymentSession }) {
   }, [session?.id, session?.status, t]);
 
   if (order.payment_method === "cod")
-    return (
-      <Alert
-        type="info"
-        showIcon
-        title={t("Thanh toán khi nhận hàng")}
-      />
-    );
+    return <Alert type="info" showIcon title={t("Thanh toán khi nhận hàng")} />;
   if (!session)
     return (
       <Alert
@@ -60,13 +58,15 @@ export default function PaymentPanel({ order, paymentSession }) {
       <Result
         status="warning"
         title={t("Phiên thanh toán không còn hiệu lực")}
-        subTitle={session.failure_code || session.status}
+        subTitle={t("Vui lòng thử lại sau.")}
       />
     );
 
   return (
     <section className="payment-panel" aria-label={t("Thanh toán đơn hàng")}>
-      <h3>{t("Thanh toán qua {{provider}}", { provider: session.provider })}</h3>
+      <h3>
+        {t("Thanh toán qua {{provider}}", { provider: session.provider })}
+      </h3>
       <p>
         {t("Số tiền thanh toán")}: <strong>{money(session.amount)}</strong>
       </p>
@@ -87,8 +87,12 @@ export default function PaymentPanel({ order, paymentSession }) {
           </a>
         </p>
       )}
-      <p>{t("Trạng thái")}: {t(session.status)}</p>
-      <p>{t("Hạn thanh toán")}: {new Date(session.expires_at).toLocaleString()}</p>
+      <p>
+        {t("Trạng thái")}: {t(session.status)}
+      </p>
+      <p>
+        {t("Hạn thanh toán")}: {new Date(session.expires_at).toLocaleString()}
+      </p>
       {error && <Alert type="error" showIcon title={error} />}
     </section>
   );

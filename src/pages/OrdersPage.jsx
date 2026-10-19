@@ -17,9 +17,13 @@ import {
 import { useShop } from "../hooks/useShop";
 import { money } from "../utils/format";
 import PaymentPanel from "../components/PaymentPanel";
+import { api } from "../services/api";
+import { App } from "antd";
+import { userError } from "../utils/userError";
 export default function Orders() {
   const { t } = useTranslation();
   const { timeZone } = usePreferences();
+  const { message } = App.useApp();
   const s = useShop(),
     [tab, setTab] = useState("all"),
     [selectedDetail, setDetail] = useState(null),
@@ -29,20 +33,16 @@ export default function Orders() {
   if (!s.user) return <Navigate to="/login?next=/orders" replace />;
   const all = s.orders.filter((o) => o.owner === s.user.email),
     orders = all.filter((o) => tab === "all" || o.status === tab);
-  function cancelOrder() {
-    s.setOrders((old) =>
-      old.map((o) =>
-        o.id === cancel.id && o.status === "Chờ xác nhận"
-          ? {
-              ...o,
-              status: "Đã hủy",
-              depositStatus: o.deposit ? "Hủy cọc" : o.depositStatus,
-            }
-          : o,
-      ),
-    );
-    s.notify("Đơn {{id}} đã hủy.", { id: cancel.id });
-    setCancel(null);
+  async function cancelOrder() {
+    try {
+      await api.orders.cancel(cancel.id, {
+        reason: "Khách hàng yêu cầu hủy đơn",
+      });
+      await s.refreshOrders();
+      setCancel(null);
+    } catch (error) {
+      message.error(t(userError(error)));
+    }
   }
   return (
     <div className="page">
@@ -82,7 +82,7 @@ export default function Orders() {
                 {t("Tổng tiền")}: {money(o.total)}
               </strong>
               <Button onClick={() => setDetail(o)}>{t("Xem chi tiết")}</Button>
-              {o.status === "Chờ xác nhận" && (
+              {o.allowed_actions?.includes("cancel") && (
                 <Button danger onClick={() => setCancel(o)}>
                   {t("Hủy đơn")}
                 </Button>

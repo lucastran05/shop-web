@@ -18,11 +18,23 @@ export function mapProductDetail(product) {
       old_price: product.old_price,
     }),
     images: product.images.map((image) => image.url),
-    variants: product.variants.map((variant) => ({
-      ...variant,
-      oldPrice: variant.old_price,
-      stock: variant.stock_quantity,
-    })),
+    variants: product.variants.length
+      ? product.variants.map((variant) => ({
+          ...variant,
+          oldPrice: variant.old_price,
+          stock: variant.stock_quantity,
+        }))
+      : [
+          {
+            id: "default",
+            label: "Mặc định",
+            color: "",
+            price: product.price,
+            oldPrice: product.old_price,
+            stock: product.stock_quantity,
+            stock_quantity: product.stock_quantity,
+          },
+        ],
     deposit: product.allow_deposit,
     attributes: product.attributes,
   };

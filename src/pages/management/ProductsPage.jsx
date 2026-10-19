@@ -19,7 +19,7 @@ import { useManagement } from "../../hooks/useManagement";
 
 import { money } from "../../utils/format";
 import ProductImageInput from "../../components/management/ProductImageInput";
-import { shopConfig } from "../../constants/shop";
+import { userError } from "../../utils/userError";
 
 export default function ProductsPage() {
   const s = useManagement(),
@@ -53,39 +53,35 @@ export default function ProductsPage() {
     );
     setOpen(true);
   }
-  function save(values) {
+  async function save(values) {
     const p = {
       ...editing,
       ...values,
       id: editing?.id || Date.now(),
-      image: values.image || "/products/1.svg",
-      images: [values.image || "/products/1.svg"],
+      image: values.image || "",
+      images: values.image ? [values.image] : [],
       attributes: editing?.attributes || [],
       variants: values.variants.map((v) => ({
         ...v,
         id: v.id || crypto.randomUUID(),
       })),
     };
-    const next = editing
-      ? s.products.map((x) => (x.id === editing.id ? p : x))
-      : [...s.products, p];
     try {
-      localStorage.setItem(
-        `${shopConfig.storagePrefix}-management-products`,
-        JSON.stringify(next),
-      );
-    } catch {
-      message.error(
-        "Không đủ dung lượng lưu. Hãy chọn ảnh nhỏ hơn hoặc dùng đường dẫn ảnh.",
-      );
+      await s.saveProduct(p, editing?.id);
+    } catch (error) {
+      message.error(userError(error));
       return;
     }
-    s.setProducts(next);
     setOpen(false);
     message.success("Đã lưu sản phẩm");
   }
-  function remove(ids) {
-    s.setProducts((old) => old.filter((p) => !ids.includes(p.id)));
+  async function remove(ids) {
+    try {
+      await s.removeProducts(ids);
+    } catch (error) {
+      message.error(userError(error));
+      return;
+    }
     setSelected([]);
     message.success("Đã xóa sản phẩm");
   }
@@ -164,7 +160,7 @@ export default function ProductsPage() {
                   setPage(1);
                   s.setProducts((old) =>
                     old.map((x) => (x.id === p.id ? { ...x, featured } : x)),
-                  );
+                  ).catch((error) => message.error(userError(error)));
                 }}
               />
             ),

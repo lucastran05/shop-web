@@ -7,6 +7,6 @@ export async function uploadProductImage(blob) {
   });
   const result = await response.json();
   if (!response.ok)
-    throw new Error(result.error || "Không tải được ảnh lên MinIO.");
+    throw new Error("Không tải được ảnh. Vui lòng thử lại sau.");
   return result.url;
 }

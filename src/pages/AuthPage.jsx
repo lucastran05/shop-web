@@ -1,10 +1,11 @@
+import { userError } from "../utils/userError";
 import { useTranslation } from "react-i18next";
 import { shopConfig } from "../constants/shop";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../hooks/useShop";
-import { api, ApiError } from "../services/api";
+import { api } from "../services/api";
 export default function Auth() {
   const { t } = useTranslation();
   const [tab, setTab] = useState("login"),
@@ -31,13 +32,19 @@ export default function Auth() {
           user = (await api.auth.login({ email, password: values.password }))
             .data.user;
         }
-        message.success(t("Đăng ký tài khoản thành công"));
       } else {
-        user = (await api.auth.login({ email, password: values.password }))
-          .data.user;
-        message.success(t("Đăng nhập thành công"));
+        user = (await api.auth.login({ email, password: values.password })).data
+          .user;
       }
+      user = (await api.auth.getProfile()).data;
       setUser(user);
+      message.success(
+        t(
+          tab === "register"
+            ? "Đăng ký tài khoản thành công"
+            : "Đăng nhập thành công",
+        ),
+      );
       const next = params.get("next");
       navigate(
         next && next.startsWith("/") && !next.startsWith("//")
@@ -46,8 +53,7 @@ export default function Auth() {
         { replace: true },
       );
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     } finally {
       setLoading(false);
     }

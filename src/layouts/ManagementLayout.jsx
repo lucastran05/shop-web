@@ -1,7 +1,8 @@
 import Button from "../components/management/ManagementButton";
 import { useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
-import { Avatar, Drawer } from "antd";
+import { Alert, App, Avatar, Drawer, Spin } from "antd";
+import { userError } from "../utils/userError";
 import {
   AppstoreOutlined,
   BarChartOutlined,
@@ -35,6 +36,7 @@ export default function ManagementLayout() {
   const s = useManagement(),
     location = useLocation();
   const [mobile, setMobile] = useState(false);
+  const { message } = App.useApp();
   const pathname = location.pathname.replace(/\/+$/, "");
   const contentClass =
     {
@@ -127,12 +129,24 @@ export default function ManagementLayout() {
               type="text"
               aria-label="Đăng xuất quản trị"
               icon={<LogoutOutlined />}
-              onClick={() => s.setSession(null)}
+              onClick={() =>
+                s
+                  .setSession(null)
+                  .catch((error) => message.error(userError(error)))
+              }
             />
           </div>
         </header>
         <main className={`mg-main ${contentClass}`}>
-          <Outlet />
+          {s.error && (
+            <Alert
+              type="error"
+              showIcon
+              title={s.error}
+              action={<Button onClick={s.refresh}>Thử lại</Button>}
+            />
+          )}
+          {s.loading ? <Spin /> : <Outlet />}
         </main>
       </div>
     </div>

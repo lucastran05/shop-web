@@ -1,4 +1,9 @@
-import { initialProducts } from "../src/constants/management";
+import { sampleProducts } from "./fixtures/products";
+const initialProducts = sampleProducts.map((product) => ({
+  ...product,
+  active: true,
+  depositRate: 20,
+}));
 // @vitest-environment jsdom
 import { beforeAll, afterEach, expect, test, vi } from "vitest";
 import {

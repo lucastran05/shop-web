@@ -3,18 +3,26 @@ import { SaveOutlined } from "@ant-design/icons";
 import Button from "../../components/management/ManagementButton";
 import { useShop } from "../../hooks/useShop";
 import { useShopConfig } from "../../hooks/useShopConfig";
+import { api } from "../../services/api";
+import { mapShop } from "../../services/viewAdapters";
+import { userError } from "../../utils/userError";
 
 export default function SettingsPage() {
   const { setShopInfo } = useShop();
   const config = useShopConfig();
   const { message } = App.useApp();
-  function save(values) {
-    setShopInfo({
-      ...values,
-      name: values.name.trim(),
-      contact: { ...config.contact, ...values.contact },
-    });
-    message.success("Đã lưu thông tin cửa hàng");
+  async function save(values) {
+    try {
+      const { data } = await api.adminSettingsShop.update({
+        ...values,
+        name: values.name.trim(),
+        contact: { ...values.contact, map_url: values.contact.mapUrl },
+      });
+      setShopInfo(mapShop(data));
+      message.success("Đã lưu thông tin cửa hàng");
+    } catch (error) {
+      message.error(userError(error));
+    }
   }
   return (
     <Card className="mg-settings" title="Thông tin cửa hàng">

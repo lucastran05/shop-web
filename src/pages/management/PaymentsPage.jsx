@@ -12,6 +12,8 @@ import { useManagement } from "../../hooks/useManagement";
 
 import { money } from "../../utils/format";
 import BulkActions from "../../components/management/BulkActions";
+import { api } from "../../services/api";
+import { userError } from "../../utils/userError";
 
 export default function PaymentsPage() {
   const s = useManagement(),
@@ -27,59 +29,54 @@ export default function PaymentsPage() {
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
-  function confirm() {
+  async function confirm() {
     const order = s.orders.find((o) => o.id === action.id);
     if (!order) return;
-    if (action.type === "note") {
-      s.updateOrder({ ...order, paymentNote: note.trim() });
+    try {
+      if (action.type === "note") {
+        await s.updateOrder({ ...order, note: note.trim() });
+        setAction(null);
+        message.success("Đã lưu ghi chú thanh toán");
+        return;
+      }
+      if (action.type === "refund") {
+        if (!["Đã hủy", "Hoàn hàng"].includes(order.status) || !order.paid)
+          return message.error("Đơn hàng không đủ điều kiện hoàn tiền.");
+        await api.adminPayments.refund(
+          order.id,
+          {
+            amount: order.paid - (order.refunded || 0),
+            reason: note.trim() || "Hoàn tiền đơn hàng",
+            transaction_reference: crypto.randomUUID(),
+          },
+          { idempotencyKey: crypto.randomUUID() },
+        );
+      } else {
+        if (["Đã hủy", "Hoàn hàng", "Hoàn tiền"].includes(order.status))
+          return message.error("Không thể xác nhận thanh toán cho đơn này.");
+        const paid =
+          action.type === "deposit"
+            ? Math.max(order.paid || 0, order.deposit || 0)
+            : order.total;
+        const amount = paid - (order.paid || 0);
+        if (amount <= 0) return;
+        await api.adminPayments.confirm(
+          order.id,
+          {
+            kind: action.type === "deposit" ? "deposit" : "full",
+            amount,
+            note: note.trim(),
+            transaction_reference: crypto.randomUUID(),
+          },
+          { idempotencyKey: crypto.randomUUID() },
+        );
+      }
+      await s.loadOrders();
       setAction(null);
-      message.success("Đã lưu ghi chú thanh toán");
-      return;
+      message.success("Đã lưu xác nhận");
+    } catch (error) {
+      message.error(userError(error));
     }
-    if (action.type === "refund") {
-      if (!["Đã hủy", "Hoàn hàng"].includes(order.status) || !order.paid)
-        return message.error("Đơn hàng không đủ điều kiện hoàn tiền.");
-      s.updateOrder({
-        ...order,
-        paymentNote: note.trim(),
-        status: "Hoàn tiền",
-        refunded: order.paid,
-        paid: 0,
-        remaining: 0,
-        paymentStatus: "Đã hoàn tiền",
-        history: [
-          ...(order.history || []),
-          {
-            at: new Date().toISOString(),
-            text: `Hoàn tiền ${money(order.paid)}`,
-          },
-        ],
-      });
-    } else {
-      if (["Đã hủy", "Hoàn hàng", "Hoàn tiền"].includes(order.status))
-        return message.error("Không thể xác nhận thanh toán cho đơn này.");
-      const paid =
-        action.type === "deposit"
-          ? Math.max(order.paid || 0, order.deposit || 0)
-          : order.total;
-      s.updateOrder({
-        ...order,
-        paymentNote: note.trim(),
-        paid,
-        remaining: order.total - paid,
-        depositStatus: order.deposit ? "Đã xác nhận" : "Không đặt cọc",
-        paymentStatus: paid === order.total ? "Đã thanh toán" : "Đã cọc",
-        history: [
-          ...(order.history || []),
-          {
-            at: new Date().toISOString(),
-            text: `Xác nhận đã trả ${money(paid)}`,
-          },
-        ],
-      });
-    }
-    setAction(null);
-    message.success("Đã lưu xác nhận");
   }
   return (
     <>

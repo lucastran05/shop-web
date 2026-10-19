@@ -1,3 +1,4 @@
+import { userError } from "../utils/userError";
 import { useTranslation } from "react-i18next";
 import ExpandableText from "../components/ExpandableText";
 import ProductReviews from "../components/ProductReviews";
@@ -13,6 +14,7 @@ import {
   App,
   Result,
   Image,
+  Empty,
   Spin,
 } from "antd";
 import { ShoppingCartOutlined } from "@ant-design/icons";
@@ -52,8 +54,7 @@ function ProductView({ p, relatedProducts }) {
         await add(p, v.id, qty);
         message.success(t("Đã thêm vào giỏ hàng"));
       } catch (error) {
-        if (error instanceof ApiError) message.error(error.message);
-        else throw error;
+        message.error(userError(error));
       }
     }
   }
@@ -68,7 +69,11 @@ function ProductView({ p, relatedProducts }) {
       />
       <div className="detail-grid panel">
         <div className="detail-image">
-          <Image src={p.images[picture]} alt={p.name} />
+          {p.images[picture] ? (
+            <Image src={p.images[picture]} alt={p.name} />
+          ) : (
+            <Empty description={t("Chưa có ảnh sản phẩm")} />
+          )}
           <div className="thumbnails">
             {p.images.map((image, i) => (
               <button
@@ -194,7 +199,7 @@ export default function ProductDetail() {
         setProduct(null);
         setError(
           cause instanceof ApiError
-            ? cause.message
+            ? userError(cause)
             : t("Không thể tải chi tiết sản phẩm"),
         );
       })

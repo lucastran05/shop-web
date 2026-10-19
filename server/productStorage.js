@@ -143,8 +143,7 @@ export function productImageMiddleware(root) {
       if (["NoSuchKey", "NoSuchBucket", "NotFound"].includes(error.code))
         return json(res, 404, { error: "Không tìm thấy ảnh." });
       return json(res, 503, {
-        error:
-          "Không kết nối được MinIO. Chạy npm run minio:start rồi thử lại.",
+        error: "Không thể xử lý ảnh lúc này. Vui lòng thử lại sau.",
       });
     }
   };

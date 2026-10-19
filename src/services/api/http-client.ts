@@ -20,6 +20,12 @@ export interface HttpClientConfig {
   baseURL: string;
   timeoutMs?: number;
   fetch?: typeof globalThis.fetch;
+  tokenStore?: TokenStore;
+}
+export interface TokenStore {
+  read(): TokenPair | null;
+  write(tokens: TokenPair): void;
+  clear(): void;
 }
 
 /** One instance represents one authenticated session. Tokens are kept in memory. */
@@ -27,6 +33,8 @@ export class HttpClient {
   private readonly baseURL: string;
   private readonly timeoutMs: number;
   private readonly fetcher: typeof globalThis.fetch;
+  private readonly tokenStore: TokenStore | undefined;
+  private readonly sessionListeners = new Set<() => void>();
   private tokens: TokenPair | null = null;
   private sessionVersion = 0;
   private refreshFlight: {
@@ -50,6 +58,12 @@ export class HttpClient {
     this.baseURL = url.toString().replace(/\/$/, "");
     this.timeoutMs = config.timeoutMs ?? 15000;
     this.fetcher = config.fetch ?? globalThis.fetch.bind(globalThis);
+    this.tokenStore = config.tokenStore;
+    try {
+      this.tokens = this.tokenStore?.read() ?? null;
+    } catch {
+      this.tokens = null;
+    }
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0)
       throw new TypeError("Invalid timeoutMs");
   }
@@ -57,11 +71,34 @@ export class HttpClient {
   setTokens(tokens: TokenPair): void {
     this.sessionVersion += 1;
     this.tokens = { ...tokens };
+    this.persistTokens();
   }
 
   clearTokens(): void {
     this.sessionVersion += 1;
     this.tokens = null;
+    this.persistTokens();
+    for (const listener of this.sessionListeners) listener();
+  }
+
+  hasSession(): boolean {
+    return this.tokens !== null;
+  }
+
+  onSessionCleared(listener: () => void): () => void {
+    this.sessionListeners.add(listener);
+    return () => {
+      this.sessionListeners.delete(listener);
+    };
+  }
+
+  private persistTokens(): void {
+    try {
+      if (this.tokens) this.tokenStore?.write(this.tokens);
+      else this.tokenStore?.clear();
+    } catch {
+      /* The current session still works when browser storage is unavailable. */
+    }
   }
 
   async refreshTokens(): Promise<ApiResponse<TokenPair>> {
@@ -101,6 +138,7 @@ export class HttpClient {
         }
         // Keep the session version stable so late 401s can use the rotated token.
         this.tokens = { ...response.data };
+        this.persistTokens();
         return response;
       } catch (error) {
         if (
@@ -274,6 +312,13 @@ export class HttpClient {
       return this.request<T>(method, path, options, true);
     }
     if (!response.ok || isBackendError(payload)) {
+      if (
+        response.status === 401 &&
+        token &&
+        version === this.sessionVersion &&
+        token === this.tokens?.accessToken
+      )
+        this.clearTokens();
       const backend = isBackendError(payload) ? payload : undefined;
       throw new ApiError(
         backend?.message ?? `HTTP ${response.status}: ${response.statusText}`,

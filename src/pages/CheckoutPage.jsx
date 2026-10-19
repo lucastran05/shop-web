@@ -1,3 +1,4 @@
+import { userError } from "../utils/userError";
 import { useState, useRef, useEffect } from "react";
 import { Navigate, Link, useSearchParams } from "react-router-dom";
 import {
@@ -65,7 +66,7 @@ export default function Checkout() {
         if (active)
           message.error(
             error instanceof ApiError
-              ? error.message
+              ? userError(error)
               : t("Không thể tải sổ địa chỉ"),
           );
       });
@@ -115,7 +116,7 @@ export default function Checkout() {
           if (active)
             message.error(
               error instanceof ApiError
-                ? error.message
+                ? userError(error)
                 : t("Không thể tải sản phẩm"),
             );
         });
@@ -126,24 +127,19 @@ export default function Checkout() {
   }, [buyProductId, buyVariantId, quantityParam, message, t]);
   useEffect(() => {
     if (!buyProductId && !items.length && s.items.length)
-      setItems(s.items.filter((item) => item.selected).map((item) => ({ ...item })));
+      setItems(
+        s.items.filter((item) => item.selected).map((item) => ({ ...item })),
+      );
   }, [buyProductId, s.items, items.length]);
   const defaultAddress = addresses.find((a) => a.id === addressId);
   const currentOrder = placed;
   const depositRate =
     mode === "deposit50" ? 0.5 : mode === "deposit70" ? 0.7 : 0;
   const deposit = depositRate > 0;
-  const totals = calculateCheckout(
-      items,
-      delivery,
-      false,
-      deposit,
-      payment,
-      {
-        ...shop.commerce,
-        depositRate,
-      },
-    ),
+  const totals = calculateCheckout(items, delivery, false, deposit, payment, {
+      ...shop.commerce,
+      depositRate,
+    }),
     { subtotal, shipping, off, total, due } = totals;
   if (!s.user)
     return (
@@ -218,7 +214,7 @@ export default function Checkout() {
         } catch (error) {
           message.error(
             error instanceof ApiError
-              ? error.message
+              ? userError(error)
               : t("Không thể khởi tạo phiên thanh toán"),
           );
         }
@@ -229,7 +225,7 @@ export default function Checkout() {
         } catch (error) {
           message.error(
             error instanceof ApiError
-              ? error.message
+              ? userError(error)
               : t("Đơn đã tạo nhưng không thể làm mới giỏ hàng"),
           );
         }
@@ -238,7 +234,7 @@ export default function Checkout() {
       submitted.current = false;
       message.error(
         error instanceof ApiError
-          ? error.message
+          ? userError(error)
           : t("Không thể tạo đơn hàng"),
       );
     } finally {
@@ -283,8 +279,7 @@ export default function Checkout() {
               setAddingAddress(false);
               message.success(t("Đã lưu địa chỉ"));
             } catch (error) {
-              if (error instanceof ApiError) message.error(error.message);
-              else throw error;
+              message.error(userError(error));
             }
           }}
         >

@@ -1,3 +1,4 @@
+import { userError } from "../utils/userError";
 import { useTranslation } from "react-i18next";
 import AddressFields from "../components/AddressFields";
 import { useEffect, useState } from "react";
@@ -40,7 +41,7 @@ function AccountContent() {
         if (active)
           message.error(
             error instanceof ApiError
-              ? error.message
+              ? userError(error)
               : t("Không thể tải sổ địa chỉ"),
           );
       })
@@ -80,8 +81,7 @@ function AccountContent() {
       setEditing(null);
       message.success(response.message || t("Đã lưu địa chỉ"));
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     }
   }
   async function removeAddress(id) {
@@ -90,8 +90,7 @@ function AccountContent() {
       setAddresses((old) => old.filter((address) => address.id !== id));
       message.success(t("Đã xóa địa chỉ"));
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     }
   }
   async function setDefaultAddress(id) {
@@ -103,10 +102,12 @@ function AccountContent() {
           is_default: address.id === data.id,
         })),
       );
-      setUser((old) => ({ ...old, default_address_id: data.default_address_id }));
+      setUser((old) => ({
+        ...old,
+        default_address_id: data.default_address_id,
+      }));
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     }
   }
   async function saveProfile(values) {
@@ -114,8 +115,7 @@ function AccountContent() {
       await updateProfile(values);
       message.success(t("Đã lưu thông tin cá nhân"));
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     }
   }
   async function changePassword(values) {
@@ -129,16 +129,11 @@ function AccountContent() {
       passwordForm.resetFields();
       message.success(t("Đổi mật khẩu thành công. Vui lòng đăng nhập lại."));
     } catch (error) {
-      if (error instanceof ApiError) message.error(error.message);
-      else throw error;
+      message.error(userError(error));
     }
   }
   const profile = (
-    <Form
-      layout="vertical"
-      initialValues={user}
-      onFinish={saveProfile}
-    >
+    <Form layout="vertical" initialValues={user} onFinish={saveProfile}>
       <Form.Item
         name="name"
         label={t("Họ và tên")}
@@ -279,7 +274,7 @@ function AccountContent() {
       >
         <Form form={addressForm} layout="vertical" onFinish={saveAddress}>
           <Form.Item
-          name="recipient_name"
+            name="recipient_name"
             label={t("Tên người nhận")}
             rules={[
               {

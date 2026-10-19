@@ -1,11 +1,5 @@
 import Button from "../../components/management/ManagementButton";
-import {
-  DeleteOutlined,
-  EditOutlined,
-  PlusOutlined,
-  KeyOutlined,
-  ReloadOutlined,
-} from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import {
   App,
@@ -20,7 +14,7 @@ import {
   Tag,
 } from "antd";
 import { useManagement } from "../../hooks/useManagement";
-import { passwordCredential, temporaryPassword } from "../../utils/password";
+import { userError } from "../../utils/userError";
 
 const roleLabels = {
   customer: "Khách hàng",
@@ -32,9 +26,6 @@ export default function UsersPage() {
   const s = useManagement(),
     { message } = App.useApp(),
     [form] = Form.useForm();
-  const [passwordForm] = Form.useForm();
-  const [passwordUser, setPasswordUser] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState(""),
     [selected, setSelected] = useState([]),
     [editing, setEditing] = useState(null),
@@ -63,47 +54,27 @@ export default function UsersPage() {
       email,
       id: editing?.id || crypto.randomUUID(),
     };
-    if (password) {
-      try {
-        user.credential = await passwordCredential(password);
-      } catch {
-        return message.error("Không thể lưu mật khẩu. Vui lòng thử lại.");
-      }
+    try {
+      await s.saveUser({ ...user, password }, editing?.id);
+    } catch (error) {
+      message.error(userError(error));
+      return;
     }
-    s.setUsers((old) =>
-      editing
-        ? old.map((u) => (u.id === editing.id ? user : u))
-        : [...old, user],
-    );
     setOpen(false);
     message.success("Đã lưu tài khoản");
   }
-  function remove(ids) {
+  async function remove(ids) {
     if (s.session.role !== "admin") return;
     if (ids.includes(s.session.id))
       return message.error("Không thể xóa tài khoản đang dùng.");
-    s.setUsers((old) => old.filter((u) => !ids.includes(u.id)));
+    try {
+      await s.removeUsers(ids);
+    } catch (error) {
+      message.error(userError(error));
+      return;
+    }
     setSelected([]);
     message.success("Đã xóa tài khoản");
-  }
-  async function savePassword({ password }) {
-    if (s.session.role !== "admin") return;
-    setSaving(true);
-    try {
-      const credential = await passwordCredential(password);
-      s.setUsers((old) =>
-        old.map((user) =>
-          user.id === passwordUser.id ? { ...user, credential } : user,
-        ),
-      );
-      setPasswordUser(null);
-      passwordForm.resetFields();
-      message.success("Đã cập nhật mật khẩu");
-    } catch {
-      message.error("Không thể lưu mật khẩu. Vui lòng thử lại.");
-    } finally {
-      setSaving(false);
-    }
   }
   return (
     <>
@@ -139,7 +110,7 @@ export default function UsersPage() {
         rowSelection={{
           selectedRowKeys: selected,
           onChange: setSelected,
-          getCheckboxProps: (u) => ({ disabled: u.id === s.session.id }),
+          getCheckboxProps: (u) => ({ disabled: u.role === "admin" }),
         }}
         dataSource={s.users.filter((u) =>
           `${u.name} ${u.email}`.toLowerCase().includes(query.toLowerCase()),
@@ -168,16 +139,6 @@ export default function UsersPage() {
             render: (_, u) => (
               <Space>
                 <Button
-                  icon={<KeyOutlined />}
-                  className="mg-icon-action"
-                  aria-label={`Đặt hoặc reset mật khẩu ${u.email}`}
-                  title="Đặt / reset mật khẩu"
-                  onClick={() => {
-                    passwordForm.resetFields();
-                    setPasswordUser(u);
-                  }}
-                />
-                <Button
                   icon={<EditOutlined aria-hidden="true" />}
                   onClick={() => edit(u)}
                   aria-label="Sửa"
@@ -191,7 +152,7 @@ export default function UsersPage() {
                   <Button
                     icon={<DeleteOutlined aria-hidden="true" />}
                     danger
-                    disabled={u.id === s.session.id}
+                    disabled={u.role === "admin"}
                     aria-label="Xóa"
                     title="Xóa"
                     className="mg-icon-action"
@@ -253,59 +214,6 @@ export default function UsersPage() {
           <Form.Item name="active" label="Hoạt động" valuePropName="checked">
             <Switch disabled={editing?.id === s.session.id} />
           </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        title="Đặt / reset mật khẩu"
-        open={!!passwordUser}
-        onCancel={() => {
-          if (!saving) setPasswordUser(null);
-        }}
-        onOk={() => passwordForm.submit()}
-        confirmLoading={saving}
-        okText="Lưu mật khẩu"
-        cancelText="Hủy"
-        destroyOnHidden
-      >
-        <p>
-          {passwordUser?.name} · {passwordUser?.email}
-        </p>
-        <Form form={passwordForm} layout="vertical" onFinish={savePassword}>
-          <Form.Item
-            name="password"
-            label="Mật khẩu mới"
-            rules={[
-              { required: true, message: "Nhập mật khẩu mới" },
-              { min: 6, message: "Tối thiểu 6 ký tự" },
-            ]}
-          >
-            <Input.Password autoComplete="new-password" />
-          </Form.Item>
-          <Form.Item
-            name="confirm"
-            label="Nhập lại mật khẩu"
-            dependencies={["password"]}
-            rules={[
-              { required: true, message: "Nhập lại mật khẩu" },
-              ({ getFieldValue }) => ({
-                validator: (_, value) =>
-                  !value || value === getFieldValue("password")
-                    ? Promise.resolve()
-                    : Promise.reject(new Error("Mật khẩu không khớp")),
-              }),
-            ]}
-          >
-            <Input.Password autoComplete="new-password" />
-          </Form.Item>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              const password = temporaryPassword();
-              passwordForm.setFieldsValue({ password, confirm: password });
-            }}
-          >
-            Tạo mật khẩu mới
-          </Button>
         </Form>
       </Modal>
     </>

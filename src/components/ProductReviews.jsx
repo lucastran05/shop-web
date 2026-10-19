@@ -1,15 +1,7 @@
-import { shopConfig } from "../constants/shop";
-import { useState } from "react";
-import {
-  Rate,
-  Form,
-  Input,
-  Button,
-  Empty,
-  Pagination,
-  App,
-  Image,
-} from "antd";
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
+import { userError } from "../utils/userError";
+import { Rate, Form, Input, Button, Empty, Pagination, App, Image } from "antd";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../hooks/useShop";
@@ -24,99 +16,77 @@ export default function ProductReviews({ productId }) {
     [page, setPage] = useState(1),
     [images, setImages] = useState([]),
     [loadingImages, setLoadingImages] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [summary, setSummary] = useState({
+    average_rating: 0,
+    review_count: 0,
+  });
+  const [total, setTotal] = useState(0);
+  const [refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setReviews([]);
+    setSummary({ average_rating: 0, review_count: 0 });
+    setTotal(0);
+    api.reviews
+      .list(productId, { page, limit: 5 })
+      .then((response) => {
+        if (!active) return;
+        setReviews(
+          response.data.map((item) => ({
+            ...item,
+            name: item.author?.name || "",
+            createdAt: item.created_at,
+            images: item.images.map((image) => image.url),
+          })),
+        );
+        setSummary(response.summary);
+        setTotal(response.pagination.total);
+      })
+      .catch((error) => {
+        if (active) message.error(t(userError(error)));
+      });
+    return () => {
+      active = false;
+    };
+  }, [productId, page, refresh, message, t]);
   async function chooseImages(event) {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
+    if (!files.length) return;
     if (images.length + files.length > 3) {
       message.error(t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB"));
       return;
     }
     setLoadingImages(true);
     try {
-      const converted = await Promise.all(
-        files.map(
-          (file) =>
-            new Promise((resolve, reject) => {
-              if (
-                !["image/jpeg", "image/png", "image/webp"].includes(
-                  file.type,
-                ) ||
-                file.size > 2 * 1024 * 1024
-              ) {
-                reject(new Error());
-                return;
-              }
-              const url = URL.createObjectURL(file),
-                img = new window.Image();
-              img.onload = () => {
-                try {
-                  const scale = Math.min(
-                    1,
-                    800 / Math.max(img.width, img.height),
-                  );
-                  const canvas = document.createElement("canvas");
-                  canvas.width = Math.max(1, Math.round(img.width * scale));
-                  canvas.height = Math.max(1, Math.round(img.height * scale));
-                  const ctx = canvas.getContext("2d");
-                  ctx.fillStyle = "white";
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  const data = canvas.toDataURL("image/jpeg", 0.7);
-                  if (data.length > 500000) reject(new Error());
-                  else resolve(data);
-                } catch (error) {
-                  reject(error);
-                } finally {
-                  URL.revokeObjectURL(url);
-                }
-              };
-              img.onerror = () => {
-                URL.revokeObjectURL(url);
-                reject(new Error());
-              };
-              img.src = url;
-            }),
-        ),
-      );
-      setImages((old) => [...old, ...converted]);
-    } catch {
-      message.error(
-        t("Không đọc được ảnh. Chọn JPG, PNG hoặc WebP tối đa 2 MB."),
-      );
+      const { data } = await api.reviews.upload({ files, purpose: "review" });
+      setImages((old) => [...old, ...data]);
+    } catch (error) {
+      message.error(t(userError(error)));
     } finally {
       setLoadingImages(false);
     }
   }
-  const reviews = s.reviews.filter((r) => r.productId === productId),
-    average = reviews.length
-      ? reviews.reduce((n, r) => n + r.rating, 0) / reviews.length
-      : 0;
-  function submit(values) {
+  const average = summary.average_rating;
+  async function submit(values) {
     if (!s.user || loadingImages) return;
-    const review = {
-      id: crypto.randomUUID(),
-      productId,
-      owner: s.user.email,
-      name: s.user.name,
-      rating: values.rating,
-      content: values.content.trim(),
-      images,
-      createdAt: new Date().toISOString(),
-    };
+    setLoadingImages(true);
     try {
-      localStorage.setItem(
-        `${shopConfig.storagePrefix}-reviews`,
-        JSON.stringify([review, ...s.reviews]),
-      );
-    } catch {
-      message.error(t("Không đủ dung lượng lưu đánh giá. Hãy giảm số ảnh."));
-      return;
+      await api.reviews.create(productId, {
+        rating: values.rating,
+        content: values.content.trim(),
+        image_ids: images.map((image) => image.id),
+      });
+      setImages([]);
+      form.resetFields();
+      setPage(1);
+      setRefresh((value) => value + 1);
+    } catch (error) {
+      message.error(t(userError(error)));
+    } finally {
+      setLoadingImages(false);
     }
-    s.setReviews((old) => [review, ...old]);
-    setImages([]);
-    form.resetFields();
-    setPage(1);
-    message.success(t("Đã lưu đánh giá"));
   }
   return (
     <section className="panel reviews">
@@ -124,7 +94,7 @@ export default function ProductReviews({ productId }) {
       <div className="rating-summary">
         <strong>{average.toFixed(1)} / 5</strong>
         <Rate disabled allowHalf value={Math.round(average * 2) / 2} />
-        <span>{t("{{count}} đánh giá", { count: reviews.length })}</span>
+        <span>{t("{{count}} đánh giá", { count: summary.review_count })}</span>
       </div>
       {s.user ? (
         <Form
@@ -172,10 +142,10 @@ export default function ProductReviews({ productId }) {
             />
             <p>{t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB")}</p>
             <div className="review-images">
-              {images.map((src, i) => (
-                <div key={src}>
+              {images.map((image, i) => (
+                <div key={image.id}>
                   <Image
-                    src={src}
+                    src={image.url}
                     width={80}
                     height={80}
                     alt={t("Ảnh đánh giá")}
@@ -207,7 +177,7 @@ export default function ProductReviews({ productId }) {
         </p>
       )}
       {reviews.length ? (
-        reviews.slice((page - 1) * 5, page * 5).map((r) => (
+        reviews.map((r) => (
           <article className="review-item" key={r.id}>
             <strong>{r.name}</strong>
             <Rate disabled value={r.rating} />
@@ -236,7 +206,7 @@ export default function ProductReviews({ productId }) {
       <Pagination
         current={page}
         pageSize={5}
-        total={reviews.length}
+        total={total}
         onChange={setPage}
         hideOnSinglePage
         showSizeChanger={false}
