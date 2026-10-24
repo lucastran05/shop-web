@@ -838,25 +838,54 @@ hr {
   font-size: 24px;
 }
 .review-form {
-  margin-top: 20px;
+  margin-top: 12px;
   max-width: 640px;
 }
+.review-action-area {
+  margin-bottom: 24px;
+}
+.review-permission-box {
+  max-width: 680px;
+  margin-top: 8px;
+}
+.review-permission-box .ant-alert {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.review-author-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reviews-list h3 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
 .review-item {
-  padding: 20px 0;
+  padding: 16px 0;
   border-bottom: 1px solid #f0f0f0;
+}
+.review-item:last-child {
+  border-bottom: none;
 }
 .review-item > .ant-rate {
   display: block;
-  margin: 8px 0;
+  margin: 6px 0;
 }
 .review-item time {
   color: #737373;
   font-size: 12px;
 }
 .review-item p {
-  margin-top: 12px;
+  margin-top: 10px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.order-review-btn:hover {
+  text-decoration: underline;
 }
 .reviews > .ant-pagination {
   margin-top: 20px;

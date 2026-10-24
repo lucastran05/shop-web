@@ -65,18 +65,40 @@ export default function Orders() {
                 {t(o.status)}
               </Tag>
             </div>
-            {o.items.map((p) => (
-              <div className="mini-product" key={p.key}>
-                <img src={p.image} alt={p.name} />
-                <div>
-                  <Link to={"/products/" + p.id}>{p.name}</Link>
-                  <small>
-                    {t(p.color)} / {t(p.variantLabel)} × {p.quantity}
-                  </small>
+            {o.items.map((p) => {
+              const isDelivered = [
+                "completed",
+                "delivered",
+                "Đã hoàn thành",
+                "Giao thành công",
+              ].includes(o.statusCode || o.status);
+              return (
+                <div className="mini-product" key={p.key}>
+                  <img src={p.image} alt={p.name} />
+                  <div>
+                    <Link to={"/products/" + p.id}>{p.name}</Link>
+                    <small>
+                      {t(p.color)} / {t(p.variantLabel)} × {p.quantity}
+                    </small>
+                  </div>
+                  <b>{money(p.price * p.quantity)}</b>
+                  {isDelivered && (
+                    <Link
+                      to={"/products/" + p.id + "#reviews"}
+                      className="order-review-btn"
+                      style={{
+                        marginLeft: 12,
+                        fontSize: "13px",
+                        whiteSpace: "nowrap",
+                        color: "#1677ff",
+                      }}
+                    >
+                      ⭐ {t("Đánh giá")}
+                    </Link>
+                  )}
                 </div>
-                <b>{money(p.price * p.quantity)}</b>
-              </div>
-            ))}
+              );
+            })}
             <div className="order-bottom">
               <strong>
                 {t("Tổng tiền")}: {money(o.total)}
@@ -112,7 +134,13 @@ export default function Orders() {
               dataSource={detail.items}
               scroll={{ x: 600 }}
               columns={[
-                { title: t("Sản phẩm"), dataIndex: "name" },
+                {
+                  title: t("Sản phẩm"),
+                  dataIndex: "name",
+                  render: (name, p) => (
+                    <Link to={"/products/" + p.id}>{name}</Link>
+                  ),
+                },
                 {
                   title: t("Phân loại"),
                   render: (_, p) => `${t(p.color)} / ${t(p.variantLabel)}`,
@@ -123,6 +151,24 @@ export default function Orders() {
                   title: t("Thành tiền"),
                   render: (_, p) => money(p.price * p.quantity),
                 },
+                ...([
+                  "completed",
+                  "delivered",
+                  "Đã hoàn thành",
+                  "Giao thành công",
+                ].includes(detail.statusCode || detail.status)
+                  ? [
+                      {
+                        title: t("Đánh giá"),
+                        key: "review",
+                        render: (_, p) => (
+                          <Link to={"/products/" + p.id + "#reviews"}>
+                            ⭐ {t("Viết đánh giá")}
+                          </Link>
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
             />
             <Descriptions

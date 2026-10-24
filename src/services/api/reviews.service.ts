@@ -39,8 +39,14 @@ export interface ReviewSummary {
   average_rating: number;
   review_count: number;
 }
+export interface ReviewEligibility {
+  can_review: boolean;
+  reason: "eligible" | "not_logged_in" | "not_purchased" | "not_delivered" | string;
+  message: string;
+}
 export interface ReviewsResponse extends ListResponse<Review> {
   summary: ReviewSummary;
+  user_eligibility?: ReviewEligibility;
 }
 export interface CreateReviewResponse extends ApiResponse<Review> {
   summary: ReviewSummary;
@@ -72,6 +78,16 @@ export class ReviewsService {
     return this.http.get(
       `/api/v1/products/${pathId(productId)}/reviews`,
       query,
+      options,
+    );
+  }
+  checkEligibility(
+    productId: ID,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<ReviewEligibility>> {
+    return this.http.get(
+      `/api/v1/products/${pathId(productId)}/reviews/eligibility`,
+      undefined,
       options,
     );
   }
