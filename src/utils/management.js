@@ -39,14 +39,16 @@ export function todayRevenue(orders, now = new Date()) {
 }
 export { statusFlow } from "../constants/management";
 export function nextStatuses(order) {
-  if (["Đã hủy", "Hoàn tiền"].includes(order.status)) return [];
-  if (order.status === "Hoàn hàng") return order.paid > 0 ? ["Hoàn tiền"] : [];
-  if (["Giao thành công", "Đã hoàn thành"].includes(order.status))
-    return order.status === "Giao thành công"
+  const currentStatus =
+    order.statusCode === "processing" ? "Đã đóng gói" : order.status;
+  if (["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(currentStatus)) return [];
+  if (currentStatus === "Hoàn hàng") return order.paid > 0 ? ["Hoàn tiền"] : [];
+  if (["Giao thành công", "Đã hoàn thành"].includes(currentStatus))
+    return currentStatus === "Giao thành công"
       ? ["Đã hoàn thành", "Hoàn hàng"]
       : ["Hoàn hàng"];
   const index = statusFlow.indexOf(
-    order.status === "Đã cọc" ? "Đã xác nhận" : order.status,
+    currentStatus === "Đã cọc" ? "Đã xác nhận" : currentStatus,
   );
   return index < 0
     ? []

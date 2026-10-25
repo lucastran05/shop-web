@@ -1,7 +1,6 @@
 export const statusFlow = [
   "Chờ xác nhận",
   "Đã xác nhận",
-  "Đang chuẩn bị hàng",
   "Đã đóng gói",
   "Đang giao hàng",
   "Giao thành công",

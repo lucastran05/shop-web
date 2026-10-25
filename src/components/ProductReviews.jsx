@@ -66,6 +66,7 @@ export default function ProductReviews({ productId }) {
       setApiEligibility(null);
       return;
     }
+    setApiEligibility(null);
     api.reviews
       .checkEligibility(productId)
       .then((res) => {
@@ -74,7 +75,7 @@ export default function ProductReviews({ productId }) {
         }
       })
       .catch(() => {
-        // Nếu API lỗi, fallback vào danh sách đơn hàng s.orders
+        if (active) setApiEligibility(null);
       });
     return () => {
       active = false;
@@ -82,18 +83,12 @@ export default function ProductReviews({ productId }) {
   }, [productId, s.user, refresh]);
 
   // Kiểm tra lịch sử đơn hàng của người dùng trong hệ thống
-  const { hasPurchased, hasCompletedOrder, hasInTransitOrder } = useMemo(() => {
+  const { hasPurchased, hasInTransitOrder } = useMemo(() => {
     if (!s.user || !s.orders || !s.orders.length) {
-      return { hasPurchased: false, hasCompletedOrder: false, hasInTransitOrder: false };
+      return { hasPurchased: false, hasInTransitOrder: false };
     }
     const userOrdersForProduct = s.orders.filter((o) =>
       o.items?.some((item) => String(item.id) === String(productId))
-    );
-
-    const completed = userOrdersForProduct.some((o) =>
-      ["completed", "delivered", "Đã hoàn thành", "Giao thành công"].includes(
-        o.statusCode || o.status
-      )
     );
 
     const inTransit = userOrdersForProduct.some((o) =>
@@ -114,16 +109,12 @@ export default function ProductReviews({ productId }) {
 
     return {
       hasPurchased: userOrdersForProduct.length > 0,
-      hasCompletedOrder: completed,
       hasInTransitOrder: inTransit,
     };
   }, [s.user, s.orders, productId]);
 
-  // Khách hàng đủ điều kiện viết đánh giá:
-  // API xác nhận can_review = true, HOẶC đã có đơn hàng ở trạng thái hoàn thành / nhận hàng thành công
-  const canWriteReview = Boolean(
-    s.user && (apiEligibility?.can_review || hasCompletedOrder)
-  );
+  // Chỉ hiện form khi backend xác nhận đã mua và nhận hàng thành công.
+  const canWriteReview = Boolean(s.user && apiEligibility?.can_review === true);
 
   async function chooseImages(event) {
     const files = Array.from(event.target.files || []);
@@ -147,7 +138,7 @@ export default function ProductReviews({ productId }) {
   const average = summary.average_rating;
 
   async function submit(values) {
-    if (!s.user || loadingImages || submitting) return;
+    if (!s.user || !canWriteReview || loadingImages || submitting) return;
     setSubmitting(true);
     try {
       await api.reviews.create(productId, {

@@ -5,13 +5,14 @@ import {
   statusTag,
 } from "../../components/management/orderColumns";
 import { useEffect, useState } from "react";
-import { EyeOutlined, EditOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import {
   App,
   Descriptions,
   Form,
   Input,
   Modal,
+  Popconfirm,
   Select,
   Space,
   Table,
@@ -31,6 +32,7 @@ export default function OrdersPage() {
     [form] = Form.useForm();
   const [query, setQuery] = useState(""),
     [status, setStatus] = useState(),
+    [selected, setSelected] = useState([]),
     [detailId, setDetailId] = useState(null),
     [mode, setMode] = useState("view");
   const detail = s.orders.find((o) => o.id === detailId);
@@ -44,6 +46,22 @@ export default function OrdersPage() {
   function show(o, nextMode) {
     setMode(nextMode);
     setDetailId(o.id);
+  }
+  async function remove(ids) {
+    try {
+      const result = await s.removeOrders(ids);
+      setSelected([]);
+      const failed = result?.failed || [];
+      if (failed.length) {
+        message.warning(
+          `Đã xóa ${result?.deleted_ids?.length || 0} đơn; ${failed.length} đơn không thể xóa vì còn lịch sử hoặc thanh toán.`,
+        );
+      } else {
+        message.success("Đã xóa các đơn hàng đã chọn");
+      }
+    } catch (error) {
+      message.error(userError(error));
+    }
   }
   useEffect(() => {
     if (!detail || mode !== "edit") return;
@@ -77,7 +95,11 @@ export default function OrdersPage() {
       setDetailId(null);
       message.success("Đã cập nhật đơn hàng");
     } catch (e) {
-      message.error(userError(e));
+      message.error(
+        e?.message && (e?.status === 400 || !e?.status)
+          ? e.message
+          : userError(e),
+      );
     }
   }
   return (
@@ -98,9 +120,22 @@ export default function OrdersPage() {
             (value) => ({ value }),
           )}
         />
+        <Popconfirm
+          title="Xóa các đơn hàng đã chọn? Chỉ đơn đã hủy chưa thanh toán mới được xóa."
+          onConfirm={() => remove(selected)}
+        >
+          <Button
+            icon={<DeleteOutlined aria-hidden="true" />}
+            danger
+            disabled={!selected.length}
+          >
+            Xóa đã chọn ({selected.length})
+          </Button>
+        </Popconfirm>
       </div>
       <Table
         rowKey="id"
+        rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
         scroll={{ x: 850 }}
         dataSource={rows}
         columns={[
@@ -231,10 +266,21 @@ export default function OrdersPage() {
                 </Form.Item>
                 <div className="mg-form-grid">
                   <Form.Item name="carrier" label="Đơn vị vận chuyển">
-                    <Input placeholder="Ví dụ: GHN" />
+                    <Input
+                      placeholder="Ví dụ: GHN"
+                      disabled={
+                        ["cancelled", "refunded"].includes(detail.statusCode) ||
+                        ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(detail.status)
+                      }
+                    />
                   </Form.Item>
                   <Form.Item name="tracking" label="Mã vận đơn">
-                    <Input />
+                    <Input
+                      disabled={
+                        ["cancelled", "refunded"].includes(detail.statusCode) ||
+                        ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(detail.status)
+                      }
+                    />
                   </Form.Item>
                 </div>
                 <Form.Item name="note" label="Ghi chú nội bộ">

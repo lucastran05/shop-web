@@ -48,6 +48,14 @@ export interface UpdateOrderRequest {
   note?: string;
   expected_updated_at?: ISODate;
 }
+export interface BulkDeleteOrdersRequest {
+  ids: ID[];
+}
+export interface BulkDeleteOrdersResult {
+  deleted_ids: ID[];
+  failed: Array<{ id: ID; code: string; message: string }>;
+  deletedCount: number;
+}
 export interface UpdateOrderResult {
   id: ID;
   code: string;
@@ -67,6 +75,13 @@ export class AdminOrdersService {
   get(id: ID, options?: RequestOptions): Promise<ApiResponse<AdminOrder>> {
     return this.http.get(`/admin/orders/${pathId(id)}`, undefined, options);
   }
+  bulkDelete(
+    body: BulkDeleteOrdersRequest,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<BulkDeleteOrdersResult>> {
+    return this.http.post("/admin/orders/bulk-delete", body, options);
+  }
+
   update(
     id: ID,
     body: UpdateOrderRequest,

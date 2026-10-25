@@ -12,6 +12,8 @@ import {
 } from "../services/viewAdapters";
 import { userError } from "../utils/userError";
 
+const managementOrderLabels = { ...orderLabels, processing: "Đã đóng gói" };
+
 export function ManagementProvider({ children }) {
   const shop = useShop();
   const session =
@@ -79,7 +81,15 @@ export function ManagementProvider({ children }) {
       rows.map((row) => api.adminOrders.get(row.id)),
     );
     if (sessionRef.current === sessionId)
-      saveOrders(details.map(({ data }) => mapOrder(data)));
+      saveOrders(
+        details.map(({ data }) => ({
+          ...mapOrder(data),
+          status:
+            data.status === "processing" ? "Đã đóng gói" : mapOrder(data).status,
+          note: data.note || "",
+          paymentNote: data.payment_note || data.note || "",
+        })),
+      );
   }, []);
   const loadUsers = useCallback(async () => {
     const sessionId = sessionRef.current;
@@ -153,10 +163,18 @@ export function ManagementProvider({ children }) {
     refresh().finally(() => {
       if (active) setLoading(false);
     });
+    const syncManagementData = () => {
+      if (document.visibilityState === "hidden") return;
+      Promise.allSettled([loadProducts(), loadOrders(), loadMessages()]);
+    };
+    const interval = window.setInterval(syncManagementData, 1000);
+    window.addEventListener("focus", syncManagementData);
     return () => {
       active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", syncManagementData);
     };
-  }, [session?.id, refresh]);
+  }, [session?.id, refresh, loadProducts, loadOrders, loadMessages]);
 
   function updateChatPreference(owner, patch) {
     if (!session) return;
@@ -271,21 +289,28 @@ export function ManagementProvider({ children }) {
     await loadUsers();
     if (data.failed.length) throw new Error("Bulk operation failed");
   }
+  async function removeOrders(ids) {
+    const { data } = await api.adminOrders.bulkDelete({ ids });
+    await loadOrders();
+    return data;
+  }
   async function updateOrder(order) {
     const status =
-      order.status === orderLabels[order.statusCode]
+      order.status === managementOrderLabels[order.statusCode]
         ? order.statusCode
         : Object.keys(orderLabels).find(
-            (key) => orderLabels[key] === order.status,
+            (key) => managementOrderLabels[key] === order.status,
           );
     if (!status) throw new Error("Invalid order status");
+    const terminal = ["cancelled", "refunded"].includes(status);
     await api.adminOrders.update(order.id, {
       status,
-      carrier: order.carrier,
-      tracking_number: order.tracking,
       note: order.note,
+      ...(terminal
+        ? {}
+        : { carrier: order.carrier, tracking_number: order.tracking }),
     });
-    await loadOrders();
+    await Promise.all([loadOrders(), loadProducts()]);
   }
   async function adjustInventory(body) {
     await api.adminInventory.adjust(body, {
@@ -301,6 +326,16 @@ export function ManagementProvider({ children }) {
       client_message_id: crypto.randomUUID(),
     });
     if (sessionRef.current === session?.id) markRead(owner);
+    await loadMessages();
+  }
+  async function startConversation(email, content) {
+    await api.adminChat.create({
+      email,
+      content,
+      client_message_id: crypto.randomUUID(),
+    });
+    // Tạo lại hội thoại phải hiện lại nếu quản lý đã ẩn hội thoại cũ.
+    updateChatPreference(email, { hidden: false });
     await loadMessages();
   }
   const setSession = async (value) => {
@@ -322,11 +357,13 @@ export function ManagementProvider({ children }) {
         removeCategories,
         orders,
         updateOrder,
+        removeOrders,
         users,
         saveUser,
         removeUsers,
         messages,
         reply,
+        startConversation,
         refreshMessages: loadMessages,
         stockHistory,
         adjustInventory,

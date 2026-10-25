@@ -38,7 +38,7 @@ src/services/api/
 | 13   | admin-inventory.service.ts         | adminInventory        | list, adjust, adjustments                                                                      |
 | 14   | admin-orders.service.ts            | adminOrders           | list, get, update                                                                              |
 | 15   | admin-payments.service.ts          | adminPayments         | confirm, refund                                                                                |
-| 16   | admin-chat.service.ts              | adminChat             | list, messages, sendMessage                                                                    |
+| 16   | admin-chat.service.ts              | adminChat             | list, messages, sendMessage, create                                                            |
 | 17   | admin-dashboard-reports.service.ts | adminDashboardReports | dashboard, sales, downloadSales                                                                |
 | 18   | admin-users.service.ts             | adminUsers            | list, create, update, delete, bulkDelete                                                       |
 | 19   | admin-settings-shop.service.ts     | adminSettingsShop     | get, update                                                                                    |
@@ -99,7 +99,7 @@ hiển thị trạng thái trống; không lấy lại dữ liệu nghiệp vụ
 
 ## Xác thực và request đồng thời
 
-- Instance dùng trong trình duyệt lưu token vào localStorage và cập nhật khi refresh.
+- Instance dùng trong trình duyệt chỉ giữ token trong bộ nhớ; tải lại trang sẽ yêu cầu đăng nhập lại.
   Khi tải lại trang, ShopProvider kiểm tra `/me` trước khi mở các trang cần đăng nhập.
   Role hiển thị lấy từ backend; dữ liệu user cũ trong trình duyệt không cấp quyền quản trị.
   Logout, đổi mật khẩu và phiên hết hiệu lực xóa token đã lưu.
@@ -187,15 +187,11 @@ Response 204 được HTTP client hỗ trợ cho caller dùng `void`.
 Envelope JSON thành công được kiểm tra ở runtime; schema domain được kiểm tra
 ở compile time, không thay thế validation schema runtime của từng payload.
 
-## Khác biệt đã đối chiếu với backend hiện tại
+## Các khác biệt contract còn lại
 
-Các điểm sau là giới hạn backend hiện hữu, chưa được sửa bởi lớp frontend:
+Các điểm sau vẫn cần đối chiếu thêm khi thay đổi backend:
 
-1. **Upload REV03/ADP07:** docs yêu cầu multipart, nhưng `app.js` chỉ cấu hình
-   JSON/urlencoded và `ProductController.upload` chỉ đọc JSON `files`.
-   Handler còn có nhánh tạo URL ảnh mẫu. Các service gửi file thật theo docs,
-   không gọi nhánh JSON để tạo URL giả. Backend cần middleware upload và lưu file
-   thật trước khi luồng upload này hoạt động đúng end-to-end.
+1. **Upload REV03/ADP07:** service gửi multipart thông qua `files` và `purpose`. Backend kiểm tra MIME/magic bytes, kích thước, lưu file thật và trả URL có thể truy cập.
 2. **ADP02/04/05:** controller sản phẩm đã nhận cả `product_id` và `id` để khớp
    các route hiện có. `image_ids` khi tạo/sửa sản phẩm chưa được backend liên kết
    vào images; form quản trị gửi danh sách `images` chứa URL thật.

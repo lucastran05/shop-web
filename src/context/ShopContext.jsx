@@ -11,6 +11,7 @@ import {
 import { shopConfig } from "../constants/shop";
 import { api } from "../services/api";
 import { mapProductSummary } from "../services/productAdapter";
+import { usePolling } from "../hooks/usePolling";
 export function ShopProvider({ children }) {
   const [shopInfo, setShopInfo] = useState({
     name: shopConfig.name,
@@ -155,6 +156,22 @@ export function ShopProvider({ children }) {
           );
       })
       .catch(() => {});
+    const openConversation = api.chatAndNotifications.openConversation;
+    if (typeof openConversation === "function") {
+      api.chatAndNotifications.openConversation()
+        .then(({ data: conversation }) => {
+          if (!active) return null;
+          setConversationId(conversation.id);
+          return api.chatAndNotifications.messages(conversation.id, {
+            limit: 100,
+          });
+        })
+        .then((response) => {
+          if (active && response?.data)
+            setMessages(response.data.map((item) => mapMessage(item, user.email)));
+        })
+        .catch(() => {});
+    }
     return () => {
       active = false;
     };
@@ -168,8 +185,14 @@ export function ShopProvider({ children }) {
     const { data: rows } = await api.chatAndNotifications.messages(data.id, {
       limit: 100,
     });
+    await api.chatAndNotifications.markConversationRead();
     if (chatUser.current === userId)
-      setMessages(rows.map((item) => mapMessage(item, user.email)));
+      setMessages(
+        rows.map((item) => ({
+          ...mapMessage(item, user.email),
+          is_read: item.sender_role === "shop" ? true : item.is_read,
+        })),
+      );
     return data.id;
   }
   async function sendMessage(content) {
@@ -245,12 +268,37 @@ export function ShopProvider({ children }) {
   }
   function refreshCart() {
     return api.cart.get().then((response) => {
-      setItems(setItemsFromServer(response));
+      const selected = new Map(items.map((item) => [item.key, item.selected]));
+      setItems(
+        setItemsFromServer(response).map((item) => ({
+          ...item,
+          selected: selected.get(item.key) ?? true,
+        })),
+      );
       return response.data;
     });
   }
   const [items, setItems] = useState([]);
   const userId = user?.id;
+  async function refreshCatalogProducts() {
+    const rows = await listAll((query) => api.products.list(query));
+    setProducts(rows.map(mapProductSummary));
+  }
+  usePolling(refreshCatalogProducts, {
+    intervalMs: 1000,
+    onError: () => {},
+  });
+  usePolling(
+    async () => {
+      if (!user?.id) return;
+      await Promise.allSettled([refreshOrders(), refreshNotifications(), refreshCart()]);
+    },
+    {
+      enabled: Boolean(user?.id),
+      intervalMs: 1000,
+      onError: () => {},
+    },
+  );
   useEffect(() => {
     if (!userId) {
       setItems([]);

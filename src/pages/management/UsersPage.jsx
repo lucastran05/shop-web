@@ -199,18 +199,24 @@ export default function UsersPage() {
               }))}
             />
           </Form.Item>
-          {!editing && (
-            <Form.Item
-              name="password"
-              label="Mật khẩu"
-              rules={[
-                { required: true, message: "Nhập mật khẩu" },
-                { min: 6, message: "Tối thiểu 6 ký tự" },
-              ]}
-            >
-              <Input.Password autoComplete="new-password" />
-            </Form.Item>
-          )}
+          <Form.Item
+            name="password"
+            label={editing ? "Mật khẩu mới" : "Mật khẩu"}
+            rules={[
+              { required: !editing, message: "Nhập mật khẩu" },
+              {
+                validator: (_, value) =>
+                  !value || value.length >= 6
+                    ? Promise.resolve()
+                    : Promise.reject(new Error("Tối thiểu 6 ký tự")),
+              },
+            ]}
+          >
+            <Input.Password
+              autoComplete="new-password"
+              placeholder={editing ? "Để trống nếu không đổi" : undefined}
+            />
+          </Form.Item>
           <Form.Item name="active" label="Hoạt động" valuePropName="checked">
             <Switch disabled={editing?.id === s.session.id} />
           </Form.Item>

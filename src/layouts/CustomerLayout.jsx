@@ -53,12 +53,15 @@ export default function CustomerLayout() {
       setChatError(null);
     },
     {
-      enabled: chat && !!s.user,
+      enabled: !!s.user,
       onError: (error) => setChatError(t(userError(error))),
     },
   );
   const notices = s.notifications.filter((n) => n.owner === s.user?.email),
     messages = s.messages.filter((n) => n.owner === s.user?.email);
+  const unreadChat = messages.some(
+    (item) => item.from === "shop" && item.is_read !== true,
+  );
   useEffect(() => {
     if (chat) chatEnd.current?.scrollIntoView?.({ block: "end" });
   }, [chat, messages.length]);
@@ -224,13 +227,16 @@ export default function CustomerLayout() {
             className="chat-trigger"
             type="primary"
             shape="circle"
-            icon={<MessageOutlined />}
             aria-label={t("Chat với shop")}
             onClick={() => {
               setChat(true);
               perform(s.openChat);
             }}
-          />
+          >
+            <Badge count={unreadChat ? 1 : 0} size="small" offset={[-2, 2]}>
+              <MessageOutlined />
+            </Badge>
+          </Button>
         </Tooltip>
       )}
       <Drawer

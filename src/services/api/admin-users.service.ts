@@ -23,7 +23,7 @@ export interface CreateUserRequest {
   is_active: boolean;
   password?: string;
 }
-export type UpdateUserRequest = Partial<Omit<CreateUserRequest, "password">>;
+export type UpdateUserRequest = Partial<CreateUserRequest>;
 export class AdminUsersService {
   constructor(private readonly http: HttpClient) {}
   list(

@@ -525,15 +525,21 @@ export default function MessagesPage() {
         <Form
           form={form}
           layout="vertical"
-          onFinish={({ email, text }) => {
+          onFinish={async ({ email, text }) => {
             const recipient = email.trim().toLowerCase();
-            s.reply(recipient, text.trim()).catch((error) =>
-              message.error(userError(error)),
-            );
-            setSelected(recipient);
-            setQuery("");
-            setFilter("all");
-            setCreating(false);
+            try {
+              await s.startConversation(recipient, text.trim());
+              setSelected(recipient);
+              setQuery("");
+              setFilter("all");
+              setCreating(false);
+            } catch (error) {
+              message.error(
+                [400, 404].includes(error?.status) && error?.message
+                  ? error.message
+                  : userError(error),
+              );
+            }
           }}
         >
           <Form.Item

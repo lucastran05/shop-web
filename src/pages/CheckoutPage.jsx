@@ -266,7 +266,11 @@ export default function Checkout() {
           onFinish={async (values) => {
             try {
               const { data } = await api.addresses.create({
-                ...values,
+                recipient_name: values.name,
+                recipient_phone: values.phone,
+                province_code: values.province_code,
+                ward_code: values.ward_code,
+                street_address: values.street_address,
                 is_default: addresses.length === 0,
               });
               setAddresses((old) => [...old, data]);
@@ -454,7 +458,11 @@ export default function Checkout() {
                         },
                       ]}
                     >
-                      <Input.TextArea rows={2} readOnly />
+                      <Input.TextArea
+                        rows={2}
+                        maxLength={250}
+                        placeholder={t("Nhập số nhà, tên đường, tòa nhà…")}
+                      />
                     </Form.Item>
                   )}
                   <Form.Item name="note" label={t("Yêu cầu bổ sung")}>

@@ -40,7 +40,12 @@ export default function PaymentsPage() {
         return;
       }
       if (action.type === "refund") {
-        if (!["Đã hủy", "Hoàn hàng"].includes(order.status) || !order.paid)
+        if (
+          !["Đã hủy", "Hoàn hàng"].includes(order.status) ||
+          !order.paid ||
+          (order.refunded || 0) >= order.paid ||
+          order.paymentStatus === "refunded"
+        )
           return message.error("Đơn hàng không đủ điều kiện hoàn tiền.");
         await api.adminPayments.refund(
           order.id,
@@ -134,8 +139,8 @@ export default function PaymentsPage() {
           },
           {
             title: "Trạng thái",
-            dataIndex: "status",
-            render: statusTag,
+            render: (_, o) =>
+              statusTag(o.paymentStatus === "refunded" ? "Hoàn tiền" : o.status),
             width: 150,
           },
           {
@@ -228,7 +233,10 @@ export default function PaymentsPage() {
                       icon={<UndoOutlined aria-hidden="true" />}
                       danger
                       disabled={
-                        !["Đã hủy", "Hoàn hàng"].includes(o.status) || !o.paid
+                        !["Đã hủy", "Hoàn hàng"].includes(o.status) ||
+                        !o.paid ||
+                        (o.refunded || 0) >= o.paid ||
+                        o.paymentStatus === "refunded"
                       }
                       onClick={() => {
                         setNote(o.paymentNote || "");

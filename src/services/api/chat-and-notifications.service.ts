@@ -17,6 +17,7 @@ export interface MessagePreview {
   content: string;
   sender_role: SenderRole;
   created_at: ISODate;
+  is_read?: boolean;
 }
 export interface Message extends MessagePreview {
   conversation_id: ID;
@@ -96,6 +97,11 @@ export class ChatAndNotificationsService {
       body,
       options,
     );
+  }
+  markConversationRead(options?: RequestOptions): Promise<ApiResponse<{
+    updatedCount: number;
+  }>> {
+    return this.http.patch("/api/v1/chat/read-all", undefined, options);
   }
   notifications(
     query: NotificationsQuery = {},

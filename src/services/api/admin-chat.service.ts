@@ -20,6 +20,10 @@ export interface AdminMessagesResponse extends MessagesResponse {
 export interface AdminSendMessageResponse extends ApiResponse<Message> {
   customer: Customer | null;
 }
+export interface AdminCreateConversationRequest extends SendMessageRequest {
+  email: string;
+}
+export interface AdminCreateConversationResponse extends AdminSendMessageResponse {}
 export class AdminChatService {
   constructor(private readonly http: HttpClient) {}
   list(
@@ -49,5 +53,11 @@ export class AdminChatService {
       body,
       options,
     );
+  }
+  create(
+    body: AdminCreateConversationRequest,
+    options?: RequestOptions,
+  ): Promise<AdminCreateConversationResponse> {
+    return this.http.post("/admin/conversations", body, options);
   }
 }
