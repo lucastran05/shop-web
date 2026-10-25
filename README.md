@@ -1,8 +1,8 @@
 # ABC Shop — giao diện Customer
 
-Phần **Manager/Admin** chạy tại `/management`. Xem [Manager/Admin — Note](./MANAGER-ADMIN.md) để biết cách chạy, tài khoản thử và phạm vi chức năng.
+Phần **Manager/Admin** chạy tại `/management`. Xem [hướng dẫn Manager/Admin](./MANAGER-ADMIN.md) để biết cách chạy và phạm vi chức năng.
 
-Mã nguồn giao diện bán hàng tổng quát bằng **React + Vite + Ant Design**, phát triển trên khung `shop-web-main` được cung cấp. Không định hướng theo một ngành hàng. Catalog dùng tên `Sản phẩm 01...08`, `Danh mục 1...3`, hình placeholder và phân loại mẫu để có thể thay thế bằng bất kỳ dữ liệu bán hàng nào.
+Mã nguồn giao diện bán hàng tổng quát bằng **React + Vite + Ant Design**, phát triển trên khung `shop-web-main` được cung cấp. Không định hướng theo một ngành hàng. Catalog hiển thị dữ liệu sản phẩm lấy từ backend và hỗ trợ ảnh, biến thể, tồn kho, danh mục và phân trang.
 
 ## 1. Chạy dự án trên Windows
 
@@ -43,7 +43,7 @@ src/
 ├── components/ProductCard.jsx   Thẻ sản phẩm tái sử dụng
 ├── constants/
 │   ├── shop.js                  Tên shop, liên hệ, chính sách, trạng thái đơn
-│   └── products.js              Dữ liệu catalog mẫu trung lập
+│   └── api/                    Các API service và kiểu dữ liệu
 ├── context/
 │   ├── shop.js                  Định nghĩa Context
 │   └── ShopContext.jsx          Giỏ, hồ sơ, đơn hàng, chat, thông báo
@@ -65,7 +65,7 @@ src/
 └── main.jsx                    Điểm khởi chạy gốc
 ```
 
-`public/products/` có hình placeholder local. Thư mục `tests/` bổ sung các bài kiểm thử; các thư mục gốc được giữ nguyên.
+Thư mục `tests/` bổ sung các bài kiểm thử; các thư mục gốc được giữ nguyên.
 
 ## 3. Chức năng theo yêu cầu Customer
 
@@ -78,8 +78,8 @@ src/
 | Checkout `/checkout`       | Yêu cầu phiên đăng nhập; nhận hàng/địa chỉ lưu sẵn/ghi chú; ship hoặc nhận tại shop; mã giảm giá; trả toàn bộ hoặc cọc; QR/thẻ/tiền mặt.                                  |
 | Đơn mua `/orders`          | Lọc mọi trạng thái trong tài liệu; xem người nhận, mặt hàng, tiền hàng, phí ship, giảm giá, cọc, số tiền đã trả/còn lại, mã vận đơn, đơn vị/ngày gửi; hủy trước xác nhận. |
 | Tài khoản `/account`       | Xem/sửa thông tin, thêm/sửa/xóa địa chỉ, đặt địa chỉ mặc định; biểu mẫu đổi mật khẩu có validation.                                                                       |
-| Đăng nhập/đăng ký `/login` | Hai tab, validation tên/email/mật khẩu demo, chuyển về checkout sau đăng nhập; hồ sơ đã lưu được khôi phục theo email trong demo.                                         |
-| Chat/thông báo             | Gửi/lưu tin nhắn, xem thông báo và đánh dấu đã đọc; tạo/hủy đơn sinh thông báo demo.                                                                                      |
+| Đăng nhập/đăng ký `/login` | Xác thực tài khoản qua backend, cập nhật hồ sơ và chuyển về checkout sau khi đăng nhập. |
+| Chat/thông báo             | Gửi tin nhắn và nhận thông báo từ backend; hỗ trợ đánh dấu đã đọc và cập nhật theo phiên. |
 
 Giao diện có bố cục desktop/mobile. Không bổ sung màn hình Admin hoặc Quản lý ngoài phạm vi Customer.
 
@@ -93,7 +93,7 @@ Ví dụ cấu trúc liên kết: `socialLinks: [{label: 'Facebook', url: 'https
 
 ### Sản phẩm và phân loại
 
-Sửa `src/constants/products.js`, hoặc thay nguồn trong `src/services/productService.js` khi có API.
+Sản phẩm, danh mục và tồn kho được quản lý qua API; thay đổi dữ liệu trong màn hình quản lý.
 
 ```js
 {
@@ -129,20 +129,11 @@ Trong `shopConfig.commerce`:
 
 Đây là giá trị mẫu cấu hình được, không phải chính sách đã xác nhận của một shop cụ thể.
 
-## 5. Phạm vi demo và kết nối backend
+## 5. Kết nối backend
 
-Backend `shop-api-main` được cung cấp chỉ có `/api/health`. Bản này không sửa backend và không giả rằng đã có các API nghiệp vụ.
+Frontend gọi trực tiếp `shop-api` qua `VITE_API_BASE_URL` (mặc định `http://localhost:5000`). Tạo `.env.local` từ `.env.example` nếu cần thay đổi địa chỉ hoặc timeout.
 
-- Xác thực: phiên demo từ email, không kiểm tra danh tính, không lưu mật khẩu; không dùng mật khẩu/dữ liệu thật. Biểu mẫu đổi mật khẩu chỉ kiểm tra dữ liệu nhập, không báo đổi thành công.
-- Dữ liệu: giỏ, hồ sơ, đơn, chat và thông báo lưu trong localStorage với prefix `abc-shop-v1`. Lọc theo email chỉ phục vụ demo, không phải bảo vệ quyền truy cập.
-- Thanh toán: chọn QR/thẻ/COD nhưng không tạo giao dịch hay thu thông tin thẻ. Đã trả vẫn bằng 0; cọc là số tiền dự kiến. Trạng thái thanh toán và ngày cọc chỉ cập nhật khi có backend xác nhận. Không tự động hoàn tiền.
-- Đơn/vận chuyển: đơn mới chờ xác nhận; không có tác vụ giả tự giao hàng. Mã vận đơn/đơn vị/ngày gửi hiển thị nếu dữ liệu đơn có. Admin/Quản lý thực tế phải cập nhật qua backend.
-- Chat: lưu nội dung demo, chưa gửi đến nhân viên thật, chưa realtime. Thông báo mới chỉ phát sinh từ thao tác tạo/hủy đơn trong demo.
-- Tồn kho: giới hạn số lượng theo dữ liệu mẫu; backend cần kiểm tra tồn, giữ/trừ kho khi đặt hàng thật.
-
-Khi triển khai thật: bổ sung service auth, cart, order, payment, user, message, notification. Backend phải tính lại giá, kiểm tra coupon/tồn/trạng thái, xác thực quyền sở hữu và xác minh webhook thanh toán. Không tin giá hoặc email từ localStorage. Route frontend bảo vệ trải nghiệm, không thay cho phân quyền backend.
-
-Các endpoint như `/api/auth/login`, `/api/products`, `/api/cart`, `/api/orders`, `/api/me/addresses` là hướng tích hợp cần thống nhất với đội backend, chưa phải API đã có.
+Các chức năng đăng nhập, hồ sơ, địa chỉ, sản phẩm, giỏ hàng, checkout, thanh toán, đơn hàng, đánh giá, chat và quản lý đều dùng API thật. Token chỉ tồn tại trong bộ nhớ phiên; tải lại trang sẽ yêu cầu đăng nhập lại. Không đặt secret backend trong biến `VITE_*`.
 
 ## 6. Kiểm thử
 

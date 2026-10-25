@@ -3,7 +3,7 @@ import { useState } from "react";
 import { App, Image, Input, Space, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Button from "./ManagementButton";
-import { uploadProductImage } from "../../services/uploadProductImage";
+import { api } from "../../services/api";
 
 export default function ProductImageInput({
   value,
@@ -41,8 +41,19 @@ export default function ProductImageInput({
           0.8,
         ),
       );
-      const url = await uploadProductImage(blob);
-      onChange?.(url);
+      const imageFile = new File(
+        [blob],
+        `${file.name.replace(/\.[^.]+$/, "") || "product-image"}.webp`,
+        { type: "image/webp" },
+      );
+      const { data } = await api.adminProducts.upload({
+        files: [imageFile],
+        purpose: "product",
+      });
+      const uploadedImage = data[0];
+      if (!uploadedImage?.url)
+        throw new Error("Backend không trả về URL ảnh sản phẩm.");
+      onChange?.(uploadedImage.url);
       message.success("Đã tải ảnh sản phẩm");
     } catch (error) {
       message.error(

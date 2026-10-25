@@ -1024,11 +1024,3 @@ hr {
   max-width: 520px;
   text-align: center;
 }
-.demo-card {
-  width: min(100%, 320px);
-  padding: 24px;
-  border-radius: 16px;
-  color: white;
-  background: linear-gradient(120deg, #173a72, #426ea9);
-  text-align: left;
-}

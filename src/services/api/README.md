@@ -3,7 +3,7 @@
 Lớp client dùng **Fetch + TypeScript strict**, triển khai 69 API giao diện trong
 `shop-api/docs/apis/01-*.md` đến `19-*.md`, bổ sung refresh token từ routes thật.
 Webhook tích hợp được đặt riêng ngoài barrel export của frontend.
-Mỗi hàm service gửi HTTP tới backend, không nhập catalog mẫu, localStorage demo,
+Mỗi hàm service gửi HTTP tới backend, không tạo dữ liệu cục bộ hoặc dùng localStorage cho dữ liệu nghiệp vụ,
 fallback dữ liệu hoặc giả lập thành công. Response giữ nguyên envelope và metadata
 (`pagination`, `filters`, `summary`, `unread_count`, `customer`).
 
@@ -95,7 +95,7 @@ try {
 
 Các biến `email`, `password`, `name`, `phone` lấy từ form của ứng dụng.
 Catalog, danh sách quản trị và dữ liệu tài khoản đọc từ backend. Danh sách rỗng
-hiển thị trạng thái trống; không lấy lại dữ liệu nghiệp vụ demo trong localStorage.
+hiển thị trạng thái trống; không lấy lại dữ liệu nghiệp vụ từ localStorage.
 
 ## Xác thực và request đồng thời
 
