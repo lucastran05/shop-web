@@ -22,7 +22,6 @@ Yêu cầu Node.js 22.12+ hoặc 24. Không cần cài Vite toàn cục. Các de
 npm.cmd run build
 npm.cmd run preview
 npm.cmd run lint
-npm.cmd test
 ```
 
 ZIP không chứa node_modules hoặc dist. Khi hosting SPA, cấu hình fallback các đường dẫn về index.html.
@@ -65,7 +64,7 @@ src/
 └── main.jsx                    Điểm khởi chạy gốc
 ```
 
-Thư mục `tests/` bổ sung các bài kiểm thử; các thư mục gốc được giữ nguyên.
+Bộ kiểm thử tự động đã được gỡ theo yêu cầu sau đợt kiểm thử ngày 26/10/2026.
 
 ## 3. Chức năng theo yêu cầu Customer
 
@@ -137,7 +136,7 @@ Các chức năng đăng nhập, hồ sơ, địa chỉ, sản phẩm, giỏ hà
 
 ## 6. Kiểm thử
 
-`npm test` chạy các bài test DOM cho luồng yêu cầu đăng nhập, đặt cọc/hủy đơn, thanh toán dòng được chọn, tìm kiếm/hết hàng, biến thể và địa chỉ nhận hàng. `npm run lint` kiểm tra mã; `npm run build` tạo production bundle.
+Bộ kiểm thử tự động đã được gỡ sau đợt kiểm thử ngày 26/10/2026. `npm run lint` kiểm tra mã; `npm run build` tạo production bundle.
 
 Build có cảnh báo bundle Ant Design lớn; code splitting là bước tối ưu triển khai, không thay đổi chức năng. Chưa xác nhận trực quan bằng trình duyệt thật trong môi trường bàn giao.
 

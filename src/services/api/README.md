@@ -51,7 +51,6 @@ Tại `shop-web`:
 npm install
 Copy-Item .env.example .env.local
 npm run typecheck
-npm run test:api
 npm run build
 npm run dev
 ```
@@ -221,8 +220,5 @@ Các điểm sau vẫn cần đối chiếu thêm khi thay đổi backend:
 
 ## Kiểm tra
 
-`tests/api/http-client.test.js` dùng HTTP server cục bộ dành riêng cho test để
-kiểm tra serialization, status/lỗi, refresh đồng thời và race khi logout, giữ key
-giao dịch, multipart, CSV, timeout, cancellation và mất kết nối.
-Fixtures test không nằm trong code production. Đây là kiểm tra transport và client,
-không phải xác nhận PostgreSQL, provider thanh toán hoặc backend thật đã chạy.
+Bộ kiểm thử transport và client đã được chạy rồi gỡ theo yêu cầu ngày 26/10/2026.
+Xem báo cáo kiểm thử tại thư mục gốc dự án.

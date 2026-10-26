@@ -19,11 +19,4 @@ export default defineConfig({
       ],
     },
   },
-  test: {
-    // UI tests need more time on Windows while local services are running.
-    testTimeout: 15000,
-    dir: "./tests",
-    setupFiles: ["./tests/setup.js"],
-    include: ["**/*.test.{js,jsx}"],
-  },
 });

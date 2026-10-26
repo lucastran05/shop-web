@@ -21,6 +21,4 @@ Kiểm tra mã nguồn:
 npm.cmd run typecheck
 npm.cmd run lint
 npm.cmd run build
-npm.cmd run test:api
-npm.cmd run test:session
 ```
