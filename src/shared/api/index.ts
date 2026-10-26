@@ -1,0 +1,47 @@
+import { createApi } from "./create-api";
+import { createSessionStore } from "./session-store";
+
+function getBrowserSessionStore() {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return createSessionStore(window.sessionStorage);
+  } catch {
+    return undefined;
+  }
+}
+
+const browserSessionStore = getBrowserSessionStore();
+
+export const api = createApi({
+  baseURL: new URL(
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
+    typeof window === "undefined" ? "http://localhost:5000" : window.location.origin,
+  ).toString(),
+  timeoutMs: Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000),
+  ...(browserSessionStore ? { tokenStore: browserSessionStore } : {}),
+});
+
+export * from "./create-api";
+export * from "./http-client";
+export * from "./api-error";
+export * from "./common.types";
+export * from "./auth.service";
+export * from "./addresses.service";
+export * from "./products.service";
+export * from "./reviews.service";
+export * from "./cart.service";
+export * from "./checkout.service";
+export * from "./payments.service";
+export * from "./orders.service";
+export * from "./chat-and-notifications.service";
+export * from "./shop.service";
+export * from "./admin-products.service";
+export * from "./admin-categories.service";
+export * from "./admin-inventory.service";
+export * from "./admin-orders.service";
+export * from "./admin-payments.service";
+export * from "./admin-chat.service";
+export * from "./admin-dashboard-reports.service";
+export * from "./admin-users.service";
+export * from "./admin-settings-shop.service";
+export * from "./admin-vouchers.service";

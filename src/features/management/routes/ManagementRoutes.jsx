@@ -1,0 +1,74 @@
+import { Link, Route, Routes } from "react-router-dom";
+import { ConfigProvider, Result } from "antd";
+import { ManagementProvider } from "../context/ManagementContext";
+import { useManagement } from "../hooks/useManagement";
+import ManagementLayout from "../layouts/ManagementLayout";
+import LoginPage from "../pages/LoginPage";
+import DashboardPage from "../pages/DashboardPage";
+import ProductsPage from "../pages/ProductsPage";
+import CategoriesPage from "../pages/CategoriesPage";
+import InventoryPage from "../pages/InventoryPage";
+import OrdersPage from "../pages/OrdersPage";
+import PaymentsPage from "../pages/PaymentsPage";
+import MessagesPage from "../pages/MessagesPage";
+import ReportsPage from "../pages/ReportsPage";
+import SettingsPage from "../pages/SettingsPage";
+import VouchersPage from "../pages/VouchersPage";
+import UsersPage from "../pages/UsersPage";
+import "../styles/management.css";
+
+function AccountsRoute() {
+  return useManagement().session?.role === "admin" ? (
+    <UsersPage />
+  ) : (
+    <Result
+      status="403"
+      title="Bạn không có quyền truy cập"
+      extra={<Link to="/management">Về tổng quan</Link>}
+    />
+  );
+}
+export default function ManagementRoutes() {
+  return (
+    <ConfigProvider
+      theme={{
+        token: { fontSize: 15, lineHeight: 1.6, controlHeight: 40 },
+        components: {
+          Input: { controlHeight: 40, inputFontSize: 15 },
+          InputNumber: { controlHeight: 40, inputFontSize: 15 },
+          Select: { controlHeight: 40, fontSize: 15 },
+          Button: { controlHeight: 40, contentFontSize: 15 },
+        },
+      }}
+    >
+      <ManagementProvider>
+        <Routes>
+          <Route path="login" element={<LoginPage />} />
+          <Route element={<ManagementLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="payments" element={<PaymentsPage />} />
+            <Route path="vouchers" element={<VouchersPage />} />
+            <Route path="messages" element={<MessagesPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="users" element={<AccountsRoute />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route
+              path="*"
+              element={
+                <Result
+                  status="404"
+                  title="Không tìm thấy trang"
+                  extra={<Link to="/management">Về tổng quan</Link>}
+                />
+              }
+            />
+          </Route>
+        </Routes>
+      </ManagementProvider>
+    </ConfigProvider>
+  );
+}

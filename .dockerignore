@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.minio
+.env
+.env.*
+!.env.example
+*.log
