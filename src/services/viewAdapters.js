@@ -17,11 +17,16 @@ export function mapOrder(order, email = "") {
     completedAt: order.completed_at,
     statusCode: order.status,
     status: orderLabels[order.status] || order.status_label || order.status,
-    total: order.total_amount,
+    total: Number(order.total_amount ?? 0),
+    subtotal: Number(order.subtotal ?? 0),
+    shipping: Number(order.shipping_fee ?? 0),
+    off: Number(order.discount_amount ?? 0),
+    delivery: order.delivery_method,
     paid: order.paid_amount,
     remaining: order.remaining_amount,
     refunded: order.refunded_amount,
     deposit: order.deposit_amount,
+    depositAt: order.deposit_paid_at,
     depositStatus:
       order.deposit_status === "paid"
         ? "Đã xác nhận"

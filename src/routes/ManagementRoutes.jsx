@@ -13,6 +13,7 @@ import PaymentsPage from "../pages/management/PaymentsPage";
 import MessagesPage from "../pages/management/MessagesPage";
 import ReportsPage from "../pages/management/ReportsPage";
 import SettingsPage from "../pages/management/SettingsPage";
+import VouchersPage from "../pages/management/VouchersPage";
 import UsersPage from "../pages/management/UsersPage";
 import "../styles/management.css";
 
@@ -50,6 +51,7 @@ export default function ManagementRoutes() {
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="vouchers" element={<VouchersPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="users" element={<AccountsRoute />} />

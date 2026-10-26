@@ -34,7 +34,11 @@ export default function LoginPage() {
       await s.setSession({ id: data.user.id });
       navigate("/management", { replace: true });
     } catch (error) {
-      message.error(userError(error));
+      message.error(
+        error?.status === 401
+          ? "Email hoặc mật khẩu không chính xác."
+          : userError(error),
+      );
     } finally {
       setLoading(false);
     }

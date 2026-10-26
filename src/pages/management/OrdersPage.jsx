@@ -4,7 +4,7 @@ import {
   orderColumns,
   statusTag,
 } from "../../components/management/orderColumns";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import {
   App,
@@ -35,6 +35,7 @@ export default function OrdersPage() {
     [selected, setSelected] = useState([]),
     [detailId, setDetailId] = useState(null),
     [mode, setMode] = useState("view");
+  const initializedEditOrder = useRef(null);
   const detail = s.orders.find((o) => o.id === detailId);
   const rows = s.orders.filter(
     (o) =>
@@ -64,14 +65,19 @@ export default function OrdersPage() {
     }
   }
   useEffect(() => {
-    if (!detail || mode !== "edit") return;
+    if (!detail || mode !== "edit") {
+      initializedEditOrder.current = null;
+      return;
+    }
+    if (initializedEditOrder.current === detail.id) return;
+    initializedEditOrder.current = detail.id;
     form.setFieldsValue({
       status: undefined,
       carrier: detail.carrier || "",
       tracking: detail.tracking || "",
       note: detail.note || "",
     });
-  }, [detail, mode, form]);
+  }, [detail?.id, mode, form]);
   async function save(values) {
     try {
       const next = values.status

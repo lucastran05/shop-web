@@ -1,8 +1,21 @@
 import { createApi } from "./create-api";
+import { createSessionStore } from "./session-store";
+
+function getBrowserSessionStore() {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return createSessionStore(window.sessionStorage);
+  } catch {
+    return undefined;
+  }
+}
+
+const browserSessionStore = getBrowserSessionStore();
 
 export const api = createApi({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
   timeoutMs: Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000),
+  ...(browserSessionStore ? { tokenStore: browserSessionStore } : {}),
 });
 
 export * from "./create-api";
@@ -28,3 +41,4 @@ export * from "./admin-chat.service";
 export * from "./admin-dashboard-reports.service";
 export * from "./admin-users.service";
 export * from "./admin-settings-shop.service";
+export * from "./admin-vouchers.service";

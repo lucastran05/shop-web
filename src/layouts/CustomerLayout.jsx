@@ -242,7 +242,10 @@ export default function CustomerLayout() {
       <Drawer
         title={t("Trò chuyện với shop")}
         open={chat}
-        onClose={() => setChat(false)}
+        onClose={() => {
+          s.closeChat();
+          setChat(false);
+        }}
         footer={
           <Space.Compact style={{ width: "100%" }}>
             <Input

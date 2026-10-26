@@ -27,15 +27,17 @@ export interface TokenStore {
   write(tokens: TokenPair): void;
   clear(): void;
 }
+export type SessionClearReason = "expired" | "manual" | undefined;
 
-/** One instance represents one authenticated session. Tokens are kept in memory. */
+/** One instance represents one authenticated session. Persistence is provided by the configured token store. */
 export class HttpClient {
   private readonly baseURL: string;
   private readonly timeoutMs: number;
   private readonly fetcher: typeof globalThis.fetch;
   private readonly tokenStore: TokenStore | undefined;
-  private readonly sessionListeners = new Set<() => void>();
+  private readonly sessionListeners = new Set<(reason?: SessionClearReason) => void>();
   private tokens: TokenPair | null = null;
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private sessionVersion = 0;
   private refreshFlight: {
     version: number;
@@ -64,6 +66,7 @@ export class HttpClient {
     } catch {
       this.tokens = null;
     }
+    this.scheduleAccessRefresh();
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0)
       throw new TypeError("Invalid timeoutMs");
   }
@@ -72,20 +75,22 @@ export class HttpClient {
     this.sessionVersion += 1;
     this.tokens = { ...tokens };
     this.persistTokens();
+    this.scheduleAccessRefresh();
   }
 
-  clearTokens(): void {
+  clearTokens(reason: SessionClearReason = undefined): void {
     this.sessionVersion += 1;
+    this.clearRefreshTimer();
     this.tokens = null;
     this.persistTokens();
-    for (const listener of this.sessionListeners) listener();
+    for (const listener of this.sessionListeners) listener(reason);
   }
 
   hasSession(): boolean {
     return this.tokens !== null;
   }
 
-  onSessionCleared(listener: () => void): () => void {
+  onSessionCleared(listener: (reason?: SessionClearReason) => void): () => void {
     this.sessionListeners.add(listener);
     return () => {
       this.sessionListeners.delete(listener);
@@ -99,6 +104,46 @@ export class HttpClient {
     } catch {
       /* The current session still works when browser storage is unavailable. */
     }
+  }
+
+  private clearRefreshTimer(): void {
+    if (this.refreshTimer !== null) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  private scheduleAccessRefresh(retryAfterMs?: number): void {
+    this.clearRefreshTimer();
+    const accessToken = this.tokens?.accessToken;
+    if (!accessToken) return;
+
+    let expiresAt = 0;
+    try {
+      const encodedPayload = accessToken.split('.')[1];
+      if (!encodedPayload) return;
+      const normalized = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const payload = JSON.parse(atob(padded));
+      expiresAt = Number(payload.exp) * 1000;
+    } catch {
+      return;
+    }
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return;
+
+    const delay = retryAfterMs ?? Math.max(1000, expiresAt - Date.now() - 60_000);
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = null;
+      this.refreshTokens().catch((error) => {
+        // Network/5xx failures are temporary; retry without logging the user out.
+        if (
+          this.tokens &&
+          !(error instanceof ApiError && [400, 401, 403].includes(error.status))
+        ) {
+          this.scheduleAccessRefresh(30_000);
+        }
+      });
+    }, delay);
   }
 
   async refreshTokens(): Promise<ApiResponse<TokenPair>> {
@@ -139,6 +184,7 @@ export class HttpClient {
         // Keep the session version stable so late 401s can use the rotated token.
         this.tokens = { ...response.data };
         this.persistTokens();
+        this.scheduleAccessRefresh();
         return response;
       } catch (error) {
         if (
@@ -146,7 +192,7 @@ export class HttpClient {
           error instanceof ApiError &&
           [400, 401, 403].includes(error.status)
         ) {
-          this.clearTokens();
+          this.clearTokens("expired");
         }
         throw error;
       } finally {
@@ -318,7 +364,7 @@ export class HttpClient {
         version === this.sessionVersion &&
         token === this.tokens?.accessToken
       )
-        this.clearTokens();
+        this.clearTokens("expired");
       const backend = isBackendError(payload) ? payload : undefined;
       throw new ApiError(
         backend?.message ?? `HTTP ${response.status}: ${response.statusText}`,

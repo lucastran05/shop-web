@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { App } from "antd";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Context } from "./shop";
 import { Button, Result, Spin } from "antd";
 import { userError } from "../utils/userError";
@@ -13,6 +15,9 @@ import { api } from "../services/api";
 import { mapProductSummary } from "../services/productAdapter";
 import { usePolling } from "../hooks/usePolling";
 export function ShopProvider({ children }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { message } = App.useApp();
   const [shopInfo, setShopInfo] = useState({
     name: shopConfig.name,
     description: shopConfig.description,
@@ -23,10 +28,13 @@ export function ShopProvider({ children }) {
   }, [shopInfo.name]);
   const [user, setUser] = useState(null);
   const chatUser = useRef(null);
+  const chatRead = useRef(false);
   useEffect(() => {
     chatUser.current = user?.id;
+    chatRead.current = false;
     return () => {
       chatUser.current = null;
+      chatRead.current = false;
     };
   }, [user?.id]);
   const [orders, setOrders] = useState([]);
@@ -36,7 +44,21 @@ export function ShopProvider({ children }) {
   const [sessionError, setSessionError] = useState(null);
   const [sessionAttempt, setSessionAttempt] = useState(0);
   const [conversationId, setConversationId] = useState(null);
-  useEffect(() => api.http.onSessionCleared(() => setUser(null)), []);
+  useEffect(() => {
+    return api.http.onSessionCleared((reason) => {
+      setUser(null);
+      if (reason !== "expired") return;
+      message.warning("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      const target = `${location.pathname}${location.search}${location.hash}`;
+      const loginPath = location.pathname.startsWith("/management")
+        ? "/management/login"
+        : "/login";
+      navigate(
+        `${loginPath}?expired=1&next=${encodeURIComponent(target)}`,
+        { replace: true },
+      );
+    });
+  }, [location, message, navigate]);
   useEffect(() => {
     let active = true;
     setAuthLoading(true);
@@ -54,7 +76,7 @@ export function ShopProvider({ children }) {
       .catch((error) => {
         if (!active) return;
         if ([401, 403].includes(error.status) || !api.http.hasSession()) {
-          api.http.clearTokens();
+          api.http.clearTokens("expired");
           setUser(null);
         } else setSessionError(error);
       })
@@ -134,6 +156,7 @@ export function ShopProvider({ children }) {
     setNotifications([]);
     setMessages([]);
     setConversationId(null);
+    chatRead.current = false;
     if (!user?.id) return;
     listAll((query) => api.orders.list(query))
       .then((rows) => Promise.all(rows.map((row) => api.orders.get(row.id))))
@@ -186,6 +209,7 @@ export function ShopProvider({ children }) {
       limit: 100,
     });
     await api.chatAndNotifications.markConversationRead();
+    chatRead.current = true;
     if (chatUser.current === userId)
       setMessages(
         rows.map((item) => ({
@@ -218,14 +242,36 @@ export function ShopProvider({ children }) {
       { limit: 100 },
     );
     if (chatUser.current !== user.id) return;
+    if (
+      chatRead.current &&
+      rows.some(
+        (item) =>
+          item.sender_role !== "customer" && item.is_read !== true,
+      )
+    ) {
+      await api.chatAndNotifications.markConversationRead();
+    }
     setMessages((old) => {
       const byId = new Map(old.map((item) => [item.id, item]));
-      for (const item of rows) byId.set(item.id, mapMessage(item, user.email));
+      for (const item of rows) {
+        const mapped = mapMessage(item, user.email);
+        const previous = byId.get(item.id);
+        byId.set(
+          item.id,
+          mapped.from === "shop" &&
+            (chatRead.current || previous?.is_read === true)
+            ? { ...mapped, is_read: true }
+            : mapped,
+        );
+      }
       return [...byId.values()].sort(
         (a, b) =>
           a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
       );
     });
+  }
+  function closeChat() {
+    chatRead.current = false;
   }
   async function readNotification(id) {
     await api.chatAndNotifications.readNotification(id);
@@ -435,6 +481,7 @@ export function ShopProvider({ children }) {
         refreshOrders,
         refreshNotifications,
         openChat,
+        closeChat,
         sendMessage,
         refreshMessages,
         readNotification,

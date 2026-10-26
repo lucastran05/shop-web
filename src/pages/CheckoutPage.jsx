@@ -1,5 +1,5 @@
 import { userError } from "../utils/userError";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Navigate, Link, useSearchParams } from "react-router-dom";
 import {
   Form,
@@ -23,6 +23,25 @@ import PaymentPanel from "../components/PaymentPanel";
 import { Modal } from "antd";
 import { api, ApiError } from "../services/api";
 import { mapProductDetail } from "../services/productAdapter";
+
+function buildVoucherPreview(voucher, subtotal, shipping) {
+  let discount = 0;
+  if (voucher.discount_type === "percentage")
+    discount = subtotal * Number(voucher.discount_value) / 100;
+  else if (voucher.discount_type === "fixed")
+    discount = Number(voucher.discount_value);
+  else if (voucher.discount_type === "free_shipping") discount = shipping;
+  if (voucher.max_discount_amount !== null && voucher.max_discount_amount !== undefined)
+    discount = Math.min(discount, Number(voucher.max_discount_amount));
+  return {
+    id: voucher.id,
+    code: voucher.code,
+    name: voucher.name,
+    discount_type: voucher.discount_type,
+    discount_amount: Math.max(0, Math.min(Math.round(discount), subtotal + shipping)),
+  };
+}
+
 export default function Checkout() {
   const { t } = useTranslation(),
     s = useShop(),
@@ -39,15 +58,23 @@ export default function Checkout() {
     [payment, setPayment] = useState("qr"),
     [mode, setMode] = useState("full"),
     [coupon, setCoupon] = useState(""),
+    [availableVouchers, setAvailableVouchers] = useState([]),
+    [couponPreview, setCouponPreview] = useState(null),
+    [checkingCoupon, setCheckingCoupon] = useState(false),
     [addingAddress, setAddingAddress] = useState(false),
     [addressId, setAddressId] = useState(null),
     [addressForm] = Form.useForm(),
     [form] = Form.useForm(),
     submitted = useRef(false),
-    orderIdempotencyKey = useRef(null);
+    orderIdempotencyKey = useRef(null),
+    lastValidatedVoucherKey = useRef(""),
+    restoredVoucherKey = useRef("");
   const buyProductId = params.get("product_id");
   const buyVariantId = params.get("variant_id");
   const quantityParam = params.get("quantity");
+  const voucherStorageKey = s.user?.id
+    ? `abc-shop-checkout-voucher:${s.user.id}:${buyProductId || "cart"}:${buyVariantId || ""}`
+    : null;
   useEffect(() => {
     if (!s.user) return;
     let active = true;
@@ -131,16 +158,154 @@ export default function Checkout() {
         s.items.filter((item) => item.selected).map((item) => ({ ...item })),
       );
   }, [buyProductId, s.items, items.length]);
+  useEffect(() => {
+    if (!s.user || !items.length) {
+      setAvailableVouchers([]);
+      return;
+    }
+    let active = true;
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    api.vouchers
+      .available({ subtotal })
+      .then(({ data }) => {
+        if (active) setAvailableVouchers(data);
+      })
+      .catch(() => {
+        if (active) setAvailableVouchers([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [s.user, items]);
   const defaultAddress = addresses.find((a) => a.id === addressId);
   const currentOrder = placed;
   const depositRate =
     mode === "deposit50" ? 0.5 : mode === "deposit70" ? 0.7 : 0;
   const deposit = depositRate > 0;
-  const totals = calculateCheckout(items, delivery, false, deposit, payment, {
+  const totals = calculateCheckout(
+      items,
+      delivery,
+      Boolean(couponPreview),
+      deposit,
+      payment,
+      { ...shop.commerce, depositRate },
+      couponPreview?.discount_amount,
+    ),
+    { subtotal, shipping, off, total, due } = totals;
+  function quantity(key, value, stock) {
+    if (value === null) return;
+    const next = Math.max(1, Math.min(stock, Math.floor(Number(value) || 1)));
+    setItems((old) =>
+      old.map((x) => (x.key === key ? { ...x, quantity: next } : x)),
+    );
+    lastValidatedVoucherKey.current = "";
+    setCouponPreview(null);
+  }
+  const applyCoupon = useCallback(async (nextCode = coupon) => {
+    const code = nextCode.trim();
+    setCoupon(code);
+    if (!code) {
+      setCouponPreview(null);
+      lastValidatedVoucherKey.current = "";
+      if (voucherStorageKey) {
+        try {
+          sessionStorage.removeItem(voucherStorageKey);
+        } catch {}
+      }
+      message.warning(t("Vui lòng nhập mã giảm giá"));
+      return;
+    }
+    const baseTotals = calculateCheckout(items, delivery, false, false, payment, {
       ...shop.commerce,
       depositRate,
-    }),
-    { subtotal, shipping, off, total, due } = totals;
+    });
+    const selectedVoucher = availableVouchers.find(
+      (voucher) => voucher.code.trim().toUpperCase() === code.toUpperCase(),
+    );
+    if (selectedVoucher) {
+      setCouponPreview(
+        buildVoucherPreview(
+          selectedVoucher,
+          baseTotals.subtotal,
+          baseTotals.shipping,
+        ),
+      );
+    }
+    lastValidatedVoucherKey.current = `${code}|${baseTotals.subtotal}|${baseTotals.shipping}`;
+    setCheckingCoupon(true);
+    try {
+      const { data } = await api.vouchers.validate({
+        code,
+        subtotal: baseTotals.subtotal,
+        shipping_fee: baseTotals.shipping,
+      });
+      const validation =
+        data && typeof data.discount_amount !== "undefined"
+          ? data
+          : data?.data;
+      const discountAmount = Number(validation?.discount_amount);
+      if (!validation || !Number.isFinite(discountAmount)) {
+        throw new ApiError("API returned an invalid voucher response", {
+          kind: "protocol",
+        });
+      }
+      setCouponPreview({ ...validation, discount_amount: discountAmount });
+      if (voucherStorageKey) {
+        try {
+          sessionStorage.setItem(voucherStorageKey, code);
+        } catch {}
+      }
+      message.success(t("Đã áp dụng mã giảm giá"));
+    } catch (error) {
+      if (
+        !selectedVoucher ||
+        (error instanceof ApiError && error.status >= 400 && error.status < 500)
+      ) {
+        setCouponPreview(null);
+      }
+      if (voucherStorageKey) {
+        try {
+          sessionStorage.removeItem(voucherStorageKey);
+        } catch {}
+      }
+      message.error(error instanceof ApiError ? userError(error) : t("Mã giảm giá không hợp lệ"));
+    } finally {
+      setCheckingCoupon(false);
+    }
+  }, [coupon, items, delivery, payment, shop.commerce, depositRate, voucherStorageKey, availableVouchers, message, t]);
+  useEffect(() => {
+    if (!voucherStorageKey || !availableVouchers.length) return;
+    if (restoredVoucherKey.current === voucherStorageKey) return;
+    let savedCode = "";
+    try {
+      savedCode = sessionStorage.getItem(voucherStorageKey)?.trim() || "";
+    } catch {
+      restoredVoucherKey.current = voucherStorageKey;
+      return;
+    }
+    restoredVoucherKey.current = voucherStorageKey;
+    if (
+      savedCode &&
+      availableVouchers.some(
+        (voucher) => voucher.code.trim().toUpperCase() === savedCode.toUpperCase(),
+      )
+    ) {
+      setCoupon(savedCode);
+    }
+  }, [availableVouchers, voucherStorageKey]);
+  useEffect(() => {
+    if (!coupon || !availableVouchers.length || checkingCoupon) return;
+    const selected = availableVouchers.find(
+      (voucher) => voucher.code.trim().toUpperCase() === coupon.trim().toUpperCase(),
+    );
+    if (!selected) return;
+    const validationKey = `${coupon.trim()}|${subtotal}|${shipping}`;
+    if (lastValidatedVoucherKey.current === validationKey) return;
+    void applyCoupon(coupon);
+  }, [availableVouchers, coupon, subtotal, shipping, checkingCoupon, applyCoupon]);
   if (!s.user)
     return (
       <Navigate
@@ -150,13 +315,6 @@ export default function Checkout() {
         replace
       />
     );
-  function quantity(key, value, stock) {
-    if (value === null) return;
-    const next = Math.max(1, Math.min(stock, Math.floor(Number(value) || 1)));
-    setItems((old) =>
-      old.map((x) => (x.key === key ? { ...x, quantity: next } : x)),
-    );
-  }
   async function submitOrder() {
     if (submitted.current || !recipient) return;
     if (payment === "cash" && (delivery !== "pickup" || deposit)) return;
@@ -200,6 +358,11 @@ export default function Checkout() {
       );
       setPlaced(order);
       setStep(2);
+      if (voucherStorageKey) {
+        try {
+          sessionStorage.removeItem(voucherStorageKey);
+        } catch {}
+      }
       if (payment !== "cash") {
         try {
           const { data: session } = await api.payments.createSession(
@@ -437,7 +600,9 @@ export default function Checkout() {
                   <Radio.Group
                     value={delivery}
                     onChange={(e) => {
+                      lastValidatedVoucherKey.current = "";
                       setDelivery(e.target.value);
+                      setCouponPreview(null);
                       if (e.target.value === "ship" && payment === "cash")
                         setPayment("qr");
                     }}
@@ -563,23 +728,56 @@ export default function Checkout() {
                   </div>
                 ))}
               {step === 0 && (
-                <div className="coupon">
+                <>
+                  {availableVouchers.length > 0 ? (
+                  <Select
+                    aria-label={t("Voucher đang hoạt động")}
+                    showSearch
+                    allowClear
+                    style={{ width: "100%", marginBottom: 8 }}
+                    placeholder={t("Chọn voucher đang hoạt động")}
+                    value={coupon || undefined}
+                    optionFilterProp="label"
+                    options={availableVouchers.map((voucher) => ({
+                      value: voucher.code,
+                      label:
+                        voucher.discount_type === "percentage"
+                          ? `${voucher.code} — Giảm ${voucher.discount_value}%`
+                          : voucher.discount_type === "fixed"
+                            ? `${voucher.code} — Giảm ${money(voucher.discount_value)}`
+                            : `${voucher.code} — Miễn phí vận chuyển`,
+                    }))}
+                    onChange={(value) => {
+                      lastValidatedVoucherKey.current = "";
+                      if (value) setCoupon(value);
+                      else {
+                        setCoupon("");
+                        setCouponPreview(null);
+                        if (voucherStorageKey) {
+                          try {
+                            sessionStorage.removeItem(voucherStorageKey);
+                          } catch {}
+                        }
+                      }
+                    }}
+                  />
+                  ) : (
+                  <div className="coupon">
                   <Input
                     aria-label={t("Mã giảm giá")}
                     placeholder={t("Nhập mã giảm giá")}
                     value={coupon}
-                    onChange={(e) => setCoupon(e.target.value)}
-                  />
-                  <Button
-                    onClick={() => {
-                      message.info(
-                        t("Mã giảm giá sẽ được áp dụng khi xác nhận đặt hàng"),
-                      );
+                    onChange={(e) => {
+                      setCoupon(e.target.value);
+                      setCouponPreview(null);
                     }}
-                  >
+                  />
+                  <Button onClick={applyCoupon} loading={checkingCoupon}>
                     {t("Áp dụng")}
                   </Button>
-                </div>
+                  </div>
+                  )}
+                </>
               )}
               <p>
                 <span>{t("Tổng tiền hàng")}</span>

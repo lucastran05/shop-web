@@ -99,7 +99,7 @@ hiển thị trạng thái trống; không lấy lại dữ liệu nghiệp vụ
 
 ## Xác thực và request đồng thời
 
-- Instance dùng trong trình duyệt chỉ giữ token trong bộ nhớ; tải lại trang sẽ yêu cầu đăng nhập lại.
+- Instance dùng trong trình duyệt lưu token trong `sessionStorage`; tải lại trang trong cùng tab vẫn giữ phiên, còn đóng tab sẽ yêu cầu đăng nhập lại.
   Khi tải lại trang, ShopProvider kiểm tra `/me` trước khi mở các trang cần đăng nhập.
   Role hiển thị lấy từ backend; dữ liệu user cũ trong trình duyệt không cấp quyền quản trị.
   Logout, đổi mật khẩu và phiên hết hiệu lực xóa token đã lưu.

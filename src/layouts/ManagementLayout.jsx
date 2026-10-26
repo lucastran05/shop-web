@@ -16,6 +16,7 @@ import {
   LogoutOutlined,
   ShopOutlined,
   SettingOutlined,
+  TagsOutlined,
 } from "@ant-design/icons";
 import { useShopConfig } from "../hooks/useShopConfig";
 import { useManagement } from "../hooks/useManagement";
@@ -26,6 +27,7 @@ const navigation = [
   ["categories", "Danh mục", DatabaseOutlined],
   ["inventory", "Kho hàng", ShopOutlined],
   ["payments", "Thanh toán", WalletOutlined],
+  ["vouchers", "Voucher", TagsOutlined],
   ["messages", "Tin nhắn", MessageOutlined],
   ["reports", "Báo cáo", BarChartOutlined],
   ["users", "Tài khoản", TeamOutlined],

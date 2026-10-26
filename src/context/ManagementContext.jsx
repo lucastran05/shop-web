@@ -34,6 +34,7 @@ export function ManagementProvider({ children }) {
   const [users, saveUsers] = useState([]);
   const [messages, saveMessages] = useState([]);
   const [stockHistory, saveStockHistory] = useState([]);
+  const [vouchers, saveVouchers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lowStockLimit, setLowStockLimit] = useState(5);
@@ -126,6 +127,11 @@ export function ManagementProvider({ children }) {
         })),
       );
   }, []);
+  const loadVouchers = useCallback(async () => {
+    const sessionId = sessionRef.current;
+    const { data } = await api.adminVouchers.list();
+    if (sessionRef.current === sessionId) saveVouchers(data);
+  }, []);
 
   const refresh = useCallback(async () => {
     const tasks = [
@@ -134,6 +140,7 @@ export function ManagementProvider({ children }) {
       loadOrders(),
       loadMessages(),
       loadStockHistory(),
+      loadVouchers(),
     ];
     if (session?.role === "admin") tasks.push(loadUsers());
     const results = await Promise.allSettled(tasks);
@@ -146,6 +153,7 @@ export function ManagementProvider({ children }) {
     loadOrders,
     loadMessages,
     loadStockHistory,
+    loadVouchers,
     loadUsers,
     session?.role,
   ]);
@@ -158,6 +166,7 @@ export function ManagementProvider({ children }) {
     saveUsers([]);
     saveMessages([]);
     saveStockHistory([]);
+    saveVouchers([]);
     if (!session?.id) return;
     setLoading(true);
     refresh().finally(() => {
@@ -165,7 +174,7 @@ export function ManagementProvider({ children }) {
     });
     const syncManagementData = () => {
       if (document.visibilityState === "hidden") return;
-      Promise.allSettled([loadProducts(), loadOrders(), loadMessages()]);
+      Promise.allSettled([loadProducts(), loadOrders(), loadMessages(), loadVouchers()]);
     };
     const interval = window.setInterval(syncManagementData, 1000);
     window.addEventListener("focus", syncManagementData);
@@ -174,7 +183,7 @@ export function ManagementProvider({ children }) {
       window.clearInterval(interval);
       window.removeEventListener("focus", syncManagementData);
     };
-  }, [session?.id, refresh, loadProducts, loadOrders, loadMessages]);
+  }, [session?.id, refresh, loadProducts, loadOrders, loadMessages, loadVouchers]);
 
   function updateChatPreference(owner, patch) {
     if (!session) return;
@@ -318,6 +327,16 @@ export function ManagementProvider({ children }) {
     });
     await Promise.all([loadProducts(), loadStockHistory()]);
   }
+  async function saveVoucher(voucher, existingId) {
+    if (existingId) await api.adminVouchers.update(existingId, voucher);
+    else await api.adminVouchers.create(voucher);
+    await loadVouchers();
+  }
+  async function removeVouchers(ids) {
+    const { data } = await api.adminVouchers.bulkDelete({ ids });
+    await loadVouchers();
+    return data;
+  }
   async function reply(owner, content) {
     const message = messages.find((item) => item.owner === owner);
     if (!message?.conversationId) throw new Error("Conversation not found");
@@ -366,6 +385,9 @@ export function ManagementProvider({ children }) {
         startConversation,
         refreshMessages: loadMessages,
         stockHistory,
+        vouchers,
+        saveVoucher,
+        removeVouchers,
         adjustInventory,
         lowStockLimit,
         setLowStockLimit,

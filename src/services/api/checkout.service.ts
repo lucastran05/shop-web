@@ -54,7 +54,13 @@ export interface Quote extends Amounts {
   items: AvailableLineItem[];
   recipient: Recipient;
   delivery_method: DeliveryMethod;
-  coupon: { code: string | null; discount_amount: number } | null;
+  coupon: {
+    id?: ID;
+    code: string | null;
+    name?: string;
+    discount_amount: number;
+    discount_type?: "percentage" | "fixed" | "free_shipping";
+  } | null;
   allowed_payment_methods: PaymentMethod[];
   allowed_deposit_rates: number[];
   subtotal: number;

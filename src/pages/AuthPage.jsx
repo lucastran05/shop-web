@@ -53,7 +53,11 @@ export default function Auth() {
         { replace: true },
       );
     } catch (error) {
-      message.error(userError(error));
+      message.error(
+        error?.status === 401
+          ? t("Email hoặc mật khẩu không chính xác")
+          : userError(error),
+      );
     } finally {
       setLoading(false);
     }

@@ -18,6 +18,7 @@ import { AdminChatService } from "./admin-chat.service";
 import { AdminDashboardReportsService } from "./admin-dashboard-reports.service";
 import { AdminUsersService } from "./admin-users.service";
 import { AdminSettingsShopService } from "./admin-settings-shop.service";
+import { AdminVouchersService, VouchersService } from "./admin-vouchers.service";
 
 /** Create separate instances for customer and management sessions if both are used at once. */
 export function createApi(config: HttpClientConfig) {
@@ -43,6 +44,8 @@ export function createApi(config: HttpClientConfig) {
     adminDashboardReports: new AdminDashboardReportsService(http),
     adminUsers: new AdminUsersService(http),
     adminSettingsShop: new AdminSettingsShopService(http),
+    adminVouchers: new AdminVouchersService(http),
+    vouchers: new VouchersService(http),
   };
 }
 export type ShopApi = ReturnType<typeof createApi>;
