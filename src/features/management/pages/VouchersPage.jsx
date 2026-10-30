@@ -231,143 +231,158 @@ export default function VouchersPage() {
       <Modal
         title={editing ? "Sửa voucher" : "Thêm voucher"}
         open={open}
-        width={650}
+        width={1120}
+        className="mg-editor-modal"
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         okText="Lưu voucher"
         cancelText="Hủy"
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" onFinish={save}>
-          <Form.Item
-            name="code"
-            label="Mã voucher"
-            rules={[
-              { required: true, message: "Nhập mã voucher" },
-              {
-                pattern: /^[A-Za-z0-9][A-Za-z0-9 _-]{1,48}[A-Za-z0-9]$/,
-                message:
-                  "Mã dài 3-50 ký tự, chỉ gồm chữ, số, khoảng trắng, - hoặc _",
-              },
-            ]}
-          >
-            <Input
-              maxLength={50}
-              placeholder="VD: SALE20"
-              disabled={Boolean(editing)}
-            />
-          </Form.Item>
-          <Form.Item
-            name="name"
-            label="Tên voucher"
-            rules={[{ required: true, message: "Nhập tên voucher" }]}
-          >
-            <Input maxLength={255} />
-          </Form.Item>
-          <Form.Item
-            name="audience"
-            label="Đối tượng áp dụng"
-            rules={[{ required: true }]}
-          >
-            <Select
-              options={[
-                { value: "broadcast", label: "Tất cả khách hàng (Broadcast)" },
-                { value: "selected", label: "Khách hàng được chọn" },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item
-            noStyle
-            shouldUpdate={(prev, next) => prev.audience !== next.audience}
-          >
-            {({ getFieldValue }) =>
-              getFieldValue("audience") === "selected" && (
-                <Form.Item
-                  name="recipient_ids"
-                  label="Khách hàng"
-                  rules={[
-                    {
-                      required: true,
-                      type: "array",
-                      min: 1,
-                      message: "Chọn ít nhất một khách hàng",
-                    },
-                  ]}
-                >
-                  <Select
-                    mode="multiple"
-                    showSearch
-                    optionFilterProp="label"
-                    placeholder="Tìm tên hoặc email khách hàng"
-                    options={s.users
-                      .filter((user) => user.role === "customer")
-                      .map((user) => ({
-                        value: user.id,
-                        label: `${user.name} · ${user.email}`,
-                      }))}
-                  />
-                </Form.Item>
-              )
-            }
-          </Form.Item>
-          <Space wrap>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={save}
+          className="mg-voucher-form"
+        >
+          <section className="mg-form-section">
+            <h3>Thông tin & đối tượng</h3>
             <Form.Item
-              name="discount_type"
-              label="Kiểu giảm"
+              name="code"
+              label="Mã voucher"
+              rules={[
+                { required: true, message: "Nhập mã voucher" },
+                {
+                  pattern: /^[A-Za-z0-9][A-Za-z0-9 _-]{1,48}[A-Za-z0-9]$/,
+                  message:
+                    "Mã dài 3-50 ký tự, chỉ gồm chữ, số, khoảng trắng, - hoặc _",
+                },
+              ]}
+            >
+              <Input
+                maxLength={50}
+                placeholder="VD: SALE20"
+                disabled={Boolean(editing)}
+              />
+            </Form.Item>
+            <Form.Item
+              name="name"
+              label="Tên voucher"
+              rules={[{ required: true, message: "Nhập tên voucher" }]}
+            >
+              <Input maxLength={255} />
+            </Form.Item>
+            <Form.Item
+              name="audience"
+              label="Đối tượng áp dụng"
               rules={[{ required: true }]}
             >
               <Select
-                style={{ width: 190 }}
                 options={[
-                  { value: "percentage", label: "Theo phần trăm" },
-                  { value: "fixed", label: "Theo số tiền" },
-                  { value: "free_shipping", label: "Miễn phí vận chuyển" },
+                  {
+                    value: "broadcast",
+                    label: "Tất cả khách hàng (Broadcast)",
+                  },
+                  { value: "selected", label: "Khách hàng được chọn" },
                 ]}
               />
             </Form.Item>
             <Form.Item
-              name="discount_value"
-              label="Giá trị giảm"
-              rules={[{ required: true, message: "Nhập giá trị giảm" }]}
+              noStyle
+              shouldUpdate={(prev, next) => prev.audience !== next.audience}
             >
-              <InputNumber min={0} style={{ width: 180 }} />
+              {({ getFieldValue }) =>
+                getFieldValue("audience") === "selected" && (
+                  <Form.Item
+                    name="recipient_ids"
+                    label="Khách hàng"
+                    rules={[
+                      {
+                        required: true,
+                        type: "array",
+                        min: 1,
+                        message: "Chọn ít nhất một khách hàng",
+                      },
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      showSearch
+                      optionFilterProp="label"
+                      placeholder="Tìm tên hoặc email khách hàng"
+                      options={s.users
+                        .filter((user) => user.role === "customer")
+                        .map((user) => ({
+                          value: user.id,
+                          label: `${user.name} · ${user.email}`,
+                        }))}
+                    />
+                  </Form.Item>
+                )
+              }
             </Form.Item>
-          </Space>
-          <Space wrap>
-            <Form.Item name="min_order_amount" label="Đơn tối thiểu">
-              <InputNumber min={0} style={{ width: 180 }} addonAfter="đ" />
+          </section>
+          <section className="mg-form-section">
+            <h3>Giá trị & thời hạn</h3>
+            <div className="mg-form-row">
+              <Form.Item
+                name="discount_type"
+                label="Kiểu giảm"
+                rules={[{ required: true }]}
+              >
+                <Select
+                  style={{ width: "100%" }}
+                  options={[
+                    { value: "percentage", label: "Theo phần trăm" },
+                    { value: "fixed", label: "Theo số tiền" },
+                    { value: "free_shipping", label: "Miễn phí vận chuyển" },
+                  ]}
+                />
+              </Form.Item>
+              <Form.Item
+                name="discount_value"
+                label="Giá trị giảm"
+                rules={[{ required: true, message: "Nhập giá trị giảm" }]}
+              >
+                <InputNumber min={0} style={{ width: "100%" }} />
+              </Form.Item>
+            </div>
+            <div className="mg-form-row mg-form-row-three">
+              <Form.Item name="min_order_amount" label="Đơn tối thiểu">
+                <InputNumber min={0} style={{ width: "100%" }} addonAfter="đ" />
+              </Form.Item>
+              <Form.Item name="max_discount_amount" label="Giảm tối đa">
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  addonAfter="đ"
+                  placeholder="Không giới hạn"
+                />
+              </Form.Item>
+              <Form.Item name="usage_limit" label="Tổng lượt dùng">
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  placeholder="Không giới hạn"
+                />
+              </Form.Item>
+            </div>
+            <div className="mg-form-row">
+              <Form.Item name="starts_at" label="Bắt đầu">
+                <Input type="datetime-local" />
+              </Form.Item>
+              <Form.Item name="expires_at" label="Kết thúc">
+                <Input type="datetime-local" />
+              </Form.Item>
+            </div>
+            <Form.Item
+              name="active"
+              label="Đang hoạt động"
+              valuePropName="checked"
+            >
+              <Switch />
             </Form.Item>
-            <Form.Item name="max_discount_amount" label="Giảm tối đa">
-              <InputNumber
-                min={0}
-                style={{ width: 180 }}
-                addonAfter="đ"
-                placeholder="Không giới hạn"
-              />
-            </Form.Item>
-            <Form.Item name="usage_limit" label="Tổng lượt dùng">
-              <InputNumber
-                min={0}
-                style={{ width: 180 }}
-                placeholder="Không giới hạn"
-              />
-            </Form.Item>
-          </Space>
-          <Space wrap>
-            <Form.Item name="starts_at" label="Bắt đầu">
-              <Input type="datetime-local" />
-            </Form.Item>
-            <Form.Item name="expires_at" label="Kết thúc">
-              <Input type="datetime-local" />
-            </Form.Item>
-          </Space>
-          <Form.Item
-            name="active"
-            label="Đang hoạt động"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
+          </section>
         </Form>
       </Modal>
     </>

@@ -315,5 +315,13 @@
   "refunded": "Refunded",
   "Đã hoàn tiền": "Refunded",
   "Thanh toán phần còn lại": "Pay remaining balance",
-  "Hoàn hàng / Hoàn tiền": "Returns / Refunds"
+  "Hoàn hàng / Hoàn tiền": "Returns / Refunds",
+  "Mất kết nối chat. Đang kết nối lại…": "Chat disconnected. Reconnecting…",
+  "Không thể tải lịch sử tin nhắn. Vui lòng mở lại chat.": "Unable to load message history. Please reopen chat.",
+  "Bạn không có quyền sử dụng chat. Vui lòng đăng nhập lại.": "Chat access denied. Please sign in again.",
+  "Thông tin giao nhận": "Delivery details",
+  "Tiến trình đơn hàng": "Order progress",
+  "Tiền sản phẩm": "Items subtotal",
+  "Trạng thái thanh toán": "Payment status",
+  "Thêm ảnh": "Add photos"
 }

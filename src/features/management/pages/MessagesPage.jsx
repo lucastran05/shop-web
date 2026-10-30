@@ -23,14 +23,12 @@ import {
   PushpinOutlined,
   MailOutlined,
   DeleteOutlined,
-  UndoOutlined,
   ThunderboltOutlined,
   MessageOutlined,
 } from "@ant-design/icons";
 import { useManagement } from "../hooks/useManagement";
 import { App } from "antd";
 import { userError } from "../../../shared/utils/userError";
-import { usePolling } from "../../../shared/hooks/usePolling";
 
 const quickReplies = [
   {
@@ -68,17 +66,7 @@ export default function MessagesPage() {
   const [form] = Form.useForm();
   const [modal, modalContext] = Modal.useModal();
   const [filter, setFilter] = useState("all");
-  const [chatError, setChatError] = useState(null);
-  usePolling(
-    async () => {
-      await s.refreshMessages();
-      setChatError(null);
-    },
-    {
-      enabled: !!s.session,
-      onError: (error) => setChatError(userError(error)),
-    },
-  );
+  const chatError = s.chatError;
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState(null),
     [query, setQuery] = useState(""),
@@ -111,27 +99,35 @@ export default function MessagesPage() {
     );
   const visibleConversations = conversations.filter(
     (c) =>
-      !c.preference.hidden &&
       (filter !== "unread" || c.unread || c.preference.unread) &&
       `${c.owner} ${c.name} ${c.last?.text || ""}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   );
-  const owner = conversations.some(
-    (c) => c.owner === selected && !c.preference.hidden,
-  )
+  const owner = conversations.some((c) => c.owner === selected)
     ? selected
     : visibleConversations[0]?.owner;
   function removeConversation(target) {
     modal.confirm({
       title: "Xóa hội thoại?",
-      content: `Hội thoại với ${displayName(target)} sẽ được bỏ khỏi danh sách của bạn. Bạn có thể khôi phục sau.`,
+      content: `Toàn bộ tin nhắn với ${displayName(target)} sẽ bị xóa vĩnh viễn cho cả hai bên. Thao tác này không thể khôi phục.`,
       okText: "Xóa hội thoại",
       cancelText: "Hủy",
       okButtonProps: { danger: true },
-      onOk: () => {
-        s.updateChatPreference(target, { hidden: true });
-        if (selected === target) setSelected(null);
+      onOk: async () => {
+        try {
+          await s.deleteConversation(target);
+          if (selected === target) setSelected(null);
+          setDrafts((old) => {
+            const next = { ...old };
+            delete next[target];
+            return next;
+          });
+          message.success("Đã xóa hội thoại");
+        } catch (error) {
+          message.error(userError(error));
+          throw error;
+        }
       },
     });
   }
@@ -218,13 +214,10 @@ export default function MessagesPage() {
             <div>
               <strong>Tin nhắn</strong>
               <small>
-                {conversations.filter((c) => !c.preference.hidden).length} hội
-                thoại ·{" "}
+                {conversations.length} hội thoại ·{" "}
                 {
-                  conversations.filter(
-                    (c) =>
-                      !c.preference.hidden && (c.unread || c.preference.unread),
-                  ).length
+                  conversations.filter((c) => c.unread || c.preference.unread)
+                    .length
                 }{" "}
                 chưa đọc
               </small>
@@ -260,30 +253,6 @@ export default function MessagesPage() {
                 { label: "Chưa đọc", value: "unread" },
               ]}
             />
-            {conversations.some((c) => c.preference.hidden) && (
-              <Dropdown
-                trigger={["click"]}
-                menu={{
-                  items: conversations
-                    .filter((c) => c.preference.hidden)
-                    .map((c) => ({ key: c.owner, label: c.name })),
-                  onClick: ({ key }) => {
-                    s.updateChatPreference(key, { hidden: false });
-                    setSelected(key);
-                    setFilter("all");
-                    setQuery("");
-                  },
-                }}
-              >
-                <Button
-                  type="text"
-                  icon={<UndoOutlined />}
-                  aria-label="Khôi phục hội thoại"
-                >
-                  Khôi phục hội thoại
-                </Button>
-              </Dropdown>
-            )}
           </div>
           <div className="mg-conversation-list">
             {visibleConversations.map((c) => (
@@ -488,7 +457,7 @@ export default function MessagesPage() {
                   type="primary"
                   icon={<SendOutlined />}
                   aria-label="Gửi tin nhắn"
-                  disabled={!draft.trim()}
+                  disabled={!draft.trim() || !s.chatConnected}
                 >
                   Gửi
                 </Button>

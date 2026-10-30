@@ -315,5 +315,13 @@
   "refunded": "Đã hoàn tiền",
   "Đã hoàn tiền": "Đã hoàn tiền",
   "Thanh toán phần còn lại": "Thanh toán phần còn lại",
-  "Hoàn hàng / Hoàn tiền": "Hoàn hàng / Hoàn tiền"
+  "Hoàn hàng / Hoàn tiền": "Hoàn hàng / Hoàn tiền",
+  "Mất kết nối chat. Đang kết nối lại…": "Mất kết nối chat. Đang kết nối lại…",
+  "Không thể tải lịch sử tin nhắn. Vui lòng mở lại chat.": "Không thể tải lịch sử tin nhắn. Vui lòng mở lại chat.",
+  "Bạn không có quyền sử dụng chat. Vui lòng đăng nhập lại.": "Bạn không có quyền sử dụng chat. Vui lòng đăng nhập lại.",
+  "Thông tin giao nhận": "Thông tin giao nhận",
+  "Tiến trình đơn hàng": "Tiến trình đơn hàng",
+  "Tiền sản phẩm": "Tiền sản phẩm",
+  "Trạng thái thanh toán": "Trạng thái thanh toán",
+  "Thêm ảnh": "Thêm ảnh"
 }

@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { PictureOutlined, CloseOutlined } from "@ant-design/icons";
 import { api } from "../../../shared/api";
 import { userError } from "../../../shared/utils/userError";
 import {
@@ -37,6 +38,7 @@ export default function ProductReviews({ productId }) {
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
   const [apiEligibility, setApiEligibility] = useState(null);
+  const imageInput = useRef(null);
 
   // Lấy danh sách đánh giá của sản phẩm (công khai cho tất cả mọi người)
   useEffect(() => {
@@ -131,7 +133,14 @@ export default function ProductReviews({ productId }) {
     const files = Array.from(event.target.files || []);
     event.target.value = "";
     if (!files.length) return;
-    if (images.length + files.length > 3) {
+    if (
+      images.length + files.length > 3 ||
+      files.some(
+        (file) =>
+          file.size > 2 * 1024 * 1024 ||
+          !["image/jpeg", "image/png", "image/webp"].includes(file.type),
+      )
+    ) {
       message.error(t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB"));
       return;
     }
@@ -173,7 +182,9 @@ export default function ProductReviews({ productId }) {
     <section className="panel reviews" id="reviews">
       <h2>{t("Đánh giá sản phẩm")}</h2>
       <div className="rating-summary">
-        <strong>{average.toFixed(1)} / 5</strong>
+        <strong>
+          {average.toFixed(1)} <small>/ 5</small>
+        </strong>
         <Rate disabled allowHalf value={Math.round(average * 2) / 2} />
         <span>{t("{{count}} đánh giá", { count: summary.review_count })}</span>
       </div>
@@ -206,11 +217,6 @@ export default function ProductReviews({ productId }) {
           </div>
         ) : canWriteReview ? (
           <div className="review-form-wrapper">
-            <div style={{ marginBottom: 16 }}>
-              <Tag color="success">
-                ✓ {t("Bạn đã mua và nhận hàng thành công sản phẩm này")}
-              </Tag>
-            </div>
             <Form
               form={form}
               layout="vertical"
@@ -219,6 +225,7 @@ export default function ProductReviews({ productId }) {
             >
               <Form.Item
                 name="rating"
+                className="review-rating-field"
                 label={t("Số sao")}
                 rules={[
                   {
@@ -248,53 +255,68 @@ export default function ProductReviews({ productId }) {
               >
                 <Input.TextArea
                   maxLength={1000}
-                  showCount
                   rows={3}
                   placeholder={t("Chia sẻ cảm nhận của bạn về sản phẩm...")}
                 />
               </Form.Item>
-              <Form.Item label={t("Ảnh đánh giá (không bắt buộc)")}>
-                <input
-                  type="file"
-                  aria-label={t("Ảnh đánh giá (không bắt buộc)")}
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  disabled={loadingImages || images.length >= 3}
-                  onChange={chooseImages}
-                />
-                <p>{t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB")}</p>
-                <div className="review-images">
-                  {images.map((image, i) => (
-                    <div key={image.id}>
-                      <Image
-                        src={image.url}
-                        width={80}
-                        height={80}
-                        alt={t("Ảnh đánh giá")}
-                      />
-                      <Button
-                        danger
-                        type="link"
-                        onClick={() =>
-                          setImages((old) =>
-                            old.filter((_, index) => index !== i),
-                          )
-                        }
-                      >
-                        {t("Xóa ảnh")}
-                      </Button>
-                    </div>
-                  ))}
+              <div className="review-images">
+                {images.map((image, i) => (
+                  <div key={image.id}>
+                    <Image
+                      src={image.url}
+                      width={64}
+                      height={64}
+                      alt={t("Ảnh đánh giá")}
+                    />
+                    <Button
+                      danger
+                      type="text"
+                      size="small"
+                      shape="circle"
+                      icon={<CloseOutlined />}
+                      aria-label={t("Xóa ảnh")}
+                      onClick={() =>
+                        setImages((old) =>
+                          old.filter((_, index) => index !== i),
+                        )
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="review-form-footer">
+                <div className="review-upload-area">
+                  <input
+                    ref={imageInput}
+                    hidden
+                    style={{ display: "none" }}
+                    type="file"
+                    aria-label={t("Ảnh đánh giá (không bắt buộc)")}
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    disabled={loadingImages || images.length >= 3}
+                    onChange={chooseImages}
+                  />
+                  <Button
+                    icon={<PictureOutlined aria-hidden="true" />}
+                    aria-label={t("Thêm ảnh")}
+                    loading={loadingImages}
+                    disabled={images.length >= 3}
+                    onClick={() => imageInput.current?.click()}
+                  >
+                    {t("Thêm ảnh")}
+                  </Button>
+                  <small>{t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB")}</small>
                 </div>
-              </Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting || loadingImages}
-                disabled={loadingImages}
-              >
-                {t("Gửi đánh giá")}
-              </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={submitting || loadingImages}
+                  disabled={loadingImages}
+                >
+                  {t("Gửi đánh giá")}
+                </Button>
+              </div>
             </Form>
           </div>
         ) : (hasPurchased && hasInTransitOrder) ||

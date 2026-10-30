@@ -90,6 +90,10 @@ export class HttpClient {
     return this.tokens !== null;
   }
 
+  getAccessToken(): string | null {
+    return this.tokens?.accessToken ?? null;
+  }
+
   onSessionCleared(listener: (reason?: SessionClearReason) => void): () => void {
     this.sessionListeners.add(listener);
     return () => {

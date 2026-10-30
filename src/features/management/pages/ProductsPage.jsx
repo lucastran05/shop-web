@@ -208,7 +208,8 @@ export default function ProductsPage() {
       <Modal
         title={editing ? "Sửa sản phẩm" : "Thêm sản phẩm"}
         open={open}
-        width={720}
+        width={1120}
+        className="mg-editor-modal"
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         okText="Lưu sản phẩm"
@@ -217,129 +218,150 @@ export default function ProductsPage() {
         destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={save}>
-          <Form.Item
-            name="name"
-            label="Tên sản phẩm"
-            rules={[
-              {
-                required: true,
-                whitespace: true,
-                message: "Nhập tên sản phẩm",
-              },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="category"
-            label="Danh mục"
-            rules={[{ required: true, message: "Chọn danh mục" }]}
-          >
-            <Select options={s.categories.map((value) => ({ value }))} />
-          </Form.Item>
-          <Form.Item name="description" label="Mô tả">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item name="image" label="Ảnh sản phẩm">
-            <ProductImageInput
-              onLoadingChange={(loading) =>
-                setImageLoading((count) => count + (loading ? 1 : -1))
-              }
-            />
-          </Form.Item>
-          <Space wrap>
-            <Form.Item name="active" label="Đang bán" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="featured"
-              label="Ghim sản phẩm"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="deposit"
-              label="Cho phép đặt cọc"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              name="depositRate"
-              label="Cọc tối thiểu (%)"
-              rules={[{ required: true }]}
-            >
-              <InputNumber min={1} max={70} precision={0} />
-            </Form.Item>
-          </Space>
-          <h3>Biến thể sản phẩm</h3>
-          <Form.List name="variants">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map((field) => (
-                  <div className="mg-variant" key={field.key}>
-                    <Form.Item name={[field.name, "id"]} hidden>
-                      <Input />
-                    </Form.Item>
-                    <Form.Item
-                      className="mg-variant-image"
-                      name={[field.name, "image"]}
-                      label="Ảnh biến thể"
-                    >
-                      <ProductImageInput
-                        onLoadingChange={(loading) =>
-                          setImageLoading((count) => count + (loading ? 1 : -1))
-                        }
+          <div className="mg-product-basics">
+            <section className="mg-form-section">
+              <h3>Thông tin sản phẩm</h3>
+              <Form.Item
+                name="name"
+                label="Tên sản phẩm"
+                rules={[
+                  {
+                    required: true,
+                    whitespace: true,
+                    message: "Nhập tên sản phẩm",
+                  },
+                ]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
+                name="category"
+                label="Danh mục"
+                rules={[{ required: true, message: "Chọn danh mục" }]}
+              >
+                <Select options={s.categories.map((value) => ({ value }))} />
+              </Form.Item>
+              <Form.Item name="description" label="Mô tả">
+                <Input.TextArea rows={4} />
+              </Form.Item>
+            </section>
+            <section className="mg-form-section">
+              <h3>Ảnh & hiển thị</h3>
+              <Form.Item name="image" label="Ảnh sản phẩm">
+                <ProductImageInput
+                  onLoadingChange={(loading) =>
+                    setImageLoading((count) => count + (loading ? 1 : -1))
+                  }
+                />
+              </Form.Item>
+              <Space wrap>
+                <Form.Item
+                  name="active"
+                  label="Đang bán"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  name="featured"
+                  label="Ghim sản phẩm"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  name="deposit"
+                  label="Cho phép đặt cọc"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  name="depositRate"
+                  label="Cọc tối thiểu (%)"
+                  rules={[{ required: true }]}
+                >
+                  <InputNumber min={1} max={70} precision={0} />
+                </Form.Item>
+              </Space>
+            </section>
+          </div>
+          <section className="mg-form-section mg-variants-section">
+            <h3>Biến thể sản phẩm</h3>
+            <Form.List name="variants">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map((field) => (
+                    <div className="mg-variant" key={field.key}>
+                      <Form.Item name={[field.name, "id"]} hidden>
+                        <Input />
+                      </Form.Item>
+                      <Form.Item
+                        className="mg-variant-image"
+                        name={[field.name, "image"]}
+                        label="Ảnh biến thể"
+                      >
+                        <ProductImageInput
+                          compact
+                          onLoadingChange={(loading) =>
+                            setImageLoading(
+                              (count) => count + (loading ? 1 : -1),
+                            )
+                          }
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, "label"]}
+                        label="Tên biến thể"
+                        rules={[
+                          {
+                            required: true,
+                            whitespace: true,
+                            message: "Nhập tên",
+                          },
+                        ]}
+                      >
+                        <Input />
+                      </Form.Item>
+                      <Form.Item name={[field.name, "color"]} label="Màu sắc">
+                        <Input />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, "price"]}
+                        label="Giá bán (đ)"
+                        rules={[{ required: true, message: "Nhập giá" }]}
+                      >
+                        <InputNumber min={0} precision={0} />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, "stock"]}
+                        label="Tồn kho"
+                        rules={[{ required: true, message: "Nhập tồn kho" }]}
+                      >
+                        <InputNumber min={0} precision={0} />
+                      </Form.Item>
+                      <Button
+                        icon={<DeleteOutlined aria-hidden="true" />}
+                        danger
+                        disabled={fields.length === 1}
+                        onClick={() => remove(field.name)}
+                        aria-label="Xóa"
+                        title="Xóa"
+                        className="mg-icon-action"
                       />
-                    </Form.Item>
-                    <Form.Item
-                      name={[field.name, "label"]}
-                      label="Tên biến thể"
-                      rules={[
-                        {
-                          required: true,
-                          whitespace: true,
-                          message: "Nhập tên",
-                        },
-                      ]}
-                    >
-                      <Input />
-                    </Form.Item>
-                    <Form.Item name={[field.name, "color"]} label="Màu sắc">
-                      <Input />
-                    </Form.Item>
-                    <Form.Item
-                      name={[field.name, "price"]}
-                      label="Giá bán (đ)"
-                      rules={[{ required: true, message: "Nhập giá" }]}
-                    >
-                      <InputNumber min={0} precision={0} />
-                    </Form.Item>
-                    <Form.Item
-                      name={[field.name, "stock"]}
-                      label="Tồn kho"
-                      rules={[{ required: true, message: "Nhập tồn kho" }]}
-                    >
-                      <InputNumber min={0} precision={0} />
-                    </Form.Item>
-                    <Button
-                      icon={<DeleteOutlined aria-hidden="true" />}
-                      danger
-                      disabled={fields.length === 1}
-                      onClick={() => remove(field.name)}
-                      aria-label="Xóa"
-                      title="Xóa"
-                      className="mg-icon-action"
-                    />
-                  </div>
-                ))}
-                <Button onClick={() => add({ label: "", price: 0, stock: 0 })}>
-                  Thêm biến thể
-                </Button>
-              </>
-            )}
-          </Form.List>
+                    </div>
+                  ))}
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    onClick={() => add({ label: "", price: 0, stock: 0 })}
+                  >
+                    Thêm biến thể
+                  </Button>
+                </>
+              )}
+            </Form.List>
+          </section>
         </Form>
       </Modal>
     </>

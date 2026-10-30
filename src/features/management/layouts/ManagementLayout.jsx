@@ -5,7 +5,6 @@ import { Alert, App, Avatar, Drawer, Spin } from "antd";
 import { userError } from "../../../shared/utils/userError";
 import {
   AppstoreOutlined,
-  BarChartOutlined,
   DatabaseOutlined,
   InboxOutlined,
   MenuOutlined,
@@ -30,9 +29,14 @@ const navigation = [
   ["payments", "Thanh toán", WalletOutlined],
   ["vouchers", "Voucher", TagsOutlined],
   ["messages", "Tin nhắn", MessageOutlined],
-  ["reports", "Báo cáo", BarChartOutlined],
   ["users", "Tài khoản", TeamOutlined],
   ["settings", "Cấu hình", SettingOutlined],
+];
+const navigationGroups = [
+  { label: "Bán hàng", paths: ["orders", "payments", "vouchers"] },
+  { label: "Sản phẩm & kho", paths: ["products", "categories", "inventory"] },
+  { label: "Khách hàng", paths: ["messages", "users"] },
+  { label: "Hệ thống", paths: ["settings"] },
 ];
 export default function ManagementLayout() {
   const shopConfig = useShopConfig();
@@ -48,8 +52,21 @@ export default function ManagementLayout() {
       "/management/settings": "mg-main-settings",
     }[pathname] || "";
   if (!s.session) return <Navigate to="/management/login" replace />;
-  const current = navigation.find(
-    ([path]) => pathname === `/management${path ? "/" + path : ""}`,
+  const navLink = ([path, label, Icon]) => (
+    <NavLink
+      key={path}
+      end
+      to={`/management${path ? "/" + path : ""}`}
+      onClick={() => setMobile(false)}
+    >
+      <Icon aria-hidden="true" />
+      <span>{label}</span>
+      {path === "orders" && (
+        <small>
+          {s.orders.filter((o) => o.status === "Chờ xác nhận").length}
+        </small>
+      )}
+    </NavLink>
   );
   const nav = (
     <>
@@ -63,26 +80,25 @@ export default function ManagementLayout() {
         </span>
       </Link>
       <nav aria-label="Menu quản trị">
-        {navigation
-          .filter(
-            ([path]) => s.session.role === "admin" || !["users"].includes(path),
-          )
-          .map(([path, label, Icon]) => (
-            <NavLink
-              key={path}
-              end
-              to={`/management${path ? "/" + path : ""}`}
-              onClick={() => setMobile(false)}
-            >
-              <Icon />
-              <span>{label}</span>
-              {path === "orders" && (
-                <small>
-                  {s.orders.filter((o) => o.status === "Chờ xác nhận").length}
-                </small>
-              )}
-            </NavLink>
-          ))}
+        {navLink(navigation[0])}
+        {navigationGroups.map((group) => (
+          <details
+            className="mg-nav-group"
+            key={`${pathname}-${group.label}`}
+            open={group.paths.some(
+              (path) => pathname === `/management/${path}`,
+            )}
+          >
+            <summary>{group.label}</summary>
+            {navigation
+              .filter(
+                ([path]) =>
+                  group.paths.includes(path) &&
+                  (s.session.role === "admin" || path !== "users"),
+              )
+              .map(navLink)}
+          </details>
+        ))}
       </nav>
       <div className="mg-sidebar-bottom">
         <Link to="/">↗ Xem cửa hàng</Link>
@@ -110,19 +126,22 @@ export default function ManagementLayout() {
               aria-label="Mở menu"
               onClick={() => setMobile(true)}
             />
-            <div className="mg-breadcrumb">
-              <span className="mg-breadcrumb-prefix">
-                Không gian quản lý <span>/</span>
-              </span>
-              <h1>{current?.[1] || "Trang quản trị"}</h1>
-            </div>
           </div>
           <div className="mg-profile">
-            <Button type="text" aria-label="Làm mới dữ liệu" icon={<ReloadOutlined />} loading={refreshing}
+            <Button
+              type="text"
+              aria-label="Làm mới dữ liệu"
+              icon={<ReloadOutlined />}
+              loading={refreshing}
               onClick={async () => {
                 setRefreshing(true);
-                try { await s.refresh(); } finally { setRefreshing(false); }
-              }} />
+                try {
+                  await s.refresh();
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+            />
             <Avatar style={{ background: "#eef5e9", color: "#468432" }}>
               {s.session.name?.trim().charAt(0).toUpperCase()}
             </Avatar>

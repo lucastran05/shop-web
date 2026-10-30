@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       proxy: Object.fromEntries(
         ["/api", "/admin", "/uploads"].map((path) => [
           path,
-          { target: backend, changeOrigin: true },
+          { target: backend, changeOrigin: true, ws: path === "/api" },
         ]),
       ),
       watch: { ignored: ["**/.minio/**"] },

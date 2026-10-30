@@ -26,7 +26,6 @@ import { usePreferences } from "../../../shared/preferences/usePreferences";
 import { formatDateTime } from "../../../shared/utils/format";
 import HeaderSearch from "../components/HeaderSearch";
 import { userError } from "../../../shared/utils/userError";
-import { usePolling } from "../../../shared/hooks/usePolling";
 export default function CustomerLayout() {
   const { t } = useTranslation(),
     shopConfig = useShopConfig(),
@@ -46,17 +45,7 @@ export default function CustomerLayout() {
     [notice, setNotice] = useState(false),
     [draft, setDraft] = useState(""),
     chatEnd = useRef(null);
-  const [chatError, setChatError] = useState(null);
-  usePolling(
-    async () => {
-      await s.refreshMessages();
-      setChatError(null);
-    },
-    {
-      enabled: !!s.user && chat,
-      onError: (error) => setChatError(t(userError(error))),
-    },
-  );
+  const chatError = s.chatError ? t(s.chatError) : null;
   const notices = s.notifications.filter((n) => n.owner === s.user?.email),
     messages = s.messages.filter((n) => n.owner === s.user?.email);
   const unreadChat = messages.some(
@@ -253,7 +242,7 @@ export default function CustomerLayout() {
               }}
               placeholder={t("Nhập tin nhắn…")}
             />
-            <Button type="primary" disabled={!draft.trim()} onClick={send}>
+            <Button type="primary" disabled={!draft.trim() || !s.chatConnected} onClick={send}>
               {t("Gửi")}
             </Button>
           </Space.Compact>

@@ -12,6 +12,8 @@ import {
 } from "../../../shared/adapters/viewAdapters";
 import { userError } from "../../../shared/utils/userError";
 import { usePolling } from "../../../shared/hooks/usePolling";
+import { useChatSocket } from "../../../shared/hooks/useChatSocket";
+import { mergeMessages } from "../../../shared/utils/mergeMessages";
 
 export function ManagementProvider({ children }) {
   const shop = useShop();
@@ -32,6 +34,7 @@ export function ManagementProvider({ children }) {
   const [orders, saveOrders] = useState([]);
   const [users, saveUsers] = useState([]);
   const [messages, saveMessages] = useState([]);
+  const removedMessages = useRef(new Set());
   const [stockHistory, saveStockHistory] = useState([]);
   const [vouchers, saveVouchers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -77,15 +80,12 @@ export function ManagementProvider({ children }) {
   const loadOrders = useCallback(async () => {
     const sessionId = sessionRef.current;
     const rows = await listAll((query) => api.adminOrders.list(query));
-    const details = await Promise.all(
-      rows.map((row) => api.adminOrders.get(row.id)),
-    );
     if (sessionRef.current === sessionId)
       saveOrders(
-        details.map(({ data }) => ({
-          ...mapOrder(data),
-          note: data.note || "",
-          paymentNote: data.payment_note || data.note || "",
+        rows.map((row) => ({
+          ...mapOrder(row),
+          note: row.note || "",
+          paymentNote: row.payment_note || row.note || "",
         })),
       );
   }, []);
@@ -103,12 +103,39 @@ export function ManagementProvider({ children }) {
         const { data } = await api.adminChat.messages(row.id, { limit: 100 });
         return data.map((item) => ({
           ...mapMessage(item, row.customer.email),
-          conversationId: row.id,
+          conversationId: row.customer.id || row.id,
         }));
       }),
     );
-    if (sessionRef.current === sessionId) saveMessages(threads.flat());
+    if (sessionRef.current === sessionId)
+      saveMessages((old) =>
+        mergeMessages(old, threads.flat(), removedMessages.current),
+      );
   }, []);
+  const chatSocket = useChatSocket({
+    userId: session?.id,
+    onReady: loadMessages,
+    onMessage: ({ message: incoming, customer, ids }) => {
+      if (!customer?.email) return;
+      if (ids) {
+        ids.forEach((id) => removedMessages.current.add(id));
+        saveMessages((old) => mergeMessages(old, [], removedMessages.current));
+        return;
+      }
+      saveMessages((old) =>
+        mergeMessages(
+          old,
+          [
+            {
+              ...mapMessage(incoming, customer.email),
+              conversationId: customer.id,
+            },
+          ],
+          removedMessages.current,
+        ),
+      );
+    },
+  });
   const loadStockHistory = useCallback(async () => {
     const sessionId = sessionRef.current;
     const rows = await listAll((query) =>
@@ -135,7 +162,6 @@ export function ManagementProvider({ children }) {
       loadProducts(),
       loadCategories(),
       loadOrders(),
-      loadMessages(),
       loadStockHistory(),
       loadVouchers(),
     ];
@@ -148,7 +174,6 @@ export function ManagementProvider({ children }) {
     loadProducts,
     loadCategories,
     loadOrders,
-    loadMessages,
     loadStockHistory,
     loadVouchers,
     loadUsers,
@@ -162,6 +187,7 @@ export function ManagementProvider({ children }) {
     saveOrders([]);
     saveUsers([]);
     saveMessages([]);
+    removedMessages.current.clear();
     saveStockHistory([]);
     saveVouchers([]);
     if (!session?.id) return;
@@ -180,7 +206,11 @@ export function ManagementProvider({ children }) {
     loadMessages,
     loadVouchers,
   ]);
-  usePolling(refresh, { enabled: Boolean(session?.id), intervalMs: 0, immediate: false });
+  usePolling(refresh, {
+    enabled: Boolean(session?.id),
+    intervalMs: 0,
+    immediate: false,
+  });
 
   function updateChatPreference(owner, patch) {
     if (!session) return;
@@ -342,22 +372,28 @@ export function ManagementProvider({ children }) {
   async function reply(owner, content) {
     const message = messages.find((item) => item.owner === owner);
     if (!message?.conversationId) throw new Error("Conversation not found");
-    await api.adminChat.sendMessage(message.conversationId, {
+    await chatSocket.request("send", {
+      conversationId: message.conversationId,
       content,
-      client_message_id: crypto.randomUUID(),
     });
     if (sessionRef.current === session?.id) markRead(owner);
-    await loadMessages();
   }
   async function startConversation(email, content) {
-    await api.adminChat.create({
-      email,
-      content,
-      client_message_id: crypto.randomUUID(),
+    await chatSocket.request("send", { email, content });
+  }
+  async function deleteConversation(owner) {
+    const sessionId = session?.id;
+    await api.adminChat.delete(owner);
+    if (sessionRef.current !== sessionId) return;
+    messages
+      .filter((item) => item.owner === owner)
+      .forEach((item) => removedMessages.current.add(item.id));
+    saveMessages((old) => mergeMessages(old, [], removedMessages.current));
+    setChatPreferences((old) => {
+      const preferences = { ...old[sessionId] };
+      delete preferences[owner];
+      return { ...old, [sessionId]: preferences };
     });
-    // Tạo lại hội thoại phải hiện lại nếu quản lý đã ẩn hội thoại cũ.
-    updateChatPreference(email, { hidden: false });
-    await loadMessages();
   }
   const setSession = async (value) => {
     if (!value) return shop.logout();
@@ -385,7 +421,10 @@ export function ManagementProvider({ children }) {
         messages,
         reply,
         startConversation,
+        deleteConversation,
         refreshMessages: loadMessages,
+        chatConnected: chatSocket.connected,
+        chatError: chatSocket.error,
         stockHistory,
         vouchers,
         saveVoucher,

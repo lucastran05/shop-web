@@ -93,23 +93,21 @@
   justify-content: space-between;
   gap: 12px;
 }
-.mg-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
+.mg-nav-group {
+  margin-top: 10px;
+}
+.mg-nav-group summary {
+  cursor: pointer;
   color: #777;
-}
-.mg-breadcrumb-prefix > span {
-  padding: 0 10px;
-  color: #bbb;
-}
-.mg-breadcrumb h1 {
-  display: inline;
-  margin: 0;
-  font-size: 20px;
-  color: #333;
+  font-size: 12px;
   font-weight: 600;
+  padding: 8px 14px;
+}
+.mg-nav-group a {
+  margin-left: 8px !important;
+}
+.mg-nav-group summary::marker {
+  color: #468432;
 }
 .mg-profile {
   display: flex;
@@ -220,12 +218,72 @@
 }
 .mg-variant {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr 1fr auto;
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: 132px minmax(140px, 1.5fr) minmax(110px, 1fr) minmax(
+      110px,
+      1fr
+    ) 90px 40px;
+  gap: 12px;
+  align-items: start;
 }
 .mg-variant .ant-input-number {
   width: 100%;
+}
+.mg-editor-modal {
+  top: 32px;
+  padding-bottom: 24px;
+}
+.mg-editor-modal .ant-modal-body {
+  max-height: calc(100dvh - 190px);
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+.mg-product-basics {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.mg-voucher-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.mg-form-section {
+  border: 1px solid #e8ede5;
+  border-radius: 10px;
+  padding: 20px;
+  min-width: 0;
+}
+.mg-form-section h3 {
+  margin: 0 0 20px;
+  font-size: 16px;
+  color: #315d24;
+}
+.mg-form-section > .ant-form-item:last-child {
+  margin-bottom: 0;
+}
+.mg-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.mg-form-row-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mg-editor-modal .ant-select,
+.mg-editor-modal .ant-input-number {
+  width: 100%;
+}
+.mg-editor-modal .ant-form-item {
+  min-width: 0;
+}
+.mg-variants-section {
+  margin-top: 20px;
+}
+.mg-variant .ant-form-item {
+  margin-bottom: 0;
+}
+.mg-variant > .ant-btn {
+  margin-top: 30px;
 }
 .mg-form-grid {
   display: grid;
@@ -654,7 +712,7 @@
   margin: 24px 0 12px;
 }
 .mg-variant-image {
-  grid-column: 1 / -1;
+  min-width: 0;
 }
 .mg-variant {
   padding: 16px;
@@ -806,9 +864,6 @@
   .mg-main {
     padding: 18px 12px;
   }
-  .mg-breadcrumb-prefix {
-    display: none;
-  }
   .mg-profile > span:not(.ant-avatar) {
     display: none;
   }
@@ -827,15 +882,33 @@
     margin-bottom: 16px;
     padding-bottom: 16px;
   }
+  .mg-product-basics,
+  .mg-voucher-form {
+    grid-template-columns: 1fr;
+  }
+  .mg-editor-modal {
+    top: 16px;
+  }
+  .mg-editor-modal .ant-modal-body {
+    max-height: calc(100dvh - 165px);
+  }
+  .mg-form-section {
+    padding: 16px;
+  }
+  .mg-variant-image {
+    grid-column: 1 / -1;
+  }
+  .mg-form-row,
+  .mg-form-row-three {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
   .mg-form-grid {
     grid-template-columns: 1fr;
     gap: 0;
   }
 }
 @media (max-width: 760px) {
-  .mg-breadcrumb h1 {
-    font-size: 18px;
-  }
   .mg-root .ant-table {
     font-size: 14px;
   }

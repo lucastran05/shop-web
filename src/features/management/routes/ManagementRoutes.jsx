@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { ConfigProvider, Result } from "antd";
 import { ManagementProvider } from "../context/ManagementContext";
 import { useManagement } from "../hooks/useManagement";
@@ -11,7 +11,6 @@ import InventoryPage from "../pages/InventoryPage";
 import OrdersPage from "../pages/OrdersPage";
 import PaymentsPage from "../pages/PaymentsPage";
 import MessagesPage from "../pages/MessagesPage";
-import ReportsPage from "../pages/ReportsPage";
 import SettingsPage from "../pages/SettingsPage";
 import VouchersPage from "../pages/VouchersPage";
 import UsersPage from "../pages/UsersPage";
@@ -53,7 +52,7 @@ export default function ManagementRoutes() {
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="vouchers" element={<VouchersPage />} />
             <Route path="messages" element={<MessagesPage />} />
-            <Route path="reports" element={<ReportsPage />} />
+            <Route path="reports" element={<Navigate to="/management" replace />} />
             <Route path="users" element={<AccountsRoute />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route

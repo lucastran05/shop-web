@@ -29,7 +29,7 @@ export default function ProductCard({ p }) {
         }
       >
         <div className="product-meta">{t(p.category)}</div>
-        <h3>{p.name}</h3>
+        <h3 title={p.name}>{p.name}</h3>
         <div className="product-price">
           <strong>{money(p.price)}</strong>
           {p.oldPrice && <del>{money(p.oldPrice)}</del>}

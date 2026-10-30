@@ -9,6 +9,7 @@ export default function ProductImageInput({
   value,
   onChange,
   onLoadingChange,
+  compact = false,
 }) {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
@@ -81,12 +82,12 @@ export default function ProductImageInput({
         disabled={loading}
       >
         <Button icon={<UploadOutlined />} loading={loading}>
-          Tải ảnh từ máy tính
+          {compact ? "Tải ảnh" : "Tải ảnh từ máy tính"}
         </Button>
       </Upload>
       {value && value !== "/product-placeholder.svg" && (
         <Button type="text" disabled={loading} onClick={() => onChange?.("")}>
-          Dùng ảnh mặc định
+          {compact ? "Ảnh mặc định" : "Dùng ảnh mặc định"}
         </Button>
       )}
     </Space>

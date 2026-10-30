@@ -14,6 +14,8 @@ import { shopConfig } from "../constants/shop";
 import { api } from "../api";
 import { mapProductSummary } from "../adapters/productAdapter";
 import { usePolling } from "../hooks/usePolling";
+import { useChatSocket } from "../hooks/useChatSocket";
+import { mergeMessages } from "../utils/mergeMessages";
 export function ShopProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,9 +31,11 @@ export function ShopProvider({ children }) {
   }, [shopInfo.name]);
   const [user, setUser] = useState(null);
   const chatUser = useRef(null);
+  const removedMessages = useRef(new Set());
   const chatRead = useRef(false);
   useEffect(() => {
     chatUser.current = user?.id;
+    removedMessages.current.clear();
     chatRead.current = false;
     return () => {
       chatUser.current = null;
@@ -44,7 +48,6 @@ export function ShopProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [sessionError, setSessionError] = useState(null);
   const [sessionAttempt, setSessionAttempt] = useState(0);
-  const [conversationId, setConversationId] = useState(null);
   useEffect(() => {
     return api.http.onSessionCleared((reason) => {
       setUser(null);
@@ -129,10 +132,7 @@ export function ShopProvider({ children }) {
   }, []);
   const refreshOrders = useCallback(async () => {
     const rows = await listAll((query) => api.orders.list(query));
-    const detailed = await Promise.all(
-      rows.map((row) => api.orders.get(row.id)),
-    );
-    const next = detailed.map(({ data }) => mapOrder(data, user?.email));
+    const next = rows.map((row) => mapOrder(row, user?.email));
     setOrders(next);
     return next;
   }, [user?.email]);
@@ -155,7 +155,6 @@ export function ShopProvider({ children }) {
     setOrders([]);
     setNotifications([]);
     setMessages([]);
-    setConversationId(null);
     chatRead.current = false;
     if (!user?.id || isManagement) return;
     listAll((query) => api.chatAndNotifications.notifications(query))
@@ -172,99 +171,108 @@ export function ShopProvider({ children }) {
           );
       })
       .catch(() => {});
-    const openConversation = api.chatAndNotifications.openConversation;
-    if (typeof openConversation === "function") {
-      api.chatAndNotifications
-        .openConversation()
-        .then(({ data: conversation }) => {
-          if (!active) return null;
-          setConversationId(conversation.id);
-          return api.chatAndNotifications.messages(conversation.id, {
-            limit: 100,
-          });
-        })
-        .then((response) => {
-          if (active && response?.data)
-            setMessages(
-              response.data.map((item) => mapMessage(item, user.email)),
-            );
-        })
-        .catch(() => {});
-    }
     return () => {
       active = false;
     };
   }, [user?.id, user?.email, isManagement]);
   async function openChat() {
     if (!user) return;
-    const userId = user.id;
-    const { data } = await api.chatAndNotifications.openConversation();
-    if (chatUser.current !== userId) return;
-    setConversationId(data.id);
-    const { data: rows } = await api.chatAndNotifications.messages(data.id, {
-      limit: 100,
-    });
-    await api.chatAndNotifications.markConversationRead();
     chatRead.current = true;
-    if (chatUser.current === userId)
-      setMessages(
-        rows.map((item) => ({
-          ...mapMessage(item, user.email),
-          is_read: item.sender_role === "shop" ? true : item.is_read,
-        })),
-      );
-    return data.id;
+    await refreshMessages();
+    return user.id;
   }
   async function sendMessage(content) {
     if (!user) return;
     const userId = user.id;
-    const id = conversationId || (await openChat());
-    if (!id || chatUser.current !== userId) return;
-    const { data } = await api.chatAndNotifications.sendMessage(id, {
-      content,
-      client_message_id: crypto.randomUUID(),
-    });
+    const { message: data } = await chatRequest("send", { content });
     if (chatUser.current === userId)
       setMessages((old) =>
-        old.some((item) => item.id === data.id)
-          ? old
-          : [...old, mapMessage(data, user.email)],
+        mergeMessages(
+          old,
+          [mapMessage(data, user.email)],
+          removedMessages.current,
+        ),
       );
   }
   async function refreshMessages() {
-    if (!conversationId || !user) return;
-    const { data: rows } = await api.chatAndNotifications.messages(
-      conversationId,
-      { limit: 100 },
-    );
+    if (!user) return;
+    const { data: rows } = await api.chatAndNotifications.messages(user.id, {
+      limit: 100,
+    });
     if (chatUser.current !== user.id) return;
     if (
       chatRead.current &&
+      !document.hidden &&
       rows.some(
         (item) => item.sender_role !== "customer" && item.is_read !== true,
       )
     ) {
-      await api.chatAndNotifications.markConversationRead();
+      await markChatRead();
     }
     setMessages((old) => {
-      const byId = new Map(old.map((item) => [item.id, item]));
-      for (const item of rows) {
-        const mapped = mapMessage(item, user.email);
-        const previous = byId.get(item.id);
-        byId.set(
-          item.id,
-          mapped.from === "shop" &&
-            (chatRead.current || previous?.is_read === true)
+      return mergeMessages(
+        old,
+        rows.map((item) => {
+          const mapped = mapMessage(item, user.email);
+          return mapped.from === "shop" && chatRead.current && !document.hidden
             ? { ...mapped, is_read: true }
-            : mapped,
-        );
-      }
-      return [...byId.values()].sort(
-        (a, b) =>
-          a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
+            : mapped;
+        }),
+        removedMessages.current,
       );
     });
   }
+  const {
+    request: chatRequest,
+    connected: chatConnected,
+    error: chatError,
+  } = useChatSocket({
+    userId: user?.id,
+    enabled: !isManagement,
+    onReady: refreshMessages,
+    onMessage: ({ message: incoming, customer, ids }) => {
+      if (customer?.id !== user?.id) return;
+      if (ids) {
+        ids.forEach((id) => removedMessages.current.add(id));
+        setMessages((old) => mergeMessages(old, [], removedMessages.current));
+        return;
+      }
+      const mapped = mapMessage(incoming, user.email);
+      setMessages((old) =>
+        mergeMessages(old, [mapped], removedMessages.current),
+      );
+      if (mapped.from === "shop" && chatRead.current && !document.hidden) {
+        markChatRead().catch(() => {});
+      }
+    },
+  });
+  const markChatRead = useCallback(async () => {
+    const id = user?.id;
+    if (!id) return;
+    await chatRequest("read");
+    if (chatUser.current === id)
+      setMessages((old) =>
+        old.map((item) =>
+          item.from === "shop" ? { ...item, is_read: true } : item,
+        ),
+      );
+  }, [user?.id, chatRequest]);
+  useEffect(() => {
+    const readVisibleChat = () => {
+      if (
+        chatRead.current &&
+        !document.hidden &&
+        messages.some((item) => item.from === "shop" && !item.is_read)
+      )
+        markChatRead().catch(() => {});
+    };
+    window.addEventListener("focus", readVisibleChat);
+    document.addEventListener("visibilitychange", readVisibleChat);
+    return () => {
+      window.removeEventListener("focus", readVisibleChat);
+      document.removeEventListener("visibilitychange", readVisibleChat);
+    };
+  }, [markChatRead, messages]);
   function closeChat() {
     chatRead.current = false;
   }
@@ -331,10 +339,13 @@ export function ShopProvider({ children }) {
     async () => {
       await Promise.allSettled([
         ...(location.pathname === "/" ? [refreshCatalogProducts()] : []),
-        ...(user?.id ? [
-          ...(location.pathname === "/orders" ? [refreshOrders()] : []),
-          refreshNotifications(), refreshCart(), refreshMessages(),
-        ] : []),
+        ...(user?.id
+          ? [
+              ...(location.pathname === "/orders" ? [refreshOrders()] : []),
+              refreshNotifications(),
+              refreshCart(),
+            ]
+          : []),
       ]);
     },
     {
@@ -483,6 +494,8 @@ export function ShopProvider({ children }) {
         closeChat,
         sendMessage,
         refreshMessages,
+        chatConnected,
+        chatError,
         readNotification,
         readAllNotifications,
         updateProfile,

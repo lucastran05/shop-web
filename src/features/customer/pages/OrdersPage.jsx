@@ -1,23 +1,16 @@
 import { usePreferences } from "../../../shared/preferences/usePreferences";
 import { formatDateTime } from "../../../shared/utils/format";
 import { useTranslation } from "react-i18next";
-import { orderStatuses, orderStatusGroup } from "../../../shared/constants/shop";
+import {
+  orderStatuses,
+  orderStatusGroup,
+} from "../../../shared/constants/shop";
 import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import {
-  Tabs,
-  Empty,
-  Tag,
-  Button,
-  Modal,
-  Descriptions,
-  Table,
-  Timeline,
-  Spin,
-} from "antd";
+import { Tabs, Empty, Tag, Button, Modal, Pagination, Spin } from "antd";
 import { useShop } from "../../../shared/shop/useShop";
 import { money } from "../../../shared/utils/format";
-import PaymentPanel from "../components/PaymentPanel";
+import OrderDetail from "../components/OrderDetail";
 import CopyCode from "../../../shared/components/CopyCode";
 import { api } from "../../../shared/api";
 import { App } from "antd";
@@ -31,21 +24,29 @@ export default function Orders() {
     [selectedDetail, setDetail] = useState(null),
     [cancel, setCancel] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const refreshOrders = s.refreshOrders;
   const userId = s.user?.id;
   useEffect(() => {
     if (!userId) return;
     let active = true;
-    refreshOrders().catch((error) => message.error(t(userError(error)))).finally(() => {
-      if (active) setLoading(false);
-    });
-    return () => { active = false; };
+    refreshOrders()
+      .catch((error) => message.error(t(userError(error))))
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [userId, refreshOrders, message, t]);
   const detail =
     selectedDetail && s.orders.find((o) => o.id === selectedDetail.id);
   if (!s.user) return <Navigate to="/login?next=/orders" replace />;
   const all = s.orders.filter((o) => o.owner === s.user.email),
-    orders = all.filter((o) => tab === "all" || orderStatusGroup(o.status) === tab);
+    orders = all.filter(
+      (o) => tab === "all" || orderStatusGroup(o.status) === tab,
+    );
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(orders.length / 5)));
   async function cancelOrder() {
     try {
       await api.orders.cancel(cancel.id, {
@@ -62,17 +63,24 @@ export default function Orders() {
       <h1>{t("Đơn mua của bạn")}</h1>
       <Tabs
         activeKey={tab}
-        onChange={setTab}
+        onChange={(value) => {
+          setTab(value);
+          setPage(1);
+        }}
         items={["all", ...orderStatuses].map((v) => ({
           key: v,
           label: v === "all" ? t("Tất cả") + " (" + all.length + ")" : t(v),
         }))}
       />
-      {loading ? <Spin /> : orders.length ? (
-        orders.map((o) => (
+      {loading ? (
+        <Spin />
+      ) : orders.length ? (
+        orders.slice((currentPage - 1) * 5, currentPage * 5).map((o) => (
           <section className="panel order" key={o.id}>
             <div className="order-head">
-              <strong>{t("Đơn hàng")} <CopyCode value={o.code} /></strong>
+              <strong>
+                {t("Đơn hàng")} <CopyCode value={o.code} />
+              </strong>
               <span>{formatDateTime(o.createdAt, timeZone)}</span>
               <Tag color={o.status === "Đã hủy" ? "default" : "orange"}>
                 {t(orderStatusGroup(o.status))}
@@ -130,171 +138,18 @@ export default function Orders() {
           <Link to="/">{t("Tiếp tục mua sắm")}</Link>
         </Empty>
       )}
-      <Modal
-        width={900}
-        open={!!detail}
-        title={t("Chi tiết đơn")}
-        onCancel={() => setDetail(null)}
-        footer={<Button onClick={() => setDetail(null)}>{t("Đóng")}</Button>}
-      >
-        {detail && (
-          <>
-            <PaymentPanel key={detail.id} order={detail} />
-            <Table
-              rowKey="key"
-              bordered
-              pagination={false}
-              dataSource={detail.items}
-              scroll={{ x: 600 }}
-              columns={[
-                {
-                  title: t("Sản phẩm"),
-                  dataIndex: "name",
-                  render: (name, p) => (
-                    <Link to={"/products/" + p.id}>{name}</Link>
-                  ),
-                },
-                {
-                  title: t("Phân loại"),
-                  render: (_, p) => `${t(p.color)} / ${t(p.variantLabel)}`,
-                },
-                { title: t("Đơn giá"), dataIndex: "price", render: money },
-                { title: t("Số lượng"), dataIndex: "quantity" },
-                {
-                  title: t("Thành tiền"),
-                  render: (_, p) => money(p.price * p.quantity),
-                },
-                ...([
-                  "completed",
-                  "delivered",
-                  "Đã hoàn thành",
-                  "Giao thành công",
-                ].includes(detail.statusCode || detail.status)
-                  ? [
-                      {
-                        title: t("Đánh giá"),
-                        key: "review",
-                        render: (_, p) => (
-                          <Link to={"/products/" + p.id + "#reviews"}>
-                            ⭐ {t("Viết đánh giá")}
-                          </Link>
-                        ),
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-            <Descriptions
-              bordered
-              column={1}
-              items={[
-                {
-                  key: "name",
-                  label: t("Người nhận"),
-                  children: detail.recipient.name,
-                },
-                {
-                  key: "phone",
-                  label: t("Điện thoại"),
-                  children: detail.recipient.phone,
-                },
-                {
-                  key: "address",
-                  label: t("Nhận hàng"),
-                  children:
-                    detail.delivery === "pickup"
-                      ? t("Tại cửa hàng")
-                      : detail.recipient.address,
-                },
-                {
-                  key: "note",
-                  label: t("Ghi chú"),
-                  children: detail.recipient.note || t("Không có"),
-                },
-                {
-                  key: "shipping",
-                  label: t("Phí giao hàng"),
-                  children: money(detail.shipping),
-                },
-                {
-                  key: "discount",
-                  label: t("Giảm giá"),
-                  children: money(detail.off),
-                },
-                {
-                  key: "total",
-                  label: t("Tổng đơn"),
-                  children: money(detail.total),
-                },
-                {
-                  key: "deposit",
-                  label: t("Cọc dự kiến"),
-                  children: money(detail.deposit),
-                },
-                {
-                  key: "deposit-status",
-                  label: t("Trạng thái cọc"),
-                  children: t(detail.depositStatus || "Không đặt cọc"),
-                },
-                {
-                  key: "deposit-time",
-                  label: t("Thời gian cọc"),
-                  children: detail.depositAt
-                    ? formatDateTime(detail.depositAt, timeZone)
-                    : t("Chưa có giao dịch"),
-                },
-                {
-                  key: "carrier",
-                  label: t("Đơn vị vận chuyển"),
-                  children: detail.carrier || t("Chưa có"),
-                },
-                {
-                  key: "sent-at",
-                  label: t("Ngày gửi hàng"),
-                  children: detail.shippedAt
-                    ? formatDateTime(detail.shippedAt, timeZone)
-                    : t("Chưa gửi"),
-                },
-                {
-                  key: "paid",
-                  label: t("Đã thanh toán"),
-                  children: money(detail.paid),
-                },
-                {
-                  key: "remaining",
-                  label: t("Còn phải trả"),
-                  children: money(detail.remaining),
-                },
-                ...(detail.refunded > 0 ? [{ key: "refunded", label: t("Đã hoàn tiền"), children: money(detail.refunded) }] : []),
-                {
-                  key: "payment",
-                  label: t("Thanh toán"),
-                  children: t(detail.paymentStatus),
-                },
-                {
-                  key: "tracking",
-                  label: t("Mã vận đơn"),
-                  children: detail.tracking || t("Chưa có — chờ shop cập nhật"),
-                },
-              ]}
-            />
-            <Timeline
-              items={[
-                {
-                  content:
-                    t("Đã tạo đơn") +
-                    ": " +
-                    formatDateTime(detail.createdAt, timeZone),
-                },
-                {
-                  content: t(orderStatusGroup(detail.status)),
-                  color: detail.status === "Đã hủy" ? "gray" : "green",
-                },
-              ]}
-            />
-          </>
-        )}
-      </Modal>
+      {!loading && (
+        <Pagination
+          className="pagination"
+          current={currentPage}
+          pageSize={5}
+          total={orders.length}
+          onChange={setPage}
+          showSizeChanger={false}
+          hideOnSinglePage
+        />
+      )}
+      <OrderDetail order={detail} onClose={() => setDetail(null)} />
       <Modal
         open={!!cancel}
         title={t("Hủy đơn hàng?")}
