@@ -12,14 +12,22 @@ export const shopConfig = {
 };
 export const orderStatuses = [
   "Chờ xác nhận",
-  "Đã xác nhận",
-  "Đã cọc",
   "Đang chuẩn bị hàng",
-  "Đã đóng gói",
   "Đang giao hàng",
-  "Giao thành công",
   "Đã hoàn thành",
   "Đã hủy",
-  "Hoàn hàng",
-  "Hoàn tiền",
+  "Hoàn hàng / Hoàn tiền",
 ];
+
+const orderStatusGroups = {
+  "Đã xác nhận": "Đang chuẩn bị hàng",
+  "Đã cọc": "Đang chuẩn bị hàng",
+  "Đã đóng gói": "Đang chuẩn bị hàng",
+  "Giao thành công": "Đã hoàn thành",
+  "Hoàn hàng": "Hoàn hàng / Hoàn tiền",
+  "Hoàn tiền": "Hoàn hàng / Hoàn tiền",
+};
+
+export function orderStatusGroup(status) {
+  return orderStatusGroups[status] || status;
+}

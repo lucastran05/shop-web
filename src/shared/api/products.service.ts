@@ -32,6 +32,7 @@ export interface ProductVariant {
   id: ID;
   label: string;
   color: string;
+  image?: string;
   price: number;
   old_price: number | null;
   stock_quantity: number;

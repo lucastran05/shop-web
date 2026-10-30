@@ -216,7 +216,7 @@ export default function MessagesPage() {
               <MessageOutlined />
             </span>
             <div>
-              <strong>Hộp thư</strong>
+              <strong>Tin nhắn</strong>
               <small>
                 {conversations.filter((c) => !c.preference.hidden).length} hội
                 thoại ·{" "}
@@ -232,7 +232,6 @@ export default function MessagesPage() {
           </div>
           <div className="mg-conversation-search">
             <Button
-              type="primary"
               icon={<PlusOutlined aria-hidden="true" />}
               onClick={() => {
                 form.resetFields();
@@ -487,11 +486,12 @@ export default function MessagesPage() {
                 <Button
                   htmlType="submit"
                   type="primary"
-                  shape="circle"
                   icon={<SendOutlined />}
                   aria-label="Gửi tin nhắn"
                   disabled={!draft.trim()}
-                />
+                >
+                  Gửi
+                </Button>
               </form>
             </>
           ) : (

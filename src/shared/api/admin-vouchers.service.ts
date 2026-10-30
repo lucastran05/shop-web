@@ -12,6 +12,8 @@ export interface Voucher {
   id: ID;
   code: string;
   name: string;
+  audience: "broadcast" | "selected";
+  recipient_ids: ID[];
   discount_type: VoucherDiscountType;
   discount_value: number;
   min_order_amount: number;
@@ -28,6 +30,8 @@ export interface Voucher {
 export interface VoucherRequest {
   code: string;
   name: string;
+  audience?: "broadcast" | "selected";
+  recipient_ids?: ID[];
   discount_type: VoucherDiscountType;
   discount_value: number;
   min_order_amount?: number;
@@ -60,29 +64,51 @@ export interface VoucherValidationResult {
 
 export class AdminVouchersService {
   constructor(private readonly http: HttpClient) {}
-  list(query?: VouchersQuery, options?: RequestOptions): Promise<ApiResponse<Voucher[]>> {
+  list(
+    query?: VouchersQuery,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<Voucher[]>> {
     return this.http.get("/admin/vouchers", query, options);
   }
-  create(body: VoucherRequest, options?: RequestOptions): Promise<ApiResponse<Voucher>> {
+  create(
+    body: VoucherRequest,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<Voucher>> {
     return this.http.post("/admin/vouchers", body, options);
   }
-  update(id: ID, body: UpdateVoucherRequest, options?: RequestOptions): Promise<ApiResponse<Voucher>> {
+  update(
+    id: ID,
+    body: UpdateVoucherRequest,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<Voucher>> {
     return this.http.patch(`/admin/vouchers/${pathId(id)}`, body, options);
   }
-  delete(id: ID, options?: RequestOptions): Promise<ApiResponse<DeletedResult>> {
+  delete(
+    id: ID,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<DeletedResult>> {
     return this.http.delete(`/admin/vouchers/${pathId(id)}`, options);
   }
-  bulkDelete(body: BulkDeleteRequest, options?: RequestOptions): Promise<ApiResponse<BulkDeleteResult>> {
+  bulkDelete(
+    body: BulkDeleteRequest,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<BulkDeleteResult>> {
     return this.http.post("/admin/vouchers/bulk-delete", body, options);
   }
 }
 
 export class VouchersService {
   constructor(private readonly http: HttpClient) {}
-  available(query?: AvailableVouchersQuery, options?: RequestOptions): Promise<ApiResponse<Voucher[]>> {
-    return this.http.get('/api/v1/vouchers/available', query, options);
+  available(
+    query?: AvailableVouchersQuery,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<Voucher[]>> {
+    return this.http.get("/api/v1/vouchers/available", query, options);
   }
-  validate(body: VoucherValidationRequest, options?: RequestOptions): Promise<ApiResponse<VoucherValidationResult>> {
+  validate(
+    body: VoucherValidationRequest,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<VoucherValidationResult>> {
     return this.http.post("/api/v1/vouchers/validate", body, options);
   }
 }

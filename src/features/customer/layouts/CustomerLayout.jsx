@@ -53,7 +53,7 @@ export default function CustomerLayout() {
       setChatError(null);
     },
     {
-      enabled: !!s.user,
+      enabled: !!s.user && chat,
       onError: (error) => setChatError(t(userError(error))),
     },
   );
@@ -136,11 +136,6 @@ export default function CustomerLayout() {
         </nav>
         <HeaderSearch />
         <div className="header-actions">
-          {s.user?.role === "admin" && s.user.is_active !== false && (
-            <Button onClick={() => navigate("/management")}>
-              {t("Quản lý")}
-            </Button>
-          )}
           {s.user ? (
             <>
               <Popover

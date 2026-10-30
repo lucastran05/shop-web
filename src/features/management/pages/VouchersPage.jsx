@@ -1,4 +1,5 @@
 import Button from "../components/ManagementButton";
+import CopyCode from "../../../shared/components/CopyCode";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import {
@@ -65,9 +66,15 @@ export default function VouchersPage() {
     form.resetFields();
     form.setFieldsValue(
       voucher
-        ? { ...voucher, starts_at: dateInput(voucher.starts_at), expires_at: dateInput(voucher.expires_at) }
+        ? {
+            ...voucher,
+            starts_at: dateInput(voucher.starts_at),
+            expires_at: dateInput(voucher.expires_at),
+          }
         : {
             active: true,
+            audience: "broadcast",
+            recipient_ids: [],
             discount_type: "percentage",
             discount_value: 10,
             min_order_amount: 0,
@@ -83,11 +90,15 @@ export default function VouchersPage() {
   async function save(values) {
     const payload = {
       ...values,
+      recipient_ids: values.audience === "selected" ? values.recipient_ids : [],
       code: values.code.trim().toUpperCase(),
       name: values.name.trim(),
       starts_at: datePayload(values.starts_at),
       expires_at: datePayload(values.expires_at),
-      usage_limit: values.usage_limit === null || values.usage_limit === "" ? null : values.usage_limit,
+      usage_limit:
+        values.usage_limit === null || values.usage_limit === ""
+          ? null
+          : values.usage_limit,
       max_discount_amount:
         values.max_discount_amount === null || values.max_discount_amount === ""
           ? null
@@ -106,7 +117,8 @@ export default function VouchersPage() {
     try {
       const result = await s.removeVouchers(ids);
       setSelected([]);
-      if (result.failed?.length) message.warning("Một số voucher không còn tồn tại");
+      if (result.failed?.length)
+        message.warning("Một số voucher không còn tồn tại");
       else message.success("Đã xóa voucher đã chọn");
     } catch (error) {
       message.error(voucherError(error));
@@ -114,7 +126,9 @@ export default function VouchersPage() {
   }
 
   const rows = s.vouchers.filter((voucher) =>
-    `${voucher.code} ${voucher.name}`.toLowerCase().includes(query.toLowerCase()),
+    `${voucher.code} ${voucher.name}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
 
   return (
@@ -126,7 +140,11 @@ export default function VouchersPage() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => edit(null)}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => edit(null)}
+        >
           Thêm voucher
         </Button>
         <Popconfirm
@@ -145,8 +163,19 @@ export default function VouchersPage() {
         dataSource={rows}
         scroll={{ x: 1100 }}
         columns={[
-          { title: "Mã", dataIndex: "code", render: (value) => <strong>{value}</strong> },
+          {
+            title: "Mã",
+            dataIndex: "code",
+            render: (value) => <CopyCode value={value} />,
+          },
           { title: "Tên voucher", dataIndex: "name" },
+          {
+            title: "Đối tượng",
+            render: (_, voucher) =>
+              voucher.audience === "selected"
+                ? `${voucher.recipient_ids.length} khách hàng`
+                : "Tất cả khách hàng",
+          },
           {
             title: "Mức giảm",
             render: (_, voucher) =>
@@ -156,7 +185,11 @@ export default function VouchersPage() {
                   ? money(voucher.discount_value)
                   : "Miễn phí vận chuyển",
           },
-          { title: "Đơn tối thiểu", dataIndex: "min_order_amount", render: money },
+          {
+            title: "Đơn tối thiểu",
+            dataIndex: "min_order_amount",
+            render: money,
+          },
           {
             title: "Lượt dùng",
             render: (_, voucher) =>
@@ -173,9 +206,22 @@ export default function VouchersPage() {
             title: "Thao tác",
             render: (_, voucher) => (
               <Space>
-                <Button aria-label="Sửa" className="mg-icon-action" icon={<EditOutlined />} onClick={() => edit(voucher)} />
-                <Popconfirm title="Xóa voucher này?" onConfirm={() => remove([voucher.id])}>
-                  <Button danger aria-label="Xóa" className="mg-icon-action" icon={<DeleteOutlined />} />
+                <Button
+                  aria-label="Sửa"
+                  className="mg-icon-action"
+                  icon={<EditOutlined />}
+                  onClick={() => edit(voucher)}
+                />
+                <Popconfirm
+                  title="Xóa voucher này?"
+                  onConfirm={() => remove([voucher.id])}
+                >
+                  <Button
+                    danger
+                    aria-label="Xóa"
+                    className="mg-icon-action"
+                    icon={<DeleteOutlined />}
+                  />
                 </Popconfirm>
               </Space>
             ),
@@ -200,17 +246,76 @@ export default function VouchersPage() {
               { required: true, message: "Nhập mã voucher" },
               {
                 pattern: /^[A-Za-z0-9][A-Za-z0-9 _-]{1,48}[A-Za-z0-9]$/,
-                message: "Mã dài 3-50 ký tự, chỉ gồm chữ, số, khoảng trắng, - hoặc _",
+                message:
+                  "Mã dài 3-50 ký tự, chỉ gồm chữ, số, khoảng trắng, - hoặc _",
               },
             ]}
           >
-            <Input maxLength={50} placeholder="VD: SALE20" disabled={Boolean(editing)} />
+            <Input
+              maxLength={50}
+              placeholder="VD: SALE20"
+              disabled={Boolean(editing)}
+            />
           </Form.Item>
-          <Form.Item name="name" label="Tên voucher" rules={[{ required: true, message: "Nhập tên voucher" }]}>
+          <Form.Item
+            name="name"
+            label="Tên voucher"
+            rules={[{ required: true, message: "Nhập tên voucher" }]}
+          >
             <Input maxLength={255} />
           </Form.Item>
+          <Form.Item
+            name="audience"
+            label="Đối tượng áp dụng"
+            rules={[{ required: true }]}
+          >
+            <Select
+              options={[
+                { value: "broadcast", label: "Tất cả khách hàng (Broadcast)" },
+                { value: "selected", label: "Khách hàng được chọn" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, next) => prev.audience !== next.audience}
+          >
+            {({ getFieldValue }) =>
+              getFieldValue("audience") === "selected" && (
+                <Form.Item
+                  name="recipient_ids"
+                  label="Khách hàng"
+                  rules={[
+                    {
+                      required: true,
+                      type: "array",
+                      min: 1,
+                      message: "Chọn ít nhất một khách hàng",
+                    },
+                  ]}
+                >
+                  <Select
+                    mode="multiple"
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder="Tìm tên hoặc email khách hàng"
+                    options={s.users
+                      .filter((user) => user.role === "customer")
+                      .map((user) => ({
+                        value: user.id,
+                        label: `${user.name} · ${user.email}`,
+                      }))}
+                  />
+                </Form.Item>
+              )
+            }
+          </Form.Item>
           <Space wrap>
-            <Form.Item name="discount_type" label="Kiểu giảm" rules={[{ required: true }]}>
+            <Form.Item
+              name="discount_type"
+              label="Kiểu giảm"
+              rules={[{ required: true }]}
+            >
               <Select
                 style={{ width: 190 }}
                 options={[
@@ -220,7 +325,11 @@ export default function VouchersPage() {
                 ]}
               />
             </Form.Item>
-            <Form.Item name="discount_value" label="Giá trị giảm" rules={[{ required: true, message: "Nhập giá trị giảm" }]}>
+            <Form.Item
+              name="discount_value"
+              label="Giá trị giảm"
+              rules={[{ required: true, message: "Nhập giá trị giảm" }]}
+            >
               <InputNumber min={0} style={{ width: 180 }} />
             </Form.Item>
           </Space>
@@ -229,10 +338,19 @@ export default function VouchersPage() {
               <InputNumber min={0} style={{ width: 180 }} addonAfter="đ" />
             </Form.Item>
             <Form.Item name="max_discount_amount" label="Giảm tối đa">
-              <InputNumber min={0} style={{ width: 180 }} addonAfter="đ" placeholder="Không giới hạn" />
+              <InputNumber
+                min={0}
+                style={{ width: 180 }}
+                addonAfter="đ"
+                placeholder="Không giới hạn"
+              />
             </Form.Item>
             <Form.Item name="usage_limit" label="Tổng lượt dùng">
-              <InputNumber min={0} style={{ width: 180 }} placeholder="Không giới hạn" />
+              <InputNumber
+                min={0}
+                style={{ width: 180 }}
+                placeholder="Không giới hạn"
+              />
             </Form.Item>
           </Space>
           <Space wrap>
@@ -243,7 +361,11 @@ export default function VouchersPage() {
               <Input type="datetime-local" />
             </Form.Item>
           </Space>
-          <Form.Item name="active" label="Đang hoạt động" valuePropName="checked">
+          <Form.Item
+            name="active"
+            label="Đang hoạt động"
+            valuePropName="checked"
+          >
             <Switch />
           </Form.Item>
         </Form>

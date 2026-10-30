@@ -12,8 +12,12 @@ import {
   Tag,
   Alert,
 } from "antd";
-import { ShoppingOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import {
+  LeftOutlined,
+  RightOutlined,
+  ShoppingOutlined,
+} from "@ant-design/icons";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
 import { matchesProduct } from "../../../shared/utils/search";
@@ -24,6 +28,8 @@ export default function Catalog() {
     { products, categories, catalogLoading, catalogError } = useShop(),
     shopConfig = useShopConfig(),
     [params, setParams] = useSearchParams();
+  const featuredRow = useRef(null);
+  const featuredProducts = products.filter((product) => product.featured);
   const q = params.get("q") || "",
     search = params.get("search") || "",
     category = params.get("category") || "",
@@ -35,9 +41,7 @@ export default function Catalog() {
     [pageSize, setPageSize] = useState(6),
     [pageState, setPage] = useState({ query: params.toString(), value: 1 });
   useEffect(() => {
-    setPrice((current) =>
-      current[1] === 1 ? [0, maxCatalogPrice] : current,
-    );
+    setPrice((current) => (current[1] === 1 ? [0, maxCatalogPrice] : current));
   }, [maxCatalogPrice]);
   function changePage(value) {
     setPage({ query: params.toString(), value });
@@ -75,7 +79,7 @@ export default function Catalog() {
     <>
       <section className="hero">
         <div>
-          <Tag color="blue">{shopConfig.name}</Tag>
+          <Tag color="#468432">{shopConfig.name}</Tag>
           <h1>{t("Chào mừng đến với {{name}}", { name: shopConfig.name })}</h1>
           <p>
             {t("Tìm kiếm sản phẩm, lựa chọn phân loại và đặt hàng trực tuyến.")}
@@ -83,6 +87,43 @@ export default function Catalog() {
         </div>
         <ShoppingOutlined className="hero-icon" />
       </section>
+      {featuredProducts.length > 0 && (
+        <section
+          className="collection featured-products"
+          aria-label={t("Sản phẩm nổi bật")}
+        >
+          <div className="section-heading">
+            <h2>{t("Sản phẩm nổi bật")}</h2>
+            <div className="featured-controls">
+              <Button
+                icon={<LeftOutlined />}
+                aria-label={t("Sản phẩm trước")}
+                onClick={() =>
+                  featuredRow.current?.scrollBy({
+                    left: -featuredRow.current.clientWidth,
+                    behavior: "smooth",
+                  })
+                }
+              />
+              <Button
+                icon={<RightOutlined />}
+                aria-label={t("Sản phẩm tiếp theo")}
+                onClick={() =>
+                  featuredRow.current?.scrollBy({
+                    left: featuredRow.current.clientWidth,
+                    behavior: "smooth",
+                  })
+                }
+              />
+            </div>
+          </div>
+          <div className="featured-product-row" ref={featuredRow}>
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} p={product} />
+            ))}
+          </div>
+        </section>
+      )}
       <section className="collection" id="collection">
         <div className="section-heading">
           <div>
@@ -109,8 +150,8 @@ export default function Catalog() {
                 <span>{c ? t(c) : t("Tất cả")}</span>
                 <span>
                   {c
-                    ? categories.find((item) => item.name === c)?.product_count ??
-                      0
+                    ? (categories.find((item) => item.name === c)
+                        ?.product_count ?? 0)
                     : products.length}
                 </span>
               </button>

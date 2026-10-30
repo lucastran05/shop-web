@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { App } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Context } from "./shop";
@@ -17,6 +17,7 @@ import { usePolling } from "../hooks/usePolling";
 export function ShopProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const isManagement = location.pathname.startsWith("/management");
   const { message } = App.useApp();
   const [shopInfo, setShopInfo] = useState({
     name: shopConfig.name,
@@ -53,10 +54,9 @@ export function ShopProvider({ children }) {
       const loginPath = location.pathname.startsWith("/management")
         ? "/management/login"
         : "/login";
-      navigate(
-        `${loginPath}?expired=1&next=${encodeURIComponent(target)}`,
-        { replace: true },
-      );
+      navigate(`${loginPath}?expired=1&next=${encodeURIComponent(target)}`, {
+        replace: true,
+      });
     });
   }, [location, message, navigate]);
   useEffect(() => {
@@ -127,7 +127,7 @@ export function ShopProvider({ children }) {
       active = false;
     };
   }, []);
-  async function refreshOrders() {
+  const refreshOrders = useCallback(async () => {
     const rows = await listAll((query) => api.orders.list(query));
     const detailed = await Promise.all(
       rows.map((row) => api.orders.get(row.id)),
@@ -135,7 +135,7 @@ export function ShopProvider({ children }) {
     const next = detailed.map(({ data }) => mapOrder(data, user?.email));
     setOrders(next);
     return next;
-  }
+  }, [user?.email]);
   async function refreshNotifications() {
     const rows = await listAll((query) =>
       api.chatAndNotifications.notifications(query),
@@ -157,14 +157,7 @@ export function ShopProvider({ children }) {
     setMessages([]);
     setConversationId(null);
     chatRead.current = false;
-    if (!user?.id) return;
-    listAll((query) => api.orders.list(query))
-      .then((rows) => Promise.all(rows.map((row) => api.orders.get(row.id))))
-      .then((rows) => {
-        if (active)
-          setOrders(rows.map(({ data }) => mapOrder(data, user.email)));
-      })
-      .catch(() => {});
+    if (!user?.id || isManagement) return;
     listAll((query) => api.chatAndNotifications.notifications(query))
       .then((rows) => {
         if (active)
@@ -181,7 +174,8 @@ export function ShopProvider({ children }) {
       .catch(() => {});
     const openConversation = api.chatAndNotifications.openConversation;
     if (typeof openConversation === "function") {
-      api.chatAndNotifications.openConversation()
+      api.chatAndNotifications
+        .openConversation()
         .then(({ data: conversation }) => {
           if (!active) return null;
           setConversationId(conversation.id);
@@ -191,14 +185,16 @@ export function ShopProvider({ children }) {
         })
         .then((response) => {
           if (active && response?.data)
-            setMessages(response.data.map((item) => mapMessage(item, user.email)));
+            setMessages(
+              response.data.map((item) => mapMessage(item, user.email)),
+            );
         })
         .catch(() => {});
     }
     return () => {
       active = false;
     };
-  }, [user?.id, user?.email]);
+  }, [user?.id, user?.email, isManagement]);
   async function openChat() {
     if (!user) return;
     const userId = user.id;
@@ -245,8 +241,7 @@ export function ShopProvider({ children }) {
     if (
       chatRead.current &&
       rows.some(
-        (item) =>
-          item.sender_role !== "customer" && item.is_read !== true,
+        (item) => item.sender_role !== "customer" && item.is_read !== true,
       )
     ) {
       await api.chatAndNotifications.markConversationRead();
@@ -306,6 +301,8 @@ export function ShopProvider({ children }) {
       variantLabel: item.variant_label,
       color: item.color,
       image: item.image_url,
+      deposit: item.allow_deposit,
+      deposit_rate: item.deposit_rate,
       price: item.unit_price,
       quantity: item.quantity,
       stock: item.stock_quantity,
@@ -330,23 +327,25 @@ export function ShopProvider({ children }) {
     const rows = await listAll((query) => api.products.list(query));
     setProducts(rows.map(mapProductSummary));
   }
-  usePolling(refreshCatalogProducts, {
-    intervalMs: 1000,
-    onError: () => {},
-  });
   usePolling(
     async () => {
-      if (!user?.id) return;
-      await Promise.allSettled([refreshOrders(), refreshNotifications(), refreshCart()]);
+      await Promise.allSettled([
+        ...(location.pathname === "/" ? [refreshCatalogProducts()] : []),
+        ...(user?.id ? [
+          ...(location.pathname === "/orders" ? [refreshOrders()] : []),
+          refreshNotifications(), refreshCart(), refreshMessages(),
+        ] : []),
+      ]);
     },
     {
-      enabled: Boolean(user?.id),
-      intervalMs: 1000,
+      enabled: !isManagement,
+      intervalMs: 0,
+      immediate: false,
       onError: () => {},
     },
   );
   useEffect(() => {
-    if (!userId) {
+    if (!userId || isManagement) {
       setItems([]);
       return;
     }
@@ -362,7 +361,7 @@ export function ShopProvider({ children }) {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, isManagement]);
   function add(product, variantId, quantity) {
     if (!user || !Number.isInteger(quantity) || quantity < 1) return null;
     const variant = product.variants.find((item) => item.id === variantId);

@@ -2,11 +2,13 @@ export const orderLabels = {
   pending: "Chờ xác nhận",
   confirmed: "Đã xác nhận",
   processing: "Đang chuẩn bị hàng",
+  packed: "Đã đóng gói",
   shipping: "Đang giao hàng",
   shipped: "Đang giao hàng",
   delivered: "Giao thành công",
   completed: "Đã hoàn thành",
   cancelled: "Đã hủy",
+  returned: "Hoàn hàng",
   refunded: "Hoàn tiền",
 };
 export function mapOrder(order, email = "") {
@@ -16,7 +18,9 @@ export function mapOrder(order, email = "") {
     createdAt: order.created_at,
     completedAt: order.completed_at,
     statusCode: order.status,
-    status: orderLabels[order.status] || order.status_label || order.status,
+    status: order.payment_status === "refunded" ? "Hoàn tiền" :
+      order.status === "confirmed" && order.deposit_status === "paid" && Number(order.paid_amount) < Number(order.total_amount)
+        ? "Đã cọc" : orderLabels[order.status] || order.status_label || order.status,
     total: Number(order.total_amount ?? 0),
     subtotal: Number(order.subtotal ?? 0),
     shipping: Number(order.shipping_fee ?? 0),
@@ -41,6 +45,7 @@ export function mapOrder(order, email = "") {
     },
     carrier: order.shipment?.carrier || "",
     tracking: order.shipment?.tracking_number || "",
+    shippedAt: order.shipment?.shipped_at,
     items: (order.items || []).map((item, index) => ({
       ...item,
       id: item.product_id,

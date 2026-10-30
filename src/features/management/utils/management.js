@@ -1,4 +1,4 @@
-import { statusFlow } from "../constants/management";
+import { orderLabels } from "../../../shared/adapters/viewAdapters";
 export const LOW_STOCK_LIMIT = 5;
 export function stockStatus(stock) {
   return stock <= 0 ? "Hết hàng" : "Còn hàng";
@@ -39,20 +39,7 @@ export function todayRevenue(orders, now = new Date()) {
 }
 export { statusFlow } from "../constants/management";
 export function nextStatuses(order) {
-  const currentStatus =
-    order.statusCode === "processing" ? "Đã đóng gói" : order.status;
-  if (["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(currentStatus)) return [];
-  if (currentStatus === "Hoàn hàng") return order.paid > 0 ? ["Hoàn tiền"] : [];
-  if (["Giao thành công", "Đã hoàn thành"].includes(currentStatus))
-    return currentStatus === "Giao thành công"
-      ? ["Đã hoàn thành", "Hoàn hàng"]
-      : ["Hoàn hàng"];
-  const index = statusFlow.indexOf(
-    currentStatus === "Đã cọc" ? "Đã xác nhận" : currentStatus,
-  );
-  return index < 0
-    ? []
-    : [statusFlow[index + 1], ...(index < 4 ? ["Đã hủy"] : [])].filter(Boolean);
+  return (order.allowed_next_statuses || []).map(({ code }) => orderLabels[code]).filter(Boolean);
 }
 export function transitionOrder(order, status, shipment = {}) {
   if (!nextStatuses(order).includes(status))

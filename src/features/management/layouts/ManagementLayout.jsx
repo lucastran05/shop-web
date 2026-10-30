@@ -16,6 +16,7 @@ import {
   LogoutOutlined,
   ShopOutlined,
   SettingOutlined,
+  ReloadOutlined,
   TagsOutlined,
 } from "@ant-design/icons";
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
@@ -38,6 +39,7 @@ export default function ManagementLayout() {
   const s = useManagement(),
     location = useLocation();
   const [mobile, setMobile] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { message } = App.useApp();
   const pathname = location.pathname.replace(/\/+$/, "");
   const contentClass =
@@ -116,7 +118,12 @@ export default function ManagementLayout() {
             </div>
           </div>
           <div className="mg-profile">
-            <Avatar style={{ background: "#e6f4ff", color: "#1677ff" }}>
+            <Button type="text" aria-label="Làm mới dữ liệu" icon={<ReloadOutlined />} loading={refreshing}
+              onClick={async () => {
+                setRefreshing(true);
+                try { await s.refresh(); } finally { setRefreshing(false); }
+              }} />
+            <Avatar style={{ background: "#eef5e9", color: "#468432" }}>
               {s.session.name?.trim().charAt(0).toUpperCase()}
             </Avatar>
             <span>

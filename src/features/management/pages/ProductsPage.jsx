@@ -27,7 +27,7 @@ export default function ProductsPage() {
     [form] = Form.useForm();
   const [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
-    [imageLoading, setImageLoading] = useState(false),
+    [imageLoading, setImageLoading] = useState(0),
     [selected, setSelected] = useState([]),
     [editing, setEditing] = useState(null),
     [open, setOpen] = useState(false);
@@ -39,7 +39,7 @@ export default function ProductsPage() {
         active: true,
         featured: false,
         deposit: false,
-        depositRate: 20,
+        depositRate: 50,
         variants: [
           {
             id: "standard",
@@ -62,6 +62,7 @@ export default function ProductsPage() {
       images: values.image ? [values.image] : [],
       attributes: editing?.attributes || [],
       variants: values.variants.map((v) => ({
+        ...editing?.variants.find((variant) => variant.id === v.id),
         ...v,
         id: v.id || crypto.randomUUID(),
       })),
@@ -211,7 +212,7 @@ export default function ProductsPage() {
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         okText="Lưu sản phẩm"
-        okButtonProps={{ disabled: imageLoading }}
+        okButtonProps={{ disabled: imageLoading > 0 }}
         cancelText="Hủy"
         destroyOnHidden
       >
@@ -240,7 +241,11 @@ export default function ProductsPage() {
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.Item name="image" label="Ảnh sản phẩm">
-            <ProductImageInput onLoadingChange={setImageLoading} />
+            <ProductImageInput
+              onLoadingChange={(loading) =>
+                setImageLoading((count) => count + (loading ? 1 : -1))
+              }
+            />
           </Form.Item>
           <Space wrap>
             <Form.Item name="active" label="Đang bán" valuePropName="checked">
@@ -262,10 +267,10 @@ export default function ProductsPage() {
             </Form.Item>
             <Form.Item
               name="depositRate"
-              label="Tỷ lệ cọc (%)"
+              label="Cọc tối thiểu (%)"
               rules={[{ required: true }]}
             >
-              <InputNumber min={1} max={100} precision={0} />
+              <InputNumber min={1} max={70} precision={0} />
             </Form.Item>
           </Space>
           <h3>Biến thể sản phẩm</h3>
@@ -274,6 +279,20 @@ export default function ProductsPage() {
               <>
                 {fields.map((field) => (
                   <div className="mg-variant" key={field.key}>
+                    <Form.Item name={[field.name, "id"]} hidden>
+                      <Input />
+                    </Form.Item>
+                    <Form.Item
+                      className="mg-variant-image"
+                      name={[field.name, "image"]}
+                      label="Ảnh biến thể"
+                    >
+                      <ProductImageInput
+                        onLoadingChange={(loading) =>
+                          setImageLoading((count) => count + (loading ? 1 : -1))
+                        }
+                      />
+                    </Form.Item>
                     <Form.Item
                       name={[field.name, "label"]}
                       label="Tên biến thể"

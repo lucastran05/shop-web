@@ -21,7 +21,7 @@
   padding: 0 8px 22px;
   font-size: 20px;
   font-weight: 700;
-  color: #1677ff;
+  color: #468432;
 }
 .mg-brand small {
   display: block;
@@ -46,7 +46,7 @@
 .mg-brand-mark {
   flex-shrink: 0;
   font-size: 25px;
-  color: #1677ff;
+  color: #468432;
 }
 .mg-sidebar nav a,
 .mg-navigation-drawer nav a {
@@ -60,12 +60,12 @@
 }
 .mg-sidebar nav a.active,
 .mg-navigation-drawer nav a.active {
-  background: #e6f4ff;
-  color: #1677ff;
+  background: #eef5e9;
+  color: #468432;
 }
 .mg-sidebar nav a:hover,
 .mg-navigation-drawer nav a:hover {
-  background: #f0f7ff;
+  background: #f4f8f1;
 }
 .mg-sidebar nav small,
 .mg-navigation-drawer nav small {
@@ -332,13 +332,13 @@
   max-width: 70px;
   border: 0;
   border-radius: 4px 4px 0 0;
-  background: #1677ff;
+  background: #468432;
   cursor: pointer;
   min-height: 2px;
 }
 .mg-chart-bar:hover,
 .mg-chart-bar:focus-visible {
-  background: #0958d9;
+  background: #356626;
 }
 .mg-bar-value {
   position: absolute;
@@ -369,7 +369,7 @@
   margin-bottom: 8px;
 }
 .mg-chart-track {
-  background: #f0f5ff;
+  background: #f4f8f1;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -401,7 +401,7 @@
   padding: 0 16px 12px;
   display: grid;
   gap: 8px;
-  border-bottom: 1px solid #edf2fa;
+  border-bottom: 1px solid #edf2e9;
 }
 .mg-conversation-row {
   position: relative;
@@ -416,11 +416,11 @@
   transform: translateY(-50%);
 }
 .mg-conversation-unread .mg-last-message {
-  color: #175ac1;
+  color: #356626;
   font-weight: 600;
 }
 .mg-conversation-heading .anticon {
-  color: #1677ff;
+  color: #468432;
   font-size: 12px;
 }
 .mg-chat-header .mg-chat-header-actions {
@@ -433,8 +433,7 @@
   flex-shrink: 0;
 }
 .mg-message-list {
-  background:
-    radial-gradient(ellipse at top right, #eaf3ff 0, transparent 60%), #f8faff;
+  background: #f5f5f5;
 }
 .mg-conversation {
   display: flex;
@@ -452,12 +451,12 @@
   background: #fafafa;
 }
 .mg-conversation.active {
-  background: #e6f4ff;
-  border-left-color: #1677ff;
+  background: #eef5e9;
+  border-left-color: #468432;
 }
 .mg-chat-avatar {
-  background: #e6f4ff;
-  color: #1677ff;
+  background: #eef5e9;
+  color: #468432;
   flex-shrink: 0;
 }
 .mg-conversation-text {
@@ -546,7 +545,7 @@
   width: fit-content;
   max-width: 82%;
   background: white;
-  border: 1px solid #e8edf5;
+  border: 1px solid #e8eee4;
   border-radius: 14px 14px 14px 2px;
   padding: 12px 16px;
   margin-bottom: 12px;
@@ -568,8 +567,8 @@
 }
 .mg-bubble-out {
   margin-left: auto;
-  background: #1677ff;
-  border-color: #1677ff;
+  background: #468432;
+  border-color: #468432;
   color: white;
   border-radius: 14px 14px 2px 14px;
 }
@@ -587,7 +586,6 @@
 }
 .mg-chat-composer .ant-btn {
   flex-shrink: 0;
-  width: 40px;
   height: 40px;
 }
 .mg-chat-empty {
@@ -602,127 +600,67 @@
 .mg-inbox-symbol {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 15px;
-  color: #fff;
-  background: linear-gradient(135deg, #438bff, #165bd4);
-  box-shadow: 0 6px 14px #1677ff24;
-  font-size: 21px;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  color: #468432;
+  background: #eef5e9;
+  font-size: 20px;
 }
 .mg-inbox-heading strong {
   display: block;
-  font-size: 21px;
-  letter-spacing: -0.5px;
-  color: #17365d;
+  font-size: 18px;
 }
 .mg-inbox-heading small {
   display: block;
-  color: #73839b;
-  margin-top: 3px;
+  color: #667085;
+  margin-top: 4px;
   font-size: 12px;
 }
 .mg-messenger .mg-conversations {
-  background: #fbfcff;
-  border-color: #e6edf8;
+  background: #fff;
 }
 .mg-messenger .mg-conversation-search {
   display: grid;
   gap: 12px;
 }
-.mg-messenger .mg-conversation-search > .ant-btn {
-  border-radius: 12px;
-  height: 40px;
-  box-shadow: 0 4px 10px #1677ff18;
-}
-.mg-messenger .mg-conversation-search .ant-input-affix-wrapper {
-  border-radius: 12px;
-  background: #f1f5fb;
-  border-color: transparent;
-  padding: 9px 12px;
-}
 .mg-messenger .mg-conversation-list {
-  padding: 8px;
   flex: 1;
 }
 .mg-messenger .mg-conversation-row {
-  margin-bottom: 5px;
-}
-.mg-messenger .mg-conversation {
-  border-radius: 14px;
-  background: transparent;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  transition:
-    background 160ms ease,
-    box-shadow 160ms ease;
-}
-.mg-messenger .mg-conversation:hover {
-  background: #f0f5fe;
-}
-.mg-messenger .mg-conversation.active {
-  background: #e9f2ff;
-  border-left-color: #3f86f6;
-  box-shadow: inset 0 0 0 1px #d7e7ff;
+  border-bottom: 1px solid #f0f0f0;
 }
 .mg-messenger .mg-chat-avatar {
-  border-radius: 15px;
-  background: linear-gradient(145deg, #dfedff, #cbdfff);
-  color: #245faa;
-  font-weight: 700;
-}
-.mg-messenger .mg-chat-header {
-  border-color: #e6edf8;
-  box-shadow: 0 3px 15px #193f7505;
-  z-index: 1;
-}
-.mg-messenger .mg-chat-header-actions .ant-tag {
-  border-radius: 20px;
-  border: 0;
-  padding: 3px 10px;
+  border-radius: 6px;
+  background: #eef5e9;
+  color: #468432;
 }
 .mg-messenger .mg-message-list {
-  padding: 20px 28px;
-  background:
-    radial-gradient(ellipse at top right, #e9f2ff 0, transparent 65%), #f6f9fe;
-}
-.mg-messenger .mg-chat-date span {
-  background: #e9eff8;
-  color: #6a7f9c;
-  padding: 5px 14px;
-  border: 1px solid #dfe8f5;
+  background: #f5f5f5;
 }
 .mg-messenger .mg-bubble {
-  border-color: #e5ebf5;
-  box-shadow: 0 3px 10px #223c6606;
+  border-radius: 8px;
+  box-shadow: none;
 }
 .mg-messenger .mg-bubble-out {
-  background: linear-gradient(120deg, #287df0, #2166d6);
-  border-color: transparent;
-  box-shadow: 0 4px 12px #2166d61a;
-}
-.mg-messenger .mg-chat-composer {
-  margin: 0 20px 18px;
-  padding: 10px;
-  gap: 8px;
-  border: 1px solid #dce7f7;
-  border-radius: 20px;
-  box-shadow: 0 6px 24px #153a6910;
-}
-.mg-messenger .mg-chat-composer:focus-within {
-  border-color: #86b4f9;
-  box-shadow: 0 0 0 3px #1677ff0a;
+  background: #468432;
+  border-color: #468432;
 }
 .mg-messenger .mg-chat-composer textarea {
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-  resize: none;
+  border-radius: 6px;
 }
-.mg-messenger .mg-chat-composer .ant-btn-primary:not(:disabled) {
-  background: linear-gradient(135deg, #408cff, #2166d6);
-  box-shadow: 0 4px 10px #2166d626;
+.mg-period-caption {
+  color: #667085;
+  margin: 24px 0 12px;
+}
+.mg-variant-image {
+  grid-column: 1 / -1;
+}
+.mg-variant {
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
 }
 @media (min-width: 1101px) {
   .mg-messenger {
@@ -838,7 +776,7 @@
 .mg-login-card > a {
   display: block;
   margin-top: 20px;
-  color: #1677ff;
+  color: #468432;
 }
 
 .mg-eyebrow {

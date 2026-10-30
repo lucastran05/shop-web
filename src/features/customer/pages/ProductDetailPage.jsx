@@ -20,7 +20,6 @@ import {
 import { ShoppingCartOutlined } from "@ant-design/icons";
 import { money } from "../../../shared/utils/format";
 import { useShop } from "../../../shared/shop/useShop";
-import { shopConfig } from "../../../shared/constants/shop";
 import ProductCard from "../components/ProductCard";
 import { api, ApiError } from "../../../shared/api";
 import { mapProductDetail } from "../../../shared/adapters/productAdapter";
@@ -29,10 +28,11 @@ function ProductView({ p, relatedProducts }) {
   const [variantId, setVariantId] = useState(p.variants[0]?.id),
     [qty, setQty] = useState(1),
     [picture, setPicture] = useState(0);
-  const v = p.variants.find((v) => v.id === variantId),
+  const v = p.variants.find((v) => v.id === variantId) || p.variants[0],
     { add, user } = useShop(),
     { message } = App.useApp(),
     navigate = useNavigate();
+  const pictures = [...new Set([v.image, ...p.images])];
   async function buy(now) {
     if (!v.stock) return;
     if (!user && !now) {
@@ -69,13 +69,17 @@ function ProductView({ p, relatedProducts }) {
       />
       <div className="detail-grid panel">
         <div className="detail-image">
-          {p.images[picture] ? (
-            <Image src={p.images[picture]} alt={p.name} />
+          {pictures[picture] ? (
+            <Image
+              src={pictures[picture]}
+              alt={`${p.name} · ${v.label}`}
+              fallback="/product-placeholder.svg"
+            />
           ) : (
             <Empty description={t("Chưa có ảnh sản phẩm")} />
           )}
           <div className="thumbnails">
-            {p.images.map((image, i) => (
+            {pictures.map((image, i) => (
               <button
                 key={image}
                 aria-label={t("Xem ảnh {{number}}", { number: i + 1 })}
@@ -101,22 +105,30 @@ function ProductView({ p, relatedProducts }) {
               : t("Tạm hết hàng")}
           </Tag>
           {p.deposit && (
-            <Tag color="blue">
+            <Tag color="#468432">
               {t("Hỗ trợ đặt cọc {{percent}}%", {
-                percent: shopConfig.commerce.depositRate * 100,
+                percent: p.deposit_rate,
               })}
             </Tag>
           )}
           <h4>{t("Phân loại sản phẩm")}</h4>
           <Radio.Group
+            className="variant-options"
+            aria-label={t("Phân loại sản phẩm")}
             value={variantId}
             onChange={(e) => {
               setVariantId(e.target.value);
+              setPicture(0);
               setQty(1);
             }}
             options={p.variants.map((v) => ({
               value: v.id,
-              label: t(v.label) + (v.color ? " · " + t(v.color) : ""),
+              label: (
+                <span className="variant-option">
+                  <img src={v.image} alt="" />
+                  <span>{t(v.label) + (v.color ? " · " + t(v.color) : "")}</span>
+                </span>
+              ),
             }))}
             optionType="button"
           />

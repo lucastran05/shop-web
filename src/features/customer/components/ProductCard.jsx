@@ -20,7 +20,7 @@ export default function ProductCard({ p }) {
               {!p.stock ? (
                 <Tag>{t("Hết hàng")}</Tag>
               ) : p.featured ? (
-                <Tag color="blue" icon={<PushpinOutlined />}>
+                <Tag color="#468432" icon={<PushpinOutlined />}>
                   {t("Nổi bật")}
                 </Tag>
               ) : null}

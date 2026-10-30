@@ -11,8 +11,7 @@ import {
   orderLabels,
 } from "../../../shared/adapters/viewAdapters";
 import { userError } from "../../../shared/utils/userError";
-
-const managementOrderLabels = { ...orderLabels, processing: "Đã đóng gói" };
+import { usePolling } from "../../../shared/hooks/usePolling";
 
 export function ManagementProvider({ children }) {
   const shop = useShop();
@@ -85,8 +84,6 @@ export function ManagementProvider({ children }) {
       saveOrders(
         details.map(({ data }) => ({
           ...mapOrder(data),
-          status:
-            data.status === "processing" ? "Đã đóng gói" : mapOrder(data).status,
           note: data.note || "",
           paymentNote: data.payment_note || data.note || "",
         })),
@@ -172,18 +169,18 @@ export function ManagementProvider({ children }) {
     refresh().finally(() => {
       if (active) setLoading(false);
     });
-    const syncManagementData = () => {
-      if (document.visibilityState === "hidden") return;
-      Promise.allSettled([loadProducts(), loadOrders(), loadMessages(), loadVouchers()]);
-    };
-    const interval = window.setInterval(syncManagementData, 1000);
-    window.addEventListener("focus", syncManagementData);
     return () => {
       active = false;
-      window.clearInterval(interval);
-      window.removeEventListener("focus", syncManagementData);
     };
-  }, [session?.id, refresh, loadProducts, loadOrders, loadMessages, loadVouchers]);
+  }, [
+    session?.id,
+    refresh,
+    loadProducts,
+    loadOrders,
+    loadMessages,
+    loadVouchers,
+  ]);
+  usePolling(refresh, { enabled: Boolean(session?.id), intervalMs: 0, immediate: false });
 
   function updateChatPreference(owner, patch) {
     if (!session) return;
@@ -240,8 +237,12 @@ export function ManagementProvider({ children }) {
         id: variant.id || crypto.randomUUID(),
         label: variant.label,
         color: variant.color || "",
+        image:
+          variant.image === "/product-placeholder.svg"
+            ? ""
+            : variant.image || "",
         price: variant.price,
-        old_price: variant.oldPrice ?? null,
+        old_price: variant.oldPrice ?? variant.old_price ?? null,
         stock_quantity: variant.stock,
       })),
     };
@@ -304,14 +305,15 @@ export function ManagementProvider({ children }) {
     return data;
   }
   async function updateOrder(order) {
+    const current = orders.find((item) => item.id === order.id);
     const status =
-      order.status === managementOrderLabels[order.statusCode]
-        ? order.statusCode
+      order.status === current?.status
+        ? current.statusCode
         : Object.keys(orderLabels).find(
-            (key) => managementOrderLabels[key] === order.status,
+            (key) => orderLabels[key] === order.status,
           );
     if (!status) throw new Error("Invalid order status");
-    const terminal = ["cancelled", "refunded"].includes(status);
+    const terminal = ["cancelled", "returned", "refunded"].includes(status);
     await api.adminOrders.update(order.id, {
       status,
       note: order.note,

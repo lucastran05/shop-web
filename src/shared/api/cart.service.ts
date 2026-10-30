@@ -18,6 +18,8 @@ export interface LineItem extends CartItemRequest {
   line_total: number;
 }
 export interface AvailableLineItem extends LineItem {
+  allow_deposit: boolean;
+  deposit_rate: number;
   stock_quantity: number;
   is_available: boolean;
 }

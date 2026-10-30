@@ -1,9 +1,7 @@
 import { userError } from "../../../shared/utils/userError";
 import Button from "../components/ManagementButton";
-import {
-  orderColumns,
-  statusTag,
-} from "../components/orderColumns";
+import CopyCode from "../../../shared/components/CopyCode";
+import { orderColumns, statusTag } from "../components/orderColumns";
 import { useEffect, useRef, useState } from "react";
 import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import {
@@ -19,11 +17,7 @@ import {
   Timeline,
 } from "antd";
 import { useManagement } from "../hooks/useManagement";
-import {
-  nextStatuses,
-  statusFlow,
-  transitionOrder,
-} from "../utils/management";
+import { nextStatuses, statusFlow, transitionOrder } from "../utils/management";
 import { money } from "../../../shared/utils/format";
 
 export default function OrdersPage() {
@@ -40,7 +34,7 @@ export default function OrdersPage() {
   const rows = s.orders.filter(
     (o) =>
       (!status || o.status === status) &&
-      `${o.id} ${o.recipient?.name} ${o.owner}`
+      `${o.code} ${o.id} ${o.recipient?.name} ${o.owner}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
@@ -122,7 +116,7 @@ export default function OrdersPage() {
           allowClear
           value={status}
           onChange={setStatus}
-          options={[...statusFlow, "Đã hủy", "Hoàn hàng", "Hoàn tiền"].map(
+          options={[...statusFlow, "Đã cọc", "Đã hủy", "Hoàn hàng", "Hoàn tiền"].map(
             (value) => ({ value }),
           )}
         />
@@ -155,14 +149,14 @@ export default function OrdersPage() {
               <Space>
                 <Button
                   icon={<EyeOutlined />}
-                  aria-label={`Chi tiết ${o.id}`}
+                  aria-label={`Chi tiết đơn của ${o.recipient?.name || "khách hàng"}`}
                   onClick={() => show(o, "view")}
                   title="Chi tiết"
                   className="mg-icon-action"
                 />
                 <Button
                   icon={<EditOutlined />}
-                  aria-label={`Sửa ${o.id}`}
+                  aria-label={`Sửa đơn của ${o.recipient?.name || "khách hàng"}`}
                   onClick={() => show(o, "edit")}
                   title="Sửa"
                   className="mg-icon-action"
@@ -173,7 +167,7 @@ export default function OrdersPage() {
         ]}
       />
       <Modal
-        title={`${mode === "edit" ? "Sửa" : "Chi tiết"} đơn ${detail?.id || ""}`}
+        title={mode === "edit" ? "Sửa đơn" : "Chi tiết đơn"}
         open={!!detail}
         width={900}
         onCancel={() => setDetailId(null)}
@@ -234,7 +228,11 @@ export default function OrdersPage() {
                 {
                   key: "tracking",
                   label: "Mã vận đơn",
-                  children: detail.tracking || "Chưa cập nhật",
+                  children: detail.tracking ? (
+                    <CopyCode value={detail.tracking} />
+                  ) : (
+                    "Chưa cập nhật"
+                  ),
                 },
                 { key: "note", label: "Ghi chú", children: detail.note || "—" },
               ]}
@@ -275,16 +273,20 @@ export default function OrdersPage() {
                     <Input
                       placeholder="Ví dụ: GHN"
                       disabled={
-                        ["cancelled", "refunded"].includes(detail.statusCode) ||
-                        ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(detail.status)
+                        ["cancelled", "returned", "refunded"].includes(detail.statusCode) ||
+                        ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(
+                          detail.status,
+                        )
                       }
                     />
                   </Form.Item>
                   <Form.Item name="tracking" label="Mã vận đơn">
                     <Input
                       disabled={
-                        ["cancelled", "refunded"].includes(detail.statusCode) ||
-                        ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(detail.status)
+                        ["cancelled", "returned", "refunded"].includes(detail.statusCode) ||
+                        ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(
+                          detail.status,
+                        )
                       }
                     />
                   </Form.Item>

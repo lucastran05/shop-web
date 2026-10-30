@@ -11,8 +11,16 @@ import {
   Steps,
   App,
   Select,
-  Result,
+  Spin,
+  Tag,
 } from "antd";
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  CreditCardOutlined,
+  QrcodeOutlined,
+  WalletOutlined,
+} from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
@@ -20,6 +28,7 @@ import { money } from "../../../shared/utils/format";
 import { calculateCheckout } from "../../../shared/utils/checkout";
 import AddressFields from "../../../shared/components/AddressFields";
 import PaymentPanel from "../components/PaymentPanel";
+import CopyCode from "../../../shared/components/CopyCode";
 import { Modal } from "antd";
 import { api, ApiError } from "../../../shared/api";
 import { mapProductDetail } from "../../../shared/adapters/productAdapter";
@@ -27,18 +36,24 @@ import { mapProductDetail } from "../../../shared/adapters/productAdapter";
 function buildVoucherPreview(voucher, subtotal, shipping) {
   let discount = 0;
   if (voucher.discount_type === "percentage")
-    discount = subtotal * Number(voucher.discount_value) / 100;
+    discount = (subtotal * Number(voucher.discount_value)) / 100;
   else if (voucher.discount_type === "fixed")
     discount = Number(voucher.discount_value);
   else if (voucher.discount_type === "free_shipping") discount = shipping;
-  if (voucher.max_discount_amount !== null && voucher.max_discount_amount !== undefined)
+  if (
+    voucher.max_discount_amount !== null &&
+    voucher.max_discount_amount !== undefined
+  )
     discount = Math.min(discount, Number(voucher.max_discount_amount));
   return {
     id: voucher.id,
     code: voucher.code,
     name: voucher.name,
     discount_type: voucher.discount_type,
-    discount_amount: Math.max(0, Math.min(Math.round(discount), subtotal + shipping)),
+    discount_amount: Math.max(
+      0,
+      Math.min(Math.round(discount), subtotal + shipping),
+    ),
   };
 }
 
@@ -46,7 +61,7 @@ export default function Checkout() {
   const { t } = useTranslation(),
     s = useShop(),
     shop = useShopConfig(),
-    [params] = useSearchParams(),
+    [params, setParams] = useSearchParams(),
     { message } = App.useApp();
   const [step, setStep] = useState(0),
     [addresses, setAddresses] = useState([]),
@@ -66,10 +81,39 @@ export default function Checkout() {
     [addressForm] = Form.useForm(),
     [form] = Form.useForm(),
     submitted = useRef(false),
-    orderIdempotencyKey = useRef(null),
+    pendingOrder = useRef(null),
     lastValidatedVoucherKey = useRef(""),
     restoredVoucherKey = useRef("");
   const buyProductId = params.get("product_id");
+  const receiptId = params.get("order_id");
+  const receiptPaymentId = params.get("payment_id");
+  const [receiptError, setReceiptError] = useState("");
+  const updatePlaced = useCallback(
+    (order) => setPlaced((current) => ({ ...current, ...order })),
+    [],
+  );
+  useEffect(() => {
+    if (!s.user || !receiptId || placed?.id === receiptId) return;
+    let active = true;
+    Promise.all([
+      api.orders.get(receiptId),
+      receiptPaymentId
+        ? api.payments.get(receiptPaymentId)
+        : Promise.resolve(null),
+    ])
+      .then(([order, session]) => {
+        if (!active) return;
+        setPlaced(order.data);
+        setPaymentSession(session?.data?.order_id === order.data.id ? session.data : null);
+        setStep(2);
+      })
+      .catch((error) => {
+        if (active) setReceiptError(userError(error));
+      });
+    return () => {
+      active = false;
+    };
+  }, [s.user, receiptId, receiptPaymentId, placed?.id]);
   const buyVariantId = params.get("variant_id");
   const quantityParam = params.get("quantity");
   const voucherStorageKey = s.user?.id
@@ -182,8 +226,17 @@ export default function Checkout() {
   }, [s.user, items]);
   const defaultAddress = addresses.find((a) => a.id === addressId);
   const currentOrder = placed;
-  const depositRate =
-    mode === "deposit50" ? 0.5 : mode === "deposit70" ? 0.7 : 0;
+  const cancelled = placed?.status === "cancelled";
+  const allowedDepositRates = [50, 70].filter(
+    (rate) =>
+      items.length > 0 &&
+      items.every((item) => item.deposit && rate >= Number(item.deposit_rate)),
+  );
+  const selectedDepositRate =
+    mode === "deposit50" ? 50 : mode === "deposit70" ? 70 : 0;
+  const depositRate = allowedDepositRates.includes(selectedDepositRate)
+    ? selectedDepositRate / 100
+    : 0;
   const deposit = depositRate > 0;
   const totals = calculateCheckout(
       items,
@@ -204,78 +257,105 @@ export default function Checkout() {
     lastValidatedVoucherKey.current = "";
     setCouponPreview(null);
   }
-  const applyCoupon = useCallback(async (nextCode = coupon) => {
-    const code = nextCode.trim();
-    setCoupon(code);
-    if (!code) {
-      setCouponPreview(null);
-      lastValidatedVoucherKey.current = "";
-      if (voucherStorageKey) {
-        try {
-          sessionStorage.removeItem(voucherStorageKey);
-        } catch {}
-      }
-      message.warning(t("Vui lòng nhập mã giảm giá"));
-      return;
-    }
-    const baseTotals = calculateCheckout(items, delivery, false, false, payment, {
-      ...shop.commerce,
-      depositRate,
-    });
-    const selectedVoucher = availableVouchers.find(
-      (voucher) => voucher.code.trim().toUpperCase() === code.toUpperCase(),
-    );
-    if (selectedVoucher) {
-      setCouponPreview(
-        buildVoucherPreview(
-          selectedVoucher,
-          baseTotals.subtotal,
-          baseTotals.shipping,
-        ),
-      );
-    }
-    lastValidatedVoucherKey.current = `${code}|${baseTotals.subtotal}|${baseTotals.shipping}`;
-    setCheckingCoupon(true);
-    try {
-      const { data } = await api.vouchers.validate({
-        code,
-        subtotal: baseTotals.subtotal,
-        shipping_fee: baseTotals.shipping,
-      });
-      const validation =
-        data && typeof data.discount_amount !== "undefined"
-          ? data
-          : data?.data;
-      const discountAmount = Number(validation?.discount_amount);
-      if (!validation || !Number.isFinite(discountAmount)) {
-        throw new ApiError("API returned an invalid voucher response", {
-          kind: "protocol",
-        });
-      }
-      setCouponPreview({ ...validation, discount_amount: discountAmount });
-      if (voucherStorageKey) {
-        try {
-          sessionStorage.setItem(voucherStorageKey, code);
-        } catch {}
-      }
-      message.success(t("Đã áp dụng mã giảm giá"));
-    } catch (error) {
-      if (
-        !selectedVoucher ||
-        (error instanceof ApiError && error.status >= 400 && error.status < 500)
-      ) {
+  const applyCoupon = useCallback(
+    async (nextCode = coupon) => {
+      const code = nextCode.trim();
+      setCoupon(code);
+      if (!code) {
         setCouponPreview(null);
+        lastValidatedVoucherKey.current = "";
+        if (voucherStorageKey) {
+          try {
+            sessionStorage.removeItem(voucherStorageKey);
+          } catch {}
+        }
+        message.warning(t("Vui lòng nhập mã giảm giá"));
+        return;
       }
-      if (voucherStorageKey) {
-        try {
-          sessionStorage.removeItem(voucherStorageKey);
-        } catch {}
+      const baseTotals = calculateCheckout(
+        items,
+        delivery,
+        false,
+        false,
+        payment,
+        {
+          ...shop.commerce,
+          depositRate,
+        },
+      );
+      const selectedVoucher = availableVouchers.find(
+        (voucher) => voucher.code.trim().toUpperCase() === code.toUpperCase(),
+      );
+      if (selectedVoucher) {
+        setCouponPreview(
+          buildVoucherPreview(
+            selectedVoucher,
+            baseTotals.subtotal,
+            baseTotals.shipping,
+          ),
+        );
       }
-      message.error(error instanceof ApiError ? userError(error) : t("Mã giảm giá không hợp lệ"));
-    } finally {
-      setCheckingCoupon(false);
-    }
-  }, [coupon, items, delivery, payment, shop.commerce, depositRate, voucherStorageKey, availableVouchers, message, t]);
+      lastValidatedVoucherKey.current = `${code}|${baseTotals.subtotal}|${baseTotals.shipping}`;
+      setCheckingCoupon(true);
+      try {
+        const { data } = await api.vouchers.validate({
+          code,
+          subtotal: baseTotals.subtotal,
+          shipping_fee: baseTotals.shipping,
+        });
+        const validation =
+          data && typeof data.discount_amount !== "undefined"
+            ? data
+            : data?.data;
+        const discountAmount = Number(validation?.discount_amount);
+        if (!validation || !Number.isFinite(discountAmount)) {
+          throw new ApiError("API returned an invalid voucher response", {
+            kind: "protocol",
+          });
+        }
+        setCouponPreview({ ...validation, discount_amount: discountAmount });
+        if (voucherStorageKey) {
+          try {
+            sessionStorage.setItem(voucherStorageKey, code);
+          } catch {}
+        }
+        message.success(t("Đã áp dụng mã giảm giá"));
+      } catch (error) {
+        if (
+          !selectedVoucher ||
+          (error instanceof ApiError &&
+            error.status >= 400 &&
+            error.status < 500)
+        ) {
+          setCouponPreview(null);
+        }
+        if (voucherStorageKey) {
+          try {
+            sessionStorage.removeItem(voucherStorageKey);
+          } catch {}
+        }
+        message.error(
+          error instanceof ApiError
+            ? userError(error)
+            : t("Mã giảm giá không hợp lệ"),
+        );
+      } finally {
+        setCheckingCoupon(false);
+      }
+    },
+    [
+      coupon,
+      items,
+      delivery,
+      payment,
+      shop.commerce,
+      depositRate,
+      voucherStorageKey,
+      availableVouchers,
+      message,
+      t,
+    ],
+  );
   useEffect(() => {
     if (!voucherStorageKey || !availableVouchers.length) return;
     if (restoredVoucherKey.current === voucherStorageKey) return;
@@ -290,7 +370,8 @@ export default function Checkout() {
     if (
       savedCode &&
       availableVouchers.some(
-        (voucher) => voucher.code.trim().toUpperCase() === savedCode.toUpperCase(),
+        (voucher) =>
+          voucher.code.trim().toUpperCase() === savedCode.toUpperCase(),
       )
     ) {
       setCoupon(savedCode);
@@ -299,13 +380,21 @@ export default function Checkout() {
   useEffect(() => {
     if (!coupon || !availableVouchers.length || checkingCoupon) return;
     const selected = availableVouchers.find(
-      (voucher) => voucher.code.trim().toUpperCase() === coupon.trim().toUpperCase(),
+      (voucher) =>
+        voucher.code.trim().toUpperCase() === coupon.trim().toUpperCase(),
     );
     if (!selected) return;
     const validationKey = `${coupon.trim()}|${subtotal}|${shipping}`;
     if (lastValidatedVoucherKey.current === validationKey) return;
     void applyCoupon(coupon);
-  }, [availableVouchers, coupon, subtotal, shipping, checkingCoupon, applyCoupon]);
+  }, [
+    availableVouchers,
+    coupon,
+    subtotal,
+    shipping,
+    checkingCoupon,
+    applyCoupon,
+  ]);
   if (!s.user)
     return (
       <Navigate
@@ -317,17 +406,15 @@ export default function Checkout() {
     );
   async function submitOrder() {
     if (submitted.current || !recipient) return;
-    if (payment === "cash" && (delivery !== "pickup" || deposit)) return;
+    if (payment === "cash" && deposit) return;
     if (items.some((p) => p.quantity < 1 || p.quantity > p.stock)) {
       message.error(t("Số lượng vượt quá tồn kho"));
       return;
     }
     submitted.current = true;
     setSubmitting(true);
-    if (!orderIdempotencyKey.current)
-      orderIdempotencyKey.current = crypto.randomUUID();
     try {
-      const { data: quote } = await api.checkout.quote({
+      const quoteRequest = {
         ...(buyProductId
           ? {
               items: items.map((item) => ({
@@ -349,15 +436,22 @@ export default function Checkout() {
         payment_method:
           payment === "cash" ? "cod" : payment === "card" ? "card" : "vietqr",
         payment_mode: deposit ? "deposit" : "full",
-        ...(deposit ? { deposit_rate: depositRate } : {}),
+        ...(deposit ? { deposit_rate: selectedDepositRate } : {}),
         ...(recipient.note ? { note: recipient.note } : {}),
-      });
+      };
+      const signature = JSON.stringify(quoteRequest);
+      if (pendingOrder.current?.signature !== signature) {
+        const { data: quote } = await api.checkout.quote(quoteRequest);
+        pendingOrder.current = { signature, quote, key: crypto.randomUUID() };
+      }
+      const { quote, key } = pendingOrder.current;
       const { data: order } = await api.checkout.createOrder(
         { quote_id: quote.quote_id, note: recipient.note },
-        { idempotencyKey: orderIdempotencyKey.current },
+        { idempotencyKey: key },
       );
       setPlaced(order);
       setStep(2);
+      let createdSessionId;
       if (voucherStorageKey) {
         try {
           sessionStorage.removeItem(voucherStorageKey);
@@ -374,6 +468,7 @@ export default function Checkout() {
             { idempotencyKey: crypto.randomUUID() },
           );
           setPaymentSession(session);
+          createdSessionId = session.id;
         } catch (error) {
           message.error(
             error instanceof ApiError
@@ -382,6 +477,14 @@ export default function Checkout() {
           );
         }
       }
+      setParams(
+        {
+          order_id: order.id,
+          ...(createdSessionId ? { payment_id: createdSessionId } : {}),
+        },
+        { replace: true },
+      );
+      s.refreshOrders().catch((error) => message.error(userError(error)));
       if (!buyProductId) {
         try {
           await s.refreshCart();
@@ -395,6 +498,7 @@ export default function Checkout() {
       }
     } catch (error) {
       submitted.current = false;
+      if ([400, 409].includes(error?.status)) pendingOrder.current = null;
       message.error(
         error instanceof ApiError
           ? userError(error)
@@ -404,6 +508,16 @@ export default function Checkout() {
       setSubmitting(false);
     }
   }
+  if (receiptId && !placed)
+    return (
+      <div className="page">
+        {receiptError ? (
+          <p role="alert">{receiptError}</p>
+        ) : (
+          <Spin size="large" />
+        )}
+      </div>
+    );
   if (!placed && !items.length)
     return (
       <div className="page">
@@ -489,32 +603,73 @@ export default function Checkout() {
         ]}
       />
       {placed ? (
-        <Result
-          status={currentOrder.status === "cancelled" ? "warning" : "success"}
-          title={t(
-            currentOrder.status === "cancelled"
-              ? "Đơn hàng đã hủy"
-              : "Đơn hàng đã được tạo",
-          )}
-          subTitle={t("Mã đơn: {{id}}", { id: placed.code })}
-          extra={
-            <Link to="/orders">
-              <Button type="primary">{t("Xem đơn hàng")}</Button>
-            </Link>
-          }
-        >
-          <p>
-            {t("Tổng cộng")}: <strong>{money(placed.total_amount)}</strong>
-          </p>
-          <p>
-            {t("Đã thanh toán")}: {money(currentOrder.paid_amount)}
-          </p>
+        <section className="order-receipt panel">
+          <div className="receipt-heading">
+            {cancelled ? (
+              <CloseCircleOutlined
+                className="receipt-success-icon"
+                style={{ color: "#cf1322" }}
+              />
+            ) : (
+              <CheckCircleOutlined className="receipt-success-icon" />
+            )}
+            <div>
+              <Tag
+                color={
+                  cancelled
+                    ? "default"
+                    : currentOrder.payment_status === "paid"
+                      ? "success"
+                      : "blue"
+                }
+              >
+                {t(
+                  cancelled
+                    ? "Đơn hàng đã hủy"
+                    : currentOrder.payment_status === "paid"
+                      ? "Đã thanh toán"
+                      : "Đặt hàng thành công",
+                )}
+              </Tag>
+              <h2>
+                {t(
+                  currentOrder.status === "cancelled"
+                    ? "Đơn hàng đã hủy"
+                    : "Đơn hàng đã được tạo",
+                )}
+              </h2>
+              <p>{t("Mã đơn")} <CopyCode value={placed.code} /></p>
+            </div>
+          </div>
+          <div className="receipt-totals">
+            <div>
+              <span>{t("Tổng cộng")}</span>
+              <strong>{money(currentOrder.total_amount)}</strong>
+            </div>
+            <div>
+              <span>{t("Đã thanh toán")}</span>
+              <strong>{money(currentOrder.paid_amount)}</strong>
+            </div>
+            <div>
+              <span>{t("Còn phải trả")}</span>
+              <strong>{money(currentOrder.remaining_amount)}</strong>
+            </div>
+          </div>
           <PaymentPanel
             key={paymentSession?.id || placed.id}
             order={currentOrder}
             paymentSession={paymentSession}
+            onOrderUpdate={updatePlaced}
           />
-        </Result>
+          <div className="receipt-actions">
+            <Link to="/orders">
+              <Button type="primary">{t("Xem đơn hàng")}</Button>
+            </Link>
+            <Link to="/">
+              <Button>{t("Tiếp tục mua sắm")}</Button>
+            </Link>
+          </div>
+        </section>
       ) : (
         <>
           <div className="two-column">
@@ -603,8 +758,6 @@ export default function Checkout() {
                       lastValidatedVoucherKey.current = "";
                       setDelivery(e.target.value);
                       setCouponPreview(null);
-                      if (e.target.value === "ship" && payment === "cash")
-                        setPayment("qr");
                     }}
                     options={[
                       { value: "ship", label: t("Giao tận nơi") },
@@ -649,39 +802,54 @@ export default function Checkout() {
                       : t("Nhận tại cửa hàng")}
                   </p>
                   {recipient.note && <p>{recipient.note}</p>}
-                  <h3>{t("Hình thức thanh toán")}</h3>
-                  <Radio.Group
-                    value={mode}
-                    onChange={(e) => {
-                      setMode(e.target.value);
-                      if (e.target.value !== "full") setPayment("qr");
-                    }}
-                    options={[
-                      {
-                        value: "deposit50",
-                        label: t("Đặt cọc {{percent}}%", { percent: 50 }),
-                      },
-                      {
-                        value: "deposit70",
-                        label: t("Đặt cọc {{percent}}%", { percent: 70 }),
-                      },
-                      { value: "full", label: t("Thanh toán toàn bộ") },
-                    ]}
-                  />
+                  {allowedDepositRates.length > 0 && (
+                    <>
+                      <h3>{t("Hình thức thanh toán")}</h3>
+                      <Radio.Group
+                        className="payment-amount-options"
+                        value={deposit ? mode : "full"}
+                        onChange={(e) => {
+                          setMode(e.target.value);
+                          if (e.target.value !== "full") setPayment("qr");
+                        }}
+                        options={[
+                          ...allowedDepositRates.map((percent) => ({
+                            value: `deposit${percent}`,
+                            label: t("Đặt cọc {{percent}}%", { percent }),
+                          })),
+                          { value: "full", label: t("Thanh toán toàn bộ") },
+                        ]}
+                      />
+                    </>
+                  )}
                   <h3>{t("Phương thức thanh toán")}</h3>
                   <Radio.Group
+                    className="payment-method-options"
                     value={payment}
                     onChange={(e) => setPayment(e.target.value)}
-                    options={[
-                      {
-                        value: "cash",
-                        label: t("Khi nhận hàng"),
-                        disabled: deposit || delivery !== "pickup",
-                      },
-                      { value: "qr", label: t("Chuyển khoản QR") },
-                      { value: "card", label: t("Thẻ") },
-                    ]}
-                  />
+                  >
+                    <Radio value="cash" disabled={deposit}>
+                      <WalletOutlined />
+                      <span>
+                        <strong>{t("Khi nhận hàng")}</strong>
+                        <small>{t("Trả tiền khi nhận đủ sản phẩm")}</small>
+                      </span>
+                    </Radio>
+                    <Radio value="qr">
+                      <QrcodeOutlined />
+                      <span>
+                        <strong>{t("Chuyển khoản QR")}</strong>
+                        <small>{t("Quét mã bằng ứng dụng ngân hàng")}</small>
+                      </span>
+                    </Radio>
+                    <Radio value="card">
+                      <CreditCardOutlined />
+                      <span>
+                        <strong>{t("Thẻ")}</strong>
+                        <small>{t("Thanh toán qua cổng ngân hàng")}</small>
+                      </span>
+                    </Radio>
+                  </Radio.Group>
                   {deposit && (
                     <p>
                       {t("Cọc dự kiến")}: <strong>{money(due)}</strong>
@@ -730,52 +898,52 @@ export default function Checkout() {
               {step === 0 && (
                 <>
                   {availableVouchers.length > 0 ? (
-                  <Select
-                    aria-label={t("Voucher đang hoạt động")}
-                    showSearch
-                    allowClear
-                    style={{ width: "100%", marginBottom: 8 }}
-                    placeholder={t("Chọn voucher đang hoạt động")}
-                    value={coupon || undefined}
-                    optionFilterProp="label"
-                    options={availableVouchers.map((voucher) => ({
-                      value: voucher.code,
-                      label:
-                        voucher.discount_type === "percentage"
-                          ? `${voucher.code} — Giảm ${voucher.discount_value}%`
-                          : voucher.discount_type === "fixed"
-                            ? `${voucher.code} — Giảm ${money(voucher.discount_value)}`
-                            : `${voucher.code} — Miễn phí vận chuyển`,
-                    }))}
-                    onChange={(value) => {
-                      lastValidatedVoucherKey.current = "";
-                      if (value) setCoupon(value);
-                      else {
-                        setCoupon("");
-                        setCouponPreview(null);
-                        if (voucherStorageKey) {
-                          try {
-                            sessionStorage.removeItem(voucherStorageKey);
-                          } catch {}
+                    <Select
+                      aria-label={t("Voucher đang hoạt động")}
+                      showSearch
+                      allowClear
+                      style={{ width: "100%", marginBottom: 8 }}
+                      placeholder={t("Chọn voucher đang hoạt động")}
+                      value={coupon || undefined}
+                      optionFilterProp="label"
+                      options={availableVouchers.map((voucher) => ({
+                        value: voucher.code,
+                        label:
+                          voucher.discount_type === "percentage"
+                            ? `${voucher.code} — Giảm ${voucher.discount_value}%`
+                            : voucher.discount_type === "fixed"
+                              ? `${voucher.code} — Giảm ${money(voucher.discount_value)}`
+                              : `${voucher.code} — Miễn phí vận chuyển`,
+                      }))}
+                      onChange={(value) => {
+                        lastValidatedVoucherKey.current = "";
+                        if (value) setCoupon(value);
+                        else {
+                          setCoupon("");
+                          setCouponPreview(null);
+                          if (voucherStorageKey) {
+                            try {
+                              sessionStorage.removeItem(voucherStorageKey);
+                            } catch {}
+                          }
                         }
-                      }
-                    }}
-                  />
+                      }}
+                    />
                   ) : (
-                  <div className="coupon">
-                  <Input
-                    aria-label={t("Mã giảm giá")}
-                    placeholder={t("Nhập mã giảm giá")}
-                    value={coupon}
-                    onChange={(e) => {
-                      setCoupon(e.target.value);
-                      setCouponPreview(null);
-                    }}
-                  />
-                  <Button onClick={applyCoupon} loading={checkingCoupon}>
-                    {t("Áp dụng")}
-                  </Button>
-                  </div>
+                    <div className="coupon">
+                      <Input
+                        aria-label={t("Mã giảm giá")}
+                        placeholder={t("Nhập mã giảm giá")}
+                        value={coupon}
+                        onChange={(e) => {
+                          setCoupon(e.target.value);
+                          setCouponPreview(null);
+                        }}
+                      />
+                      <Button onClick={() => applyCoupon()} loading={checkingCoupon}>
+                        {t("Áp dụng")}
+                      </Button>
+                    </div>
                   )}
                 </>
               )}
@@ -793,9 +961,23 @@ export default function Checkout() {
               </p>
               <hr />
               <p className="total">
-                <span>{t("Số tiền phải thanh toán")}</span>
+                <span>{t("Tổng cộng")}</span>
                 <b>{money(total)}</b>
               </p>
+              {step === 1 && (
+                <>
+                  <p>
+                    <span>{t("Thanh toán ngay")}</span>
+                    <b>{money(due)}</b>
+                  </p>
+                  {total > due && (
+                    <p>
+                      <span>{t("Thanh toán khi nhận hàng")}</span>
+                      <b>{money(total - due)}</b>
+                    </p>
+                  )}
+                </>
+              )}
             </aside>
           </div>
         </>

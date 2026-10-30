@@ -1,3 +1,4 @@
+import CopyCode from "../../../shared/components/CopyCode";
 import BulkSelectAll from "../components/BulkSelectAll";
 import {
   CheckCircleOutlined,
@@ -25,7 +26,7 @@ export default function PaymentsPage() {
   const rows = s.orders.filter(
     (o) =>
       !s.hiddenPayments.includes(o.id) &&
-      `${o.id} ${o.recipient?.name}`
+      `${o.code} ${o.id} ${o.recipient?.name}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
@@ -124,7 +125,12 @@ export default function PaymentsPage() {
         scroll={{ x: 1230 }}
         dataSource={rows}
         columns={[
-          { title: "Mã đơn", dataIndex: "id", width: 100 },
+          {
+            title: "Mã đơn",
+            dataIndex: "code",
+            width: 80,
+            render: (value) => <CopyCode value={value} />,
+          },
           {
             title: "Khách hàng",
             render: (_, o) => o.recipient?.name || o.owner,
@@ -140,7 +146,9 @@ export default function PaymentsPage() {
           {
             title: "Trạng thái",
             render: (_, o) =>
-              statusTag(o.paymentStatus === "refunded" ? "Hoàn tiền" : o.status),
+              statusTag(
+                o.paymentStatus === "refunded" ? "Hoàn tiền" : o.status,
+              ),
             width: 150,
           },
           {
@@ -179,7 +187,7 @@ export default function PaymentsPage() {
                 <Tooltip title="Ghi chú thanh toán">
                   <Button
                     className="mg-icon-action"
-                    aria-label={`Ghi chú ${o.id}`}
+                    aria-label="Ghi chú thanh toán"
                     icon={<EditOutlined />}
                     onClick={() => {
                       setNote(o.paymentNote || "");
@@ -191,7 +199,7 @@ export default function PaymentsPage() {
                   <span>
                     <Button
                       className="mg-icon-action"
-                      aria-label={`Xác nhận cọc ${o.id}`}
+                      aria-label="Xác nhận cọc"
                       icon={<WalletOutlined aria-hidden="true" />}
                       disabled={
                         ["Đã hủy", "Hoàn hàng", "Hoàn tiền"].includes(
@@ -211,7 +219,7 @@ export default function PaymentsPage() {
                   <span>
                     <Button
                       className="mg-icon-action"
-                      aria-label={`Xác nhận thanh toán đủ ${o.id}`}
+                      aria-label="Xác nhận thanh toán đủ"
                       icon={<CheckCircleOutlined aria-hidden="true" />}
                       disabled={
                         ["Đã hủy", "Hoàn hàng", "Hoàn tiền"].includes(
@@ -229,7 +237,7 @@ export default function PaymentsPage() {
                   <span>
                     <Button
                       className="mg-icon-action"
-                      aria-label={`Hoàn tiền ${o.id}`}
+                      aria-label="Hoàn tiền"
                       icon={<UndoOutlined aria-hidden="true" />}
                       danger
                       disabled={
@@ -265,7 +273,10 @@ export default function PaymentsPage() {
         cancelText="Hủy"
       >
         <p>
-          Đơn hàng: <strong>{action?.id}</strong>
+          Đơn hàng:{" "}
+          <CopyCode
+            value={s.orders.find((order) => order.id === action?.id)?.code}
+          />
         </p>
         {action?.type !== "note" && (
           <p>

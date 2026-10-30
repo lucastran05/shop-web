@@ -1,7 +1,18 @@
 import { useEffect, useState, useMemo } from "react";
 import { api } from "../../../shared/api";
 import { userError } from "../../../shared/utils/userError";
-import { Rate, Form, Input, Button, Empty, Pagination, App, Image, Alert, Tag } from "antd";
+import {
+  Rate,
+  Form,
+  Input,
+  Button,
+  Empty,
+  Pagination,
+  App,
+  Image,
+  Alert,
+  Tag,
+} from "antd";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
@@ -88,7 +99,7 @@ export default function ProductReviews({ productId }) {
       return { hasPurchased: false, hasInTransitOrder: false };
     }
     const userOrdersForProduct = s.orders.filter((o) =>
-      o.items?.some((item) => String(item.id) === String(productId))
+      o.items?.some((item) => String(item.id) === String(productId)),
     );
 
     const inTransit = userOrdersForProduct.some((o) =>
@@ -104,7 +115,7 @@ export default function ProductReviews({ productId }) {
         "Đang chuẩn bị hàng",
         "Đã đóng gói",
         "Đang giao hàng",
-      ].includes(o.statusCode || o.status)
+      ].includes(o.statusCode || o.status),
     );
 
     return {
@@ -187,7 +198,7 @@ export default function ProductReviews({ productId }) {
                   </Link>
                   {" — "}
                   {t(
-                    "Chỉ khách hàng đã mua và nhận hàng thành công mới có thể gửi nhận xét."
+                    "Chỉ khách hàng đã mua và nhận hàng thành công mới có thể gửi nhận xét.",
                   )}
                 </span>
               }
@@ -266,7 +277,7 @@ export default function ProductReviews({ productId }) {
                         type="link"
                         onClick={() =>
                           setImages((old) =>
-                            old.filter((_, index) => index !== i)
+                            old.filter((_, index) => index !== i),
                           )
                         }
                       >
@@ -286,32 +297,15 @@ export default function ProductReviews({ productId }) {
               </Button>
             </Form>
           </div>
-        ) : ((hasPurchased && hasInTransitOrder) || apiEligibility?.reason === "not_delivered") ? (
-          <div className="review-permission-box pending-delivery">
-            <Alert
-              type="info"
-              showIcon
-              message={t("Chưa thể đánh giá sản phẩm")}
-              description={
-                <div>
-                  <p style={{ margin: "4px 0 8px" }}>
-                    {t(
-                      "Đơn hàng của bạn đang được giao hoặc xử lý. Bạn chỉ có thể đánh giá sau khi đã nhận hàng thành công."
-                    )}
-                  </p>
-                  <Link to="/orders">{t("Kiểm tra đơn hàng của bạn")}</Link>
-                </div>
-              }
-            />
-          </div>
-        ) : (
+        ) : (hasPurchased && hasInTransitOrder) ||
+          apiEligibility?.reason === "not_delivered" ? null : (
           <div className="review-permission-box not-purchased">
             <Alert
               type="warning"
               showIcon
               message={t("Chưa thể đánh giá sản phẩm")}
               description={t(
-                "Chỉ những khách hàng đã mua sản phẩm này và nhận hàng thành công mới có thể gửi đánh giá."
+                "Chỉ những khách hàng đã mua sản phẩm này và nhận hàng thành công mới có thể gửi đánh giá.",
               )}
             />
           </div>

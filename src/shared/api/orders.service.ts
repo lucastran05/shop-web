@@ -19,11 +19,13 @@ export type OrderStatus =
   | "pending"
   | "confirmed"
   | "processing"
+  | "packed"
   | "shipping"
   | "shipped"
   | "delivered"
   | "completed"
   | "cancelled"
+  | "returned"
   | "refunded";
 export type PaymentStatus =
   "unpaid" | "partial" | "partially_paid" | "paid" | "refunded";

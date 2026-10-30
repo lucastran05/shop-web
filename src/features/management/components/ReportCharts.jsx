@@ -61,7 +61,7 @@ export default function ReportCharts({ rows, orders }) {
                   <div
                     style={{
                       width: `${(count / orders.length) * 100}%`,
-                      background: ["#1677ff", "#69b1ff", "#4096ff", "#0958d9"][
+                      background: ["#468432", "#93bc82", "#6ca256", "#356626"][
                         i % 4
                       ],
                     }}

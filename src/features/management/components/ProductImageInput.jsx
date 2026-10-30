@@ -1,6 +1,6 @@
 import { userError } from "../../../shared/utils/userError";
 import { useState } from "react";
-import { App, Image, Input, Space, Upload } from "antd";
+import { App, Image, Space, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Button from "./ManagementButton";
 import { api } from "../../../shared/api";
@@ -67,15 +67,13 @@ export default function ProductImageInput({
   }
   return (
     <Space direction="vertical" style={{ width: "100%" }}>
-      {value && (
-        <Image
-          src={value}
-          alt="Ảnh sản phẩm"
-          width={100}
-          height={100}
-          style={{ objectFit: "contain" }}
-        />
-      )}
+      <Image
+        src={value || "/product-placeholder.svg"}
+        alt="Ảnh sản phẩm"
+        width={100}
+        height={100}
+        style={{ objectFit: "contain" }}
+      />
       <Upload
         accept="image/jpeg,image/png,image/webp"
         showUploadList={false}
@@ -86,12 +84,11 @@ export default function ProductImageInput({
           Tải ảnh từ máy tính
         </Button>
       </Upload>
-      <Input
-        aria-label="Đường dẫn ảnh"
-        placeholder="Hoặc nhập đường dẫn ảnh"
-        value={value?.startsWith("data:") ? "" : value}
-        onChange={(event) => onChange?.(event.target.value)}
-      />
+      {value && value !== "/product-placeholder.svg" && (
+        <Button type="text" disabled={loading} onClick={() => onChange?.("")}>
+          Dùng ảnh mặc định
+        </Button>
+      )}
     </Space>
   );
 }

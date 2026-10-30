@@ -1,8 +1,8 @@
 import { usePreferences } from "../../../shared/preferences/usePreferences";
 import { formatDateTime } from "../../../shared/utils/format";
 import { useTranslation } from "react-i18next";
-import { orderStatuses } from "../../../shared/constants/shop";
-import { useState } from "react";
+import { orderStatuses, orderStatusGroup } from "../../../shared/constants/shop";
+import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
 import {
   Tabs,
@@ -13,10 +13,12 @@ import {
   Descriptions,
   Table,
   Timeline,
+  Spin,
 } from "antd";
 import { useShop } from "../../../shared/shop/useShop";
 import { money } from "../../../shared/utils/format";
 import PaymentPanel from "../components/PaymentPanel";
+import CopyCode from "../../../shared/components/CopyCode";
 import { api } from "../../../shared/api";
 import { App } from "antd";
 import { userError } from "../../../shared/utils/userError";
@@ -28,11 +30,22 @@ export default function Orders() {
     [tab, setTab] = useState("all"),
     [selectedDetail, setDetail] = useState(null),
     [cancel, setCancel] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const refreshOrders = s.refreshOrders;
+  const userId = s.user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    refreshOrders().catch((error) => message.error(t(userError(error)))).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [userId, refreshOrders, message, t]);
   const detail =
     selectedDetail && s.orders.find((o) => o.id === selectedDetail.id);
   if (!s.user) return <Navigate to="/login?next=/orders" replace />;
   const all = s.orders.filter((o) => o.owner === s.user.email),
-    orders = all.filter((o) => tab === "all" || o.status === tab);
+    orders = all.filter((o) => tab === "all" || orderStatusGroup(o.status) === tab);
   async function cancelOrder() {
     try {
       await api.orders.cancel(cancel.id, {
@@ -55,14 +68,14 @@ export default function Orders() {
           label: v === "all" ? t("Tất cả") + " (" + all.length + ")" : t(v),
         }))}
       />
-      {orders.length ? (
+      {loading ? <Spin /> : orders.length ? (
         orders.map((o) => (
           <section className="panel order" key={o.id}>
             <div className="order-head">
-              <strong>{o.id}</strong>
+              <strong>{t("Đơn hàng")} <CopyCode value={o.code} /></strong>
               <span>{formatDateTime(o.createdAt, timeZone)}</span>
               <Tag color={o.status === "Đã hủy" ? "default" : "orange"}>
-                {t(o.status)}
+                {t(orderStatusGroup(o.status))}
               </Tag>
             </div>
             {o.items.map((p) => {
@@ -90,7 +103,7 @@ export default function Orders() {
                         marginLeft: 12,
                         fontSize: "13px",
                         whiteSpace: "nowrap",
-                        color: "#1677ff",
+                        color: "#468432",
                       }}
                     >
                       ⭐ {t("Đánh giá")}
@@ -120,13 +133,13 @@ export default function Orders() {
       <Modal
         width={900}
         open={!!detail}
-        title={t("Chi tiết đơn {{id}}", { id: detail?.id || "" })}
+        title={t("Chi tiết đơn")}
         onCancel={() => setDetail(null)}
         footer={<Button onClick={() => setDetail(null)}>{t("Đóng")}</Button>}
       >
         {detail && (
           <>
-            {detail.paymentExpiresAt && <PaymentPanel order={detail} />}
+            <PaymentPanel key={detail.id} order={detail} />
             <Table
               rowKey="key"
               bordered
@@ -252,6 +265,7 @@ export default function Orders() {
                   label: t("Còn phải trả"),
                   children: money(detail.remaining),
                 },
+                ...(detail.refunded > 0 ? [{ key: "refunded", label: t("Đã hoàn tiền"), children: money(detail.refunded) }] : []),
                 {
                   key: "payment",
                   label: t("Thanh toán"),
@@ -273,7 +287,7 @@ export default function Orders() {
                     formatDateTime(detail.createdAt, timeZone),
                 },
                 {
-                  content: t(detail.status),
+                  content: t(orderStatusGroup(detail.status)),
                   color: detail.status === "Đã hủy" ? "gray" : "green",
                 },
               ]}

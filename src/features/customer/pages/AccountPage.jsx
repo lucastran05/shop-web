@@ -170,7 +170,7 @@ function AccountContent() {
               {a.recipient_name} · {a.recipient_phone}
             </strong>
             {a.is_default && (
-              <Tag color="blue" style={{ marginLeft: 10 }}>
+              <Tag color="#468432" style={{ marginLeft: 10 }}>
                 {t("Mặc định")}
               </Tag>
             )}

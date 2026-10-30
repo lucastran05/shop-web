@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 export function usePolling(
   action,
-  { enabled = true, intervalMs = 3000, onError } = {},
+  { enabled = true, intervalMs = 3000, immediate = true, onError } = {},
 ) {
   const actionRef = useRef(action);
   const errorRef = useRef(onError);
@@ -25,8 +25,8 @@ export function usePolling(
         pending = false;
       }
     };
-    poll();
-    const timer = setInterval(poll, intervalMs);
+    if (immediate) poll();
+    const timer = intervalMs > 0 ? setInterval(poll, intervalMs) : null;
     window.addEventListener("focus", poll);
     document.addEventListener("visibilitychange", poll);
     return () => {
@@ -35,5 +35,5 @@ export function usePolling(
       window.removeEventListener("focus", poll);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [enabled, intervalMs]);
+  }, [enabled, intervalMs, immediate]);
 }
