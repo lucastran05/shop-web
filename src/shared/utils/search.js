@@ -36,10 +36,12 @@ export function getCatalogFilters(params, defaultSort = "popular") {
   };
 }
 
-export function filterCatalogProducts(products, filters) {
+export function filterCatalogProducts(products, filters, user = null) {
   return products
-    .filter(
-      (p) =>
+    .filter((p) => {
+      if (p.visibility === "hidden") return false;
+      if (p.visibility === "private" && !user) return false;
+      return (
         (!filters.category ||
           filters.category === "Tất cả" ||
           p.category === filters.category) &&
@@ -47,8 +49,9 @@ export function filterCatalogProducts(products, filters) {
         p.price >= filters.price[0] &&
         p.price <= filters.price[1] &&
         (!filters.stock || p.stock > 0) &&
-        (!filters.featured || p.featured),
-    )
+        (!filters.featured || p.featured)
+      );
+    })
     .sort((a, b) =>
       filters.sort === "low"
         ? a.price - b.price

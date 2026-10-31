@@ -9,10 +9,12 @@ import {
   appendFeaturedProducts,
 } from "../../../shared/utils/featuredProducts";
 import { userError } from "../../../shared/utils/userError";
+import { useShop } from "../../../shared/shop/useShop";
 import ProductCard from "./ProductCard";
 
 export default function FeaturedProducts() {
   const { t } = useTranslation();
+  const { user } = useShop();
   const rowRef = useRef(null);
   const pending = useRef(true);
   const nextScroll = useRef(null);
@@ -105,7 +107,11 @@ export default function FeaturedProducts() {
     }
   }
 
-  if (!loading && !error && !products.length) return null;
+  const visibleProducts = products.filter(
+    (p) => p.visibility !== "hidden" && (p.visibility !== "private" || user),
+  );
+
+  if (!loading && !error && !visibleProducts.length) return null;
   return (
     <section
       className="collection featured-products"
@@ -114,7 +120,7 @@ export default function FeaturedProducts() {
       <div className="section-heading">
         <h2>{t("Sản phẩm nổi bật")}</h2>
       </div>
-      {products.length > 0 ? (
+      {visibleProducts.length > 0 ? (
         <div className="featured-carousel" aria-busy={loading}>
           <Button
             className="featured-arrow"
@@ -134,7 +140,7 @@ export default function FeaturedProducts() {
             ref={rowRef}
             onScroll={syncPosition}
           >
-            {products.map((product) => (
+            {visibleProducts.map((product) => (
               <ProductCard key={product.id} p={product} />
             ))}
           </div>

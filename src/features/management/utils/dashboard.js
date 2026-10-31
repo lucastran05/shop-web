@@ -57,6 +57,7 @@ export function buildDashboardData(orders, year) {
 }
 
 const statusColors = {
+  "Chờ thanh toán": "#ed8936",
   "Chờ xác nhận": "#e6a23c",
   "Đang chuẩn bị hàng": "#36a3a8",
   "Đang giao hàng": "#4b87d5",

@@ -54,15 +54,29 @@ export default function SettingsPage() {
         </Form.Item>
         <Form.Item
           name={["contact", "mapUrl"]}
-          label="Liên kết bản đồ"
+          label="Liên kết hoặc tọa độ bản đồ"
+          extra="Dán link Google Maps hoặc tọa độ vĩ độ, kinh độ (VD: 10.762622, 106.660172)"
           rules={[
             {
-              pattern: /^https?:\/\/\S+$/i,
-              message: "Nhập liên kết bắt đầu bằng https:// hoặc http://",
+              validator: (_, value) => {
+                if (!value || !value.trim()) return Promise.resolve();
+                const trimmed = value.trim();
+                if (
+                  /^https?:\/\/\S+$/i.test(trimmed) ||
+                  /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(trimmed)
+                ) {
+                  return Promise.resolve();
+                }
+                return Promise.reject(
+                  new Error(
+                    "Nhập liên kết https:// hoặc tọa độ dạng '10.7626, 106.6601'",
+                  ),
+                );
+              },
             },
           ]}
         >
-          <Input placeholder="https://maps.google.com/..." />
+          <Input placeholder="https://maps.google.com/... hoặc 10.762622, 106.660172" />
         </Form.Item>
         <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>
           Lưu thay đổi

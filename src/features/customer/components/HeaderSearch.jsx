@@ -7,7 +7,7 @@ import { matchesProduct } from "../../../shared/utils/search";
 import { money } from "../../../shared/utils/format";
 export default function HeaderSearch() {
   const { t } = useTranslation(),
-    { products } = useShop(),
+    { products, user } = useShop(),
     navigate = useNavigate(),
     location = useLocation(),
     [params] = useSearchParams();
@@ -15,7 +15,12 @@ export default function HeaderSearch() {
     params.get("search") || params.get("q") || "",
   );
   const results = value.trim()
-    ? products.filter((p) => matchesProduct(p, value, true))
+    ? products.filter(
+        (p) =>
+          p.visibility !== "hidden" &&
+          (p.visibility !== "private" || user) &&
+          matchesProduct(p, value, true),
+      )
     : [];
   function search() {
     const next = new URLSearchParams(

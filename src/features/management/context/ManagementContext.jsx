@@ -65,11 +65,14 @@ export function ManagementProvider({ children }) {
     const details = await Promise.all(
       rows.map((row) => api.adminProducts.get(row.id)),
     );
-    const next = details.map(({ data }) => ({
-      ...mapProductDetail(data),
-      active: data.is_active,
-      depositRate: data.deposit_rate,
-    }));
+    const next = details.map(({ data }) => {
+      const mapped = mapProductDetail(data);
+      return {
+        ...mapped,
+        active: mapped.visibility !== "hidden" && data.is_active !== false,
+        depositRate: data.deposit_rate,
+      };
+    });
     if (sessionRef.current === sessionId) saveProducts(next);
     return next;
   }, []);
@@ -247,6 +250,9 @@ export function ManagementProvider({ children }) {
   }
   async function saveProduct(product, existingId) {
     const category = categoryRows.find((row) => row.name === product.category);
+    const visibility =
+      product.visibility || (product.active ? "public" : "hidden");
+    const active = visibility !== "hidden";
     const body = {
       name: product.name,
       category_id: category?.id,
@@ -259,8 +265,13 @@ export function ManagementProvider({ children }) {
             : image,
         ),
       image: product.image || "",
-      attributes: product.attributes || [],
-      is_active: product.active,
+      attributes: [
+        ...(product.attributes || []).filter(
+          (a) => a.name !== "visibility" && a.name !== "_visibility",
+        ),
+        { name: "visibility", value: visibility },
+      ],
+      is_active: active,
       is_pinned: product.featured,
       allow_deposit: product.deposit,
       deposit_rate: product.depositRate,

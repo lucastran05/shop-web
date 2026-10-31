@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   orderStatuses,
   orderStatusGroup,
+  canCancelOrder,
 } from "../../../shared/constants/shop";
 import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
@@ -29,6 +30,7 @@ import {
   CheckCircleOutlined,
   UndoOutlined,
   CalendarOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import { useShop } from "../../../shared/shop/useShop";
 import { money } from "../../../shared/utils/format";
@@ -40,6 +42,7 @@ import { userError } from "../../../shared/utils/userError";
 import RequestError from "../../../shared/components/RequestError";
 
 const statusAppearance = {
+  "Chờ thanh toán": { icon: <WalletOutlined />, color: "orange" },
   "Chờ xác nhận": { icon: <ClockCircleOutlined />, color: "gold" },
   "Đang chuẩn bị hàng": { icon: <InboxOutlined />, color: "cyan" },
   "Đang giao hàng": { icon: <TruckOutlined />, color: "blue" },
@@ -83,9 +86,10 @@ export default function Orders() {
     selectedDetail && s.orders.find((o) => o.id === selectedDetail.id);
   if (!s.user) return <Navigate to="/login?next=/orders" replace />;
   const all = s.orders.filter((o) => o.owner === s.user.email),
-    orders = all.filter(
-      (o) => tab === "all" || orderStatusGroup(o.status) === tab,
-    );
+    orders = all.filter((o) => {
+      if (tab === "all") return true;
+      return orderStatusGroup(o.status) === tab;
+    });
   const currentPage = Math.min(page, Math.max(1, Math.ceil(orders.length / 5)));
   async function cancelOrder() {
     if (cancelling) return;
@@ -116,20 +120,29 @@ export default function Orders() {
           setTab(value);
           setPage(1);
         }}
-        items={["all", ...orderStatuses].map((v) => ({
-          key: v,
-          icon: v === "all" ? <ShoppingOutlined /> : statusAppearance[v]?.icon,
-          label: (
-            <span className="orders-tab-label">
-              {v === "all" ? t("Tất cả") : t(v)}{" "}
-              <span>
-                {v === "all"
-                  ? all.length
-                  : all.filter((o) => orderStatusGroup(o.status) === v).length}
+        items={[
+          {
+            key: "all",
+            icon: <ShoppingOutlined />,
+            label: (
+              <span className="orders-tab-label">
+                {t("Tất cả")} <span>{all.length}</span>
               </span>
-            </span>
-          ),
-        }))}
+            ),
+          },
+          ...orderStatuses.map((v) => ({
+            key: v,
+            icon: statusAppearance[v]?.icon,
+            label: (
+              <span className="orders-tab-label">
+                {t(v)}{" "}
+                <span>
+                  {all.filter((o) => orderStatusGroup(o.status) === v).length}
+                </span>
+              </span>
+            ),
+          })),
+        ]}
       />
       {loadError && !loading && (
         <RequestError
@@ -214,7 +227,7 @@ export default function Orders() {
                   onClick={() => setDetail(o)}
                 />
               </Tooltip>
-              {o.allowed_actions?.includes("cancel") && (
+              {(o.allowed_actions?.includes("cancel") || canCancelOrder(o)) && (
                 <Tooltip title={t("Hủy đơn")}>
                   <Button
                     className="order-action"
@@ -245,7 +258,14 @@ export default function Orders() {
           hideOnSinglePage
         />
       )}
-      <OrderDetail order={detail} onClose={() => setDetail(null)} />
+      <OrderDetail
+        order={detail}
+        onClose={() => setDetail(null)}
+        onCancel={(o) => {
+          setDetail(null);
+          setCancel(o);
+        }}
+      />
       <Modal
         open={!!cancel}
         title={t("Hủy đơn hàng?")}
@@ -260,7 +280,7 @@ export default function Orders() {
         maskClosable={!cancelling}
         keyboard={!cancelling}
       >
-        <p>{t("Chỉ có thể hủy khi shop chưa xác nhận đơn.")}</p>
+        <p>{t("Bạn có chắc chắn muốn hủy đơn hàng này không?")}</p>
       </Modal>
     </div>
   );

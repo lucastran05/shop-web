@@ -23,6 +23,13 @@ import { userError } from "../../../shared/utils/userError";
 import { getVariantImages } from "../../../shared/adapters/productAdapter";
 import ExpandableText from "../../../shared/components/ExpandableText";
 
+const visibilityConfig = {
+  public: { label: "Hiển thị", color: "green" },
+  private: { label: "Private", color: "blue" },
+  coming_soon: { label: "Coming soon", color: "orange" },
+  hidden: { label: "Ẩn", color: "default" },
+};
+
 export default function ProductsPage() {
   const s = useManagement(),
     { message } = App.useApp(),
@@ -37,33 +44,46 @@ export default function ProductsPage() {
     setEditing(p);
     form.resetFields();
     form.setFieldsValue(
-      p || {
-        active: true,
-        featured: false,
-        deposit: false,
-        depositRate: 50,
-        variants: [
-          {
-            id: "standard",
-            label: "Tiêu chuẩn",
-            color: "",
-            price: 0,
-            stock: 0,
+      p
+        ? {
+            ...p,
+            visibility: p.visibility || (p.active ? "public" : "hidden"),
+          }
+        : {
+            visibility: "public",
+            featured: false,
+            deposit: false,
+            depositRate: 50,
+            variants: [
+              {
+                id: "standard",
+                label: "Tiêu chuẩn",
+                color: "",
+                price: 0,
+                stock: 0,
+              },
+            ],
           },
-        ],
-      },
     );
     setOpen(true);
   }
   async function save(values) {
     const images = getVariantImages(values.variants);
+    const visibility = values.visibility || "public";
     const p = {
       ...editing,
       ...values,
+      visibility,
+      active: visibility !== "hidden",
       id: editing?.id || Date.now(),
       image: images[0] || "",
       images,
-      attributes: editing?.attributes || [],
+      attributes: [
+        ...(editing?.attributes || []).filter(
+          (a) => a.name !== "visibility" && a.name !== "_visibility",
+        ),
+        { name: "visibility", value: visibility },
+      ],
       variants: values.variants.map((v) => ({
         ...editing?.variants.find((variant) => variant.id === v.id),
         ...v,
@@ -171,11 +191,11 @@ export default function ProductsPage() {
           },
           {
             title: "Trạng thái",
-            render: (_, p) => (
-              <Tag color={p.active ? "blue" : "default"}>
-                {p.active ? "Đang bán" : "Tạm ẩn"}
-              </Tag>
-            ),
+            render: (_, p) => {
+              const vis = p.visibility || (p.active ? "public" : "hidden");
+              const cfg = visibilityConfig[vis] || visibilityConfig.public;
+              return <Tag color={cfg.color}>{cfg.label}</Tag>;
+            },
           },
           {
             title: "Thao tác",
@@ -250,14 +270,24 @@ export default function ProductsPage() {
             </section>
             <section className="mg-form-section">
               <h3>Hiển thị & đặt cọc</h3>
+              <Form.Item
+                name="visibility"
+                label="Trạng thái hàng"
+                rules={[{ required: true, message: "Chọn trạng thái" }]}
+              >
+                <Select
+                  options={[
+                    { value: "public", label: "Hiển thị" },
+                    {
+                      value: "private",
+                      label: "Riêng tư (khách hàng đã đăng nhập)",
+                    },
+                    { value: "coming_soon", label: "Chuẩn bị mở bán" },
+                    { value: "hidden", label: "Ẩn" },
+                  ]}
+                />
+              </Form.Item>
               <Space wrap>
-                <Form.Item
-                  name="active"
-                  label="Đang bán"
-                  valuePropName="checked"
-                >
-                  <Switch />
-                </Form.Item>
                 <Form.Item
                   name="featured"
                   label="Ghim sản phẩm"

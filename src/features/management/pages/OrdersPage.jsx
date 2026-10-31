@@ -18,10 +18,11 @@ import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
   SaveOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
 import {
-  App,
   Alert,
+  App,
   Descriptions,
   Form,
   Input,
@@ -32,6 +33,7 @@ import {
   Table,
   Tabs,
   Timeline,
+  Tooltip,
 } from "antd";
 import { useManagement } from "../hooks/useManagement";
 import { nextStatuses, statusFlow, transitionOrder } from "../utils/management";
@@ -40,10 +42,14 @@ import { orderLabels } from "../../../shared/adapters/viewAdapters";
 import {
   orderStatuses,
   orderStatusGroup,
+  isAwaitingPayment,
+  canAdminConfirm,
+  canCancelOrder,
 } from "../../../shared/constants/shop";
 
 const tabIcons = {
   all: <ShoppingOutlined />,
+  "Chờ thanh toán": <WalletOutlined />,
   "Chờ xác nhận": <ClockCircleOutlined />,
   "Đang chuẩn bị hàng": <InboxOutlined />,
   "Đang giao hàng": <TruckOutlined />,
@@ -52,23 +58,13 @@ const tabIcons = {
   "Hoàn hàng / Hoàn tiền": <UndoOutlined />,
 };
 
-const stageHints = {
-  "Đã xác nhận":
-    "Kiểm tra sản phẩm, số lượng, người nhận và địa chỉ trước khi xác nhận đơn.",
-  "Đang chuẩn bị hàng":
-    "Lấy đủ sản phẩm và đúng biến thể theo đơn. Ghi chú nếu có yêu cầu khi chuẩn bị hàng.",
-  "Đã đóng gói":
-    "Kiểm tra số lượng, tình trạng sản phẩm và hoàn tất đóng gói trước khi bàn giao vận chuyển.",
-  "Đang giao hàng":
-    "Nhập đơn vị vận chuyển và mã vận đơn sau khi bàn giao kiện hàng.",
-  "Giao thành công":
-    "Chỉ xác nhận khi đơn vị vận chuyển báo giao thành công và người nhận đã nhận hàng.",
-  "Đã hoàn thành":
-    "Đơn đã giao và được thanh toán đủ mới có thể hoàn thành. Xác nhận thanh toán tại trang Thanh toán.",
-  "Đã hủy":
-    "Ghi rõ lý do hủy đơn. Thao tác này kết thúc quy trình giao hàng của đơn.",
-  "Hoàn hàng":
-    "Chỉ xác nhận khi cửa hàng đã nhận lại hàng. Ghi rõ lý do và tình trạng hàng nhận lại.",
+const stageActionLabels = {
+  "Đã xác nhận": "Xác nhận đơn",
+  "Đang chuẩn bị hàng": "Chuẩn bị hàng",
+  "Đã đóng gói": "Đóng gói xong",
+  "Đang giao hàng": "Bàn giao vận chuyển",
+  "Giao thành công": "Giao thành công",
+  "Đã hoàn thành": "Hoàn tất đơn hàng",
 };
 
 export default function OrdersPage() {
@@ -82,20 +78,18 @@ export default function OrdersPage() {
     [mode, setMode] = useState("view"),
     [saving, setSaving] = useState(false),
     [exceptionStatus, setExceptionStatus] = useState(null),
-    [reason, setReason] = useState("");
+    [reason, setReason] = useState(""),
+    [cancellingOrder, setCancellingOrder] = useState(null),
+    [cancelReason, setCancelReason] = useState("");
   const detail = s.orders.find((o) => o.id === detailId);
-  const activeStatus = orderLabels[detail?.statusCode];
+  const activeStatus = orderLabels[detail?.statusCode] || detail?.status;
   const stageIndex = statusFlow.indexOf(activeStatus);
   const previousStage = statusFlow[stageIndex - 1];
   const nextStage = stageIndex >= 0 ? statusFlow[stageIndex + 1] : undefined;
   const allowed = nextStatuses(detail || {});
   const showShipment = stageIndex >= 3;
-  const canCancel =
-    stageIndex >= 0 &&
-    stageIndex < 4 &&
-    !detail?.shippedAt &&
-    !detail?.history?.some((event) => event.status === "shipping") &&
-    allowed.includes("Đã hủy");
+  const canCancel = canCancelOrder(detail);
+  const cannotConfirm = nextStage === "Đã xác nhận" && !canAdminConfirm(detail);
   const unpaidCompletion =
     nextStage === "Đã hoàn thành" &&
     Number(detail?.paid || 0) < Number(detail?.total || 0);
@@ -104,9 +98,136 @@ export default function OrdersPage() {
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
-  const rows = searchedOrders.filter(
-    (o) => status === "all" || orderStatusGroup(o.status) === status,
-  );
+  const rows = searchedOrders.filter((o) => {
+    if (status === "all") return true;
+    return orderStatusGroup(o.status) === status;
+  });
+
+  function promptCancel(order) {
+    setCancellingOrder(order);
+    setCancelReason("");
+  }
+
+  async function confirmCancel() {
+    if (!cancellingOrder || saving) return;
+    setSaving(true);
+    try {
+      const reasonText = cancelReason.trim() || "Cửa hàng hủy đơn";
+      const next = transitionOrder(cancellingOrder, "Đã hủy", {
+        note: reasonText,
+      });
+      await s.updateOrder(next);
+      setCancellingOrder(null);
+      if (detailId === cancellingOrder.id) {
+        setDetailId(null);
+      }
+      message.success("Đã hủy đơn hàng");
+    } catch (e) {
+      message.error(e?.message || userError(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function quickAdvance(order, targetStatus) {
+    if (saving) return;
+    setSaving(true);
+    try {
+      if (targetStatus === "Đã xác nhận" && !canAdminConfirm(order)) {
+        throw new Error(
+          "Đơn hàng chưa thanh toán. Phải thanh toán xong mới được xác nhận (ngoại trừ thanh toán khi nhận hàng).",
+        );
+      }
+      const next = transitionOrder(order, targetStatus);
+      await s.updateOrder(next);
+      message.success(`Đã chuyển sang trạng thái: ${targetStatus}`);
+    } catch (e) {
+      message.error(e?.message || userError(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function renderQuickActions(o) {
+    const group = orderStatusGroup(o.status);
+    const next = nextStatuses(o);
+    if (isAwaitingPayment(o)) return null;
+
+    if (group === "Chờ xác nhận" && next.includes("Đã xác nhận")) {
+      return (
+        <Popconfirm
+          title="Xác nhận đơn hàng này?"
+          onConfirm={() => quickAdvance(o, "Đã xác nhận")}
+          okText="Xác nhận"
+          cancelText="Quay lại"
+          disabled={saving}
+        >
+          <Button
+            size="small"
+            type="primary"
+            className="mg-icon-action"
+            icon={<CheckCircleOutlined />}
+            aria-label="Xác nhận đơn"
+            disabled={saving}
+          />
+        </Popconfirm>
+      );
+    }
+
+    if (group === "Đang chuẩn bị hàng" && next.includes("Đang giao hàng")) {
+      return (
+        <Button
+          size="small"
+          type="primary"
+          className="mg-icon-action"
+          icon={<TruckOutlined />}
+          aria-label="Nhập vận chuyển và giao hàng"
+          disabled={saving}
+          onClick={() => show(o, "shipment")}
+        />
+      );
+    }
+
+    if (group === "Đang giao hàng") {
+      return (
+        <>
+          {next.includes("Giao thành công") && (
+            <Popconfirm
+              title="Xác nhận đã giao hàng thành công?"
+              onConfirm={() => quickAdvance(o, "Giao thành công")}
+              okText="Đã giao hàng"
+              cancelText="Quay lại"
+              disabled={saving}
+            >
+              <Button
+                size="small"
+                type="primary"
+                className="mg-icon-action"
+                icon={<CheckCircleOutlined />}
+                aria-label="Xác nhận đã giao hàng"
+                disabled={saving}
+              />
+            </Popconfirm>
+          )}
+          {next.includes("Hoàn hàng") && (
+            <Button
+              size="small"
+              danger
+              className="mg-icon-action"
+              icon={<UndoOutlined />}
+              aria-label="Hoàn hàng"
+              disabled={saving}
+              onClick={() => {
+                show(o, "return");
+                setExceptionStatus("Hoàn hàng");
+              }}
+            />
+          )}
+        </>
+      );
+    }
+    return null;
+  }
   function show(o, nextMode) {
     setExceptionStatus(null);
     setReason("");
@@ -164,7 +285,8 @@ export default function OrdersPage() {
         );
       await s.updateOrder(next);
       setExceptionStatus(null);
-      if (needsReason) setDetailId(null);
+      if (needsReason || mode === "shipment") setDetailId(null);
+      if (mode === "shipment") setStatus("Đang giao hàng");
       message.success("Đã cập nhật đơn hàng");
     } catch (e) {
       if (e?.errorFields) return;
@@ -202,37 +324,49 @@ export default function OrdersPage() {
       <Tabs
         activeKey={status}
         onChange={setStatus}
-        items={["all", ...orderStatuses].map((value) => ({
-          key: value,
-          icon: tabIcons[value],
-          label: (
-            <span className="orders-tab-label">
-              {value === "all" ? "Tất cả" : value}
-              <span>
-                {value === "all"
-                  ? searchedOrders.length
-                  : searchedOrders.filter(
-                      (o) => orderStatusGroup(o.status) === value,
-                    ).length}
+        items={[
+          {
+            key: "all",
+            icon: tabIcons.all,
+            label: (
+              <span className="orders-tab-label">
+                Tất cả <span>{searchedOrders.length}</span>
               </span>
-            </span>
-          ),
-        }))}
+            ),
+          },
+          ...orderStatuses.map((value) => ({
+            key: value,
+            icon: tabIcons[value],
+            label: (
+              <span className="orders-tab-label">
+                {value}
+                <span>
+                  {
+                    searchedOrders.filter(
+                      (o) => orderStatusGroup(o.status) === value,
+                    ).length
+                  }
+                </span>
+              </span>
+            ),
+          })),
+        ]}
       />
       <Table
         rowKey="id"
         rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
-        scroll={{ x: 850 }}
+        scroll={{ x: 950 }}
         dataSource={rows}
         columns={[
           ...orderColumns,
           {
             title: "Thao tác",
             align: "center",
-            width: 112,
+            width: 200,
             className: "mg-action-cell",
             render: (_, o) => (
-              <Space>
+              <Space size={4} wrap>
+                {renderQuickActions(o)}
                 <Button
                   icon={<EyeOutlined />}
                   aria-label={`Chi tiết đơn của ${o.recipient?.name || "khách hàng"}`}
@@ -247,6 +381,17 @@ export default function OrdersPage() {
                   title="Xử lý đơn"
                   className="mg-icon-action"
                 />
+                {canCancelOrder(o) && (
+                  <Button
+                    size="small"
+                    danger
+                    className="mg-icon-action"
+                    icon={<CloseCircleOutlined />}
+                    aria-label="Hủy đơn"
+                    disabled={saving}
+                    onClick={() => promptCancel(o)}
+                  />
+                )}
               </Space>
             ),
           },
@@ -255,7 +400,7 @@ export default function OrdersPage() {
       <Modal
         className="mg-editor-modal mg-order-modal"
         title={mode === "edit" ? "Xử lý đơn hàng" : "Chi tiết đơn hàng"}
-        open={!!detail}
+        open={!!detail && mode !== "shipment" && mode !== "return"}
         width={900}
         onCancel={() => !saving && setDetailId(null)}
         closable={!saving}
@@ -269,10 +414,7 @@ export default function OrdersPage() {
                     danger
                     icon={<CloseCircleOutlined />}
                     disabled={saving}
-                    onClick={() => {
-                      setReason("");
-                      setExceptionStatus("Đã hủy");
-                    }}
+                    onClick={() => promptCancel(detail)}
                   >
                     Hủy đơn
                   </Button>
@@ -302,18 +444,45 @@ export default function OrdersPage() {
                     Giai đoạn trước
                   </Button>
                 )}
-                {nextStage && allowed.includes(nextStage) && (
-                  <Button
-                    type="primary"
-                    icon={<ArrowRightOutlined />}
-                    title={nextStage}
-                    loading={saving}
-                    disabled={unpaidCompletion}
-                    onClick={() => save(nextStage)}
-                  >
-                    Giai đoạn sau
-                  </Button>
-                )}
+                {nextStage &&
+                  allowed.includes(nextStage) &&
+                  (cannotConfirm ? (
+                    <Tooltip title="Đơn hàng chưa thanh toán. Phải thanh toán xong mới được xác nhận (ngoại trừ thanh toán khi nhận hàng).">
+                      <span>
+                        <Button
+                          type="primary"
+                          icon={<ArrowRightOutlined />}
+                          disabled
+                        >
+                          {stageActionLabels[nextStage] || nextStage}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  ) : unpaidCompletion ? (
+                    <Tooltip
+                      title={`Còn phải thanh toán ${money(Number(detail.total) - Number(detail.paid || 0))}`}
+                    >
+                      <span>
+                        <Button
+                          type="primary"
+                          icon={<ArrowRightOutlined />}
+                          disabled
+                        >
+                          {stageActionLabels[nextStage] || nextStage}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Button
+                      type="primary"
+                      icon={<ArrowRightOutlined />}
+                      title={nextStage}
+                      loading={saving}
+                      onClick={() => save(nextStage)}
+                    >
+                      {stageActionLabels[nextStage] || nextStage}
+                    </Button>
+                  ))}
               </Space>
             </div>
           ) : null
@@ -431,21 +600,6 @@ export default function OrdersPage() {
                 onFinish={() => save()}
                 disabled={saving}
               >
-                {stageIndex >= 0 && (
-                  <Alert
-                    className="mg-order-hint"
-                    showIcon
-                    type={unpaidCompletion ? "warning" : "info"}
-                    title={
-                      unpaidCompletion
-                        ? `Còn phải thanh toán ${money(Number(detail.total) - Number(detail.paid || 0))}`
-                        : nextStage
-                          ? `Giai đoạn tiếp theo: ${nextStage}`
-                          : activeStatus
-                    }
-                    description={stageHints[nextStage || activeStatus]}
-                  />
-                )}
                 {showShipment && (
                   <div className="mg-form-grid">
                     <Form.Item
@@ -514,13 +668,55 @@ export default function OrdersPage() {
         )}
       </Modal>
       <Modal
+        title="Thông tin vận chuyển"
+        open={!!detail && mode === "shipment"}
+        onCancel={() => !saving && setDetailId(null)}
+        onOk={() => save("Đang giao hàng")}
+        okText="Lưu và giao hàng"
+        cancelText="Quay lại"
+        confirmLoading={saving}
+        cancelButtonProps={{ disabled: saving }}
+        closable={!saving}
+        maskClosable={!saving}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical" disabled={saving}>
+          <Form.Item
+            name="carrier"
+            label="Đơn vị vận chuyển"
+            rules={[
+              {
+                required: true,
+                whitespace: true,
+                message: "Nhập đơn vị vận chuyển",
+              },
+            ]}
+          >
+            <Input placeholder="Ví dụ: GHN" />
+          </Form.Item>
+          <Form.Item
+            name="tracking"
+            label="Mã vận đơn"
+            rules={[
+              { required: true, whitespace: true, message: "Nhập mã vận đơn" },
+            ]}
+          >
+            <Input placeholder="Mã tra cứu của kiện hàng" />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
         title={
           exceptionStatus === "Hoàn hàng"
             ? "Xác nhận nhận lại hàng"
             : "Xác nhận hủy đơn"
         }
         open={!!exceptionStatus}
-        onCancel={() => !saving && setExceptionStatus(null)}
+        onCancel={() => {
+          if (saving) return;
+          setExceptionStatus(null);
+          if (mode === "return") setDetailId(null);
+        }}
         onOk={() => save(exceptionStatus, reason)}
         okText={
           exceptionStatus === "Hoàn hàng"
@@ -534,13 +730,39 @@ export default function OrdersPage() {
         closable={!saving}
         maskClosable={!saving}
       >
-        <p>{stageHints[exceptionStatus]}</p>
+        <p>Vui lòng nhập lý do để xác nhận xử lý đơn hàng.</p>
         <Input.TextArea
           aria-label="Lý do"
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           rows={3}
           placeholder="Nhập lý do cụ thể (bắt buộc)"
+          disabled={saving}
+        />
+      </Modal>
+      <Modal
+        title="Xác nhận hủy đơn hàng"
+        open={!!cancellingOrder}
+        onCancel={() => !saving && setCancellingOrder(null)}
+        onOk={confirmCancel}
+        okText="Xác nhận hủy đơn"
+        cancelText="Quay lại"
+        confirmLoading={saving}
+        okButtonProps={{ danger: true }}
+        cancelButtonProps={{ disabled: saving }}
+        closable={!saving}
+        maskClosable={!saving}
+      >
+        <p>
+          Bạn có chắc chắn muốn hủy đơn hàng{" "}
+          <strong>{cancellingOrder?.code || cancellingOrder?.id}</strong> không?
+        </p>
+        <Input.TextArea
+          aria-label="Lý do hủy đơn"
+          value={cancelReason}
+          onChange={(event) => setCancelReason(event.target.value)}
+          rows={3}
+          placeholder="Nhập lý do hủy đơn (không bắt buộc)"
           disabled={saving}
         />
       </Modal>

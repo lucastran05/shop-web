@@ -24,7 +24,7 @@ import FeaturedProducts from "../components/FeaturedProducts";
 import { usePreferences } from "../../../shared/preferences/usePreferences";
 export default function Catalog() {
   const { t } = useTranslation(),
-    { products, categories, catalogLoading, catalogError } = useShop(),
+    { products, categories, catalogLoading, catalogError, user } = useShop(),
     shopConfig = useShopConfig(),
     [params, setParams] = useSearchParams();
   const { catalogPreferences, setCatalogPreferences } = usePreferences();
@@ -46,10 +46,14 @@ export default function Catalog() {
     setPage({ query: next.toString(), value: 1 });
     setParams(next, { replace });
   }
-  const categoryProducts = filterCatalogProducts(products, {
-    ...filters,
-    category: "",
-  });
+  const categoryProducts = filterCatalogProducts(
+    products,
+    {
+      ...filters,
+      category: "",
+    },
+    user,
+  );
   const list = categoryProducts.filter(
     (p) => !category || category === "Tất cả" || p.category === category,
   );

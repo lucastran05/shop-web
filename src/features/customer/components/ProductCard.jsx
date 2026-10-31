@@ -20,7 +20,15 @@ export default function ProductCard({ p, showFeatured = true }) {
               />
             )}
             <div className="product-tags">
-              {!p.stock ? (
+              {p.visibility === "coming_soon" ? (
+                <Tag color="orange" className="product-badge">
+                  {t("Coming soon")}
+                </Tag>
+              ) : p.visibility === "private" ? (
+                <Tag color="blue" className="product-badge">
+                  {t("Thành viên")}
+                </Tag>
+              ) : !p.stock ? (
                 <Tag className="product-badge sold-out">{t("Hết hàng")}</Tag>
               ) : showFeatured && p.featured ? (
                 <Tag className="product-badge" icon={<PushpinOutlined />}>

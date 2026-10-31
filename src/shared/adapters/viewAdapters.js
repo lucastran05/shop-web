@@ -1,3 +1,5 @@
+import { isAwaitingPayment } from "../constants/shop.js";
+
 export const orderLabels = {
   pending: "Chờ xác nhận",
   confirmed: "Đã xác nhận",
@@ -12,7 +14,7 @@ export const orderLabels = {
   refunded: "Hoàn tiền",
 };
 export function mapOrder(order, email = "") {
-  return {
+  const mapped = {
     ...order,
     owner: order.customer?.email || email,
     createdAt: order.created_at,
@@ -67,6 +69,8 @@ export function mapOrder(order, email = "") {
       text: item.label || item.note,
     })),
   };
+  if (isAwaitingPayment(mapped)) mapped.status = "Chờ thanh toán";
+  return mapped;
 }
 export function mapMessage(item, owner) {
   return {

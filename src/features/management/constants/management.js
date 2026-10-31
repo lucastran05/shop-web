@@ -8,6 +8,7 @@ export const statusFlow = [
   "Đã hoàn thành",
 ];
 export const statusColors = {
+  "Chờ thanh toán": "orange",
   "Chờ xác nhận": "gold",
   "Đã xác nhận": "blue",
   "Đã cọc": "gold",

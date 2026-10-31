@@ -5,14 +5,18 @@ import { useTranslation } from "react-i18next";
 import { usePreferences } from "../../../shared/preferences/usePreferences";
 import { formatDateTime, money } from "../../../shared/utils/format";
 import { orderLabels } from "../../../shared/adapters/viewAdapters";
-import { orderStatusGroup } from "../../../shared/constants/shop";
+import {
+  orderStatusGroup,
+  canCancelOrder,
+} from "../../../shared/constants/shop";
 import CopyCode from "../../../shared/components/CopyCode";
 import PaymentPanel from "./PaymentPanel";
 
-export default function OrderDetail({ order, onClose }) {
+export default function OrderDetail({ order, onClose, onCancel }) {
   const { t } = useTranslation();
   const { timeZone } = usePreferences();
   const received = ["delivered", "completed"].includes(order?.statusCode);
+  const cancellable = canCancelOrder(order);
   return (
     <Modal
       open={!!order}
@@ -21,9 +25,25 @@ export default function OrderDetail({ order, onClose }) {
       className="order-detail-modal"
       onCancel={onClose}
       footer={
-        <Button icon={<CloseOutlined />} onClick={onClose}>
-          {t("Đóng")}
-        </Button>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <div>
+            {cancellable && onCancel && (
+              <Button danger onClick={() => onCancel(order)}>
+                {t("Hủy đơn")}
+              </Button>
+            )}
+          </div>
+          <Button icon={<CloseOutlined />} onClick={onClose}>
+            {t("Đóng")}
+          </Button>
+        </div>
       }
     >
       {order && (

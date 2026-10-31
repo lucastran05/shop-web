@@ -11,6 +11,7 @@ export const shopConfig = {
   },
 };
 export const orderStatuses = [
+  "Chờ thanh toán",
   "Chờ xác nhận",
   "Đang chuẩn bị hàng",
   "Đang giao hàng",
@@ -30,4 +31,68 @@ const orderStatusGroups = {
 
 export function orderStatusGroup(status) {
   return orderStatusGroups[status] || status;
+}
+
+export function isAwaitingPayment(order) {
+  if (!order || order.paymentStatus === "refunded") return false;
+  return (
+    ["pending", "Chờ xác nhận", "Chờ thanh toán"].includes(
+      order.statusCode || order.status,
+    ) && !canAdminConfirm(order)
+  );
+}
+
+export function canAdminConfirm(order) {
+  if (!order) return false;
+  if (
+    order.payment === "cash" ||
+    order.payment === "cod" ||
+    order.delivery === "pickup"
+  )
+    return true;
+  if (Number(order.deposit) > 0) {
+    return (
+      order.depositStatus === "paid" ||
+      order.depositStatus === "Đã xác nhận" ||
+      Number(order.paid || 0) >= Number(order.deposit || 0)
+    );
+  }
+  return (
+    order.paymentStatus === "paid" ||
+    Number(order.paid || 0) >= Number(order.total || 0)
+  );
+}
+
+export function canCancelOrder(order) {
+  if (!order) return false;
+  const terminal = [
+    "cancelled",
+    "returned",
+    "refunded",
+    "Đã hủy",
+    "Hoàn hàng",
+    "Hoàn tiền",
+  ].includes(order.statusCode || order.status);
+  if (terminal) return false;
+  if (
+    order.shippedAt ||
+    order.history?.some(
+      (e) => e.status === "shipping" || e.status === "shipped",
+    )
+  ) {
+    return false;
+  }
+  const cancellableCodes = ["pending", "confirmed", "processing", "packed"];
+  const cancellableLabels = [
+    "Chờ xác nhận",
+    "Đã xác nhận",
+    "Đã cọc",
+    "Đang chuẩn bị hàng",
+    "Đã đóng gói",
+  ];
+  return (
+    cancellableCodes.includes(order.statusCode) ||
+    cancellableLabels.includes(order.status) ||
+    isAwaitingPayment(order)
+  );
 }

@@ -1,4 +1,8 @@
 import { orderLabels } from "../../../shared/adapters/viewAdapters";
+import {
+  canAdminConfirm,
+  canCancelOrder,
+} from "../../../shared/constants/shop";
 export const LOW_STOCK_LIMIT = 5;
 export function stockStatus(stock) {
   return stock <= 0 ? "Hết hàng" : "Còn hàng";
@@ -44,8 +48,21 @@ export function nextStatuses(order) {
     .filter(Boolean);
 }
 export function transitionOrder(order, status, shipment = {}) {
-  if (!nextStatuses(order).includes(status))
+  const allowed = nextStatuses(order);
+  const isCancel = status === "Đã hủy";
+
+  if (isCancel && canCancelOrder(order)) {
+    // Cho phép hủy ở các giai đoạn: Chờ xác nhận, Đã xác nhận, Đang chuẩn bị hàng, Đã đóng gói
+  } else if (!allowed.includes(status)) {
     throw new Error("Không thể chuyển sang trạng thái này.");
+  }
+
+  if (status === "Đã xác nhận" && !canAdminConfirm(order)) {
+    throw new Error(
+      "Đơn hàng chưa thanh toán. Phải thanh toán xong mới được xác nhận.",
+    );
+  }
+
   if (
     status === "Đang giao hàng" &&
     (!shipment.tracking?.trim() || !shipment.carrier?.trim())
