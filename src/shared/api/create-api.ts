@@ -18,7 +18,10 @@ import { AdminChatService } from "./admin-chat.service";
 import { AdminDashboardReportsService } from "./admin-dashboard-reports.service";
 import { AdminUsersService } from "./admin-users.service";
 import { AdminSettingsShopService } from "./admin-settings-shop.service";
-import { AdminVouchersService, VouchersService } from "./admin-vouchers.service";
+import {
+  AdminVouchersService,
+  VouchersService,
+} from "./admin-vouchers.service";
 
 /** Create separate instances for customer and management sessions if both are used at once. */
 export function createApi(config: HttpClientConfig) {

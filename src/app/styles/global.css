@@ -1,4 +1,16 @@
+/* Import Google Fonts Inter */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
 /* CSS toàn cục của ứng dụng */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -295,10 +307,24 @@ hr {
   height: 100%;
   border-radius: 18px;
 }
-.catalog-layout > * { min-width: 0; }
-.filters .category { max-width: 100%; min-width: 0; }
-.filters .category > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.product-price strong, .product-price del { overflow-wrap: anywhere; max-width: 100%; }
+.catalog-layout > * {
+  min-width: 0;
+}
+.filters .category {
+  max-width: 100%;
+  min-width: 0;
+}
+.filters .category > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.product-price strong,
+.product-price del {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
 .product-card > .ant-card {
   display: flex;
   flex-direction: column;
@@ -309,7 +335,9 @@ hr {
   border-radius: 18px;
   overflow: hidden;
   box-shadow: 0 3px 12px #243b1810;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .product-card:hover > .ant-card,
 .product-card:focus-visible > .ant-card {
@@ -424,7 +452,9 @@ hr {
   font-size: 12px;
   font-weight: 600;
   color: #386b28;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 .product-card:hover .card-link,
 .product-card:focus-visible .card-link {

@@ -8,6 +8,7 @@ import {
   Empty,
   Pagination,
   Alert,
+  Divider,
 } from "antd";
 import { ArrowRightOutlined, FilterOutlined } from "@ant-design/icons";
 import { useState } from "react";
@@ -135,7 +136,7 @@ export default function Catalog() {
                 </span>
               </button>
             ))}
-            <hr />
+            <Divider style={{ margin: "22px 0" }} />
             <h3>{t("Khoảng giá")}</h3>
             <div className="price-inputs">
               <label>
@@ -169,7 +170,7 @@ export default function Catalog() {
                 />
               </label>
             </div>
-            <hr />
+            <Divider style={{ margin: "22px 0" }} />
             <h3>{t("Lựa chọn khác")}</h3>
             <Checkbox
               checked={stock}

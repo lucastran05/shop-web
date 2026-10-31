@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { PictureOutlined, CloseOutlined } from "@ant-design/icons";
 import { api } from "../../../shared/api";
 import { userError } from "../../../shared/utils/userError";
@@ -11,10 +11,8 @@ import {
   Pagination,
   App,
   Image,
-  Alert,
-  Tag,
+  Upload,
 } from "antd";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
 import { usePreferences } from "../../../shared/preferences/usePreferences";
@@ -38,7 +36,6 @@ export default function ProductReviews({ productId }) {
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(0);
   const [apiEligibility, setApiEligibility] = useState(null);
-  const imageInput = useRef(null);
 
   // Lấy danh sách đánh giá của sản phẩm (công khai cho tất cả mọi người)
   useEffect(() => {
@@ -129,30 +126,31 @@ export default function ProductReviews({ productId }) {
   // Chỉ hiện form khi backend xác nhận đã mua và nhận hàng thành công.
   const canWriteReview = Boolean(s.user && apiEligibility?.can_review === true);
 
-  async function chooseImages(event) {
-    const files = Array.from(event.target.files || []);
-    event.target.value = "";
-    if (!files.length) return;
+  async function handleUpload(file) {
+    if (images.length >= 3) {
+      message.error(t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB"));
+      return Upload.LIST_IGNORE;
+    }
     if (
-      images.length + files.length > 3 ||
-      files.some(
-        (file) =>
-          file.size > 2 * 1024 * 1024 ||
-          !["image/jpeg", "image/png", "image/webp"].includes(file.type),
-      )
+      file.size > 2 * 1024 * 1024 ||
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type)
     ) {
       message.error(t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB"));
-      return;
+      return Upload.LIST_IGNORE;
     }
     setLoadingImages(true);
     try {
-      const { data } = await api.reviews.upload({ files, purpose: "review" });
+      const { data } = await api.reviews.upload({
+        files: [file],
+        purpose: "review",
+      });
       setImages((old) => [...old, ...data]);
     } catch (error) {
       message.error(t(userError(error)));
     } finally {
       setLoadingImages(false);
     }
+    return Upload.LIST_IGNORE;
   }
 
   const average = summary.average_rating;
@@ -264,26 +262,21 @@ export default function ProductReviews({ productId }) {
               </div>
               <div className="review-form-footer">
                 <div className="review-upload-area">
-                  <input
-                    ref={imageInput}
-                    hidden
-                    style={{ display: "none" }}
-                    type="file"
-                    aria-label={t("Ảnh đánh giá (không bắt buộc)")}
+                  <Upload
                     accept="image/jpeg,image/png,image/webp"
-                    multiple
+                    showUploadList={false}
+                    beforeUpload={handleUpload}
                     disabled={loadingImages || images.length >= 3}
-                    onChange={chooseImages}
-                  />
-                  <Button
-                    icon={<PictureOutlined aria-hidden="true" />}
-                    aria-label={t("Thêm ảnh")}
-                    loading={loadingImages}
-                    disabled={images.length >= 3}
-                    onClick={() => imageInput.current?.click()}
                   >
-                    {t("Thêm ảnh")}
-                  </Button>
+                    <Button
+                      icon={<PictureOutlined aria-hidden="true" />}
+                      aria-label={t("Thêm ảnh")}
+                      loading={loadingImages}
+                      disabled={images.length >= 3}
+                    >
+                      {t("Thêm ảnh")}
+                    </Button>
+                  </Upload>
                   <small>{t("Tối đa 3 ảnh, mỗi ảnh không quá 2 MB")}</small>
                 </div>
                 <Button
@@ -310,7 +303,6 @@ export default function ProductReviews({ productId }) {
             <article className="review-item" key={r.id}>
               <div className="review-author-line">
                 <strong>{r.name}</strong>
-               
               </div>
               <Rate disabled value={r.rating} />
               <time dateTime={r.createdAt}>

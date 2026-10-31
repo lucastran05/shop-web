@@ -35,7 +35,9 @@ export class HttpClient {
   private readonly timeoutMs: number;
   private readonly fetcher: typeof globalThis.fetch;
   private readonly tokenStore: TokenStore | undefined;
-  private readonly sessionListeners = new Set<(reason?: SessionClearReason) => void>();
+  private readonly sessionListeners = new Set<
+    (reason?: SessionClearReason) => void
+  >();
   private tokens: TokenPair | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private sessionVersion = 0;
@@ -94,7 +96,9 @@ export class HttpClient {
     return this.tokens?.accessToken ?? null;
   }
 
-  onSessionCleared(listener: (reason?: SessionClearReason) => void): () => void {
+  onSessionCleared(
+    listener: (reason?: SessionClearReason) => void,
+  ): () => void {
     this.sessionListeners.add(listener);
     return () => {
       this.sessionListeners.delete(listener);
@@ -124,10 +128,13 @@ export class HttpClient {
 
     let expiresAt = 0;
     try {
-      const encodedPayload = accessToken.split('.')[1];
+      const encodedPayload = accessToken.split(".")[1];
       if (!encodedPayload) return;
-      const normalized = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+      const normalized = encodedPayload.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized.padEnd(
+        Math.ceil(normalized.length / 4) * 4,
+        "=",
+      );
       const payload = JSON.parse(atob(padded));
       expiresAt = Number(payload.exp) * 1000;
     } catch {
@@ -135,7 +142,8 @@ export class HttpClient {
     }
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return;
 
-    const delay = retryAfterMs ?? Math.max(1000, expiresAt - Date.now() - 60_000);
+    const delay =
+      retryAfterMs ?? Math.max(1000, expiresAt - Date.now() - 60_000);
     this.refreshTimer = setTimeout(() => {
       this.refreshTimer = null;
       this.refreshTokens().catch((error) => {

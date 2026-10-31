@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { App } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Context } from "./shop";
 import PageLoading from "../components/PageLoading";
+
+export const ShopContext = createContext(null);
+export const Context = ShopContext;
 import RequestError from "../components/RequestError";
 import {
   listAll,

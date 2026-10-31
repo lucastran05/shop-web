@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Card, Tag, Empty } from "antd";
+import { Card, Tag, Empty, Typography } from "antd";
 import { PushpinOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { money } from "../../../shared/utils/format";
 export default function ProductCard({ p, showFeatured = true }) {
@@ -36,7 +36,9 @@ export default function ProductCard({ p, showFeatured = true }) {
         <div className="product-price">
           <strong>{money(p.price)}</strong>
           {p.oldPrice > p.price && (
-            <del title={t("Giá gốc")}>{money(p.oldPrice)}</del>
+            <Typography.Text delete type="secondary" title={t("Giá gốc")}>
+              {money(p.oldPrice)}
+            </Typography.Text>
           )}
         </div>
         <div className="product-card-footer">

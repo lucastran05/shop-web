@@ -15,9 +15,8 @@ export default function ExpandableText({ text, maxLength }) {
             : characters.slice(0, maxLength).join("") + (canExpand ? "…" : "")}
         </span>
         {canExpand && (
-          <button
+          <Typography.Link
             className="expandable-text-toggle"
-            type="button"
             aria-expanded={expanded}
             onClick={(event) => {
               event.stopPropagation();
@@ -25,7 +24,7 @@ export default function ExpandableText({ text, maxLength }) {
             }}
           >
             {expanded ? t("Thu gọn") : t("Xem thêm")}
-          </button>
+          </Typography.Link>
         )}
       </span>
     );

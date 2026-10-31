@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Button, Checkbox, InputNumber, Empty, App } from "antd";
+import { Button, Checkbox, InputNumber, Empty, App, Divider } from "antd";
 import { DeleteOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { useShop } from "../../../shared/shop/useShop";
 import { money } from "../../../shared/utils/format";
@@ -93,7 +93,7 @@ export default function Cart() {
             <p className="muted">
               {t("Phí vận chuyển được tính ở bước đặt hàng.")}
             </p>
-            <hr />
+            <Divider style={{ margin: "22px 0" }} />
             <p className="total">
               <span>{t("Tạm tính")}</span>
               <strong>{money(total)}</strong>

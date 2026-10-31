@@ -13,8 +13,12 @@ function getBrowserSessionStore() {
 const browserSessionStore = getBrowserSessionStore();
 export const apiBaseURL = new URL(
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000",
-  typeof window === "undefined" ? "http://localhost:5000" : window.location.origin,
-).toString().replace(/\/$/, "");
+  typeof window === "undefined"
+    ? "http://localhost:5000"
+    : window.location.origin,
+)
+  .toString()
+  .replace(/\/$/, "");
 
 export const api = createApi({
   baseURL: apiBaseURL,

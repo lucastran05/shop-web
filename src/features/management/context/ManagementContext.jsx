@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ManagementContext } from "./management";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useSaved } from "../../../shared/hooks/useSaved";
+
+export const ManagementContext = createContext(null);
 import { useShop } from "../../../shared/shop/useShop";
 import { api } from "../../../shared/api";
 import { mapProductDetail } from "../../../shared/adapters/productAdapter";

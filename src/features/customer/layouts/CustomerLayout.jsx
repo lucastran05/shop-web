@@ -73,7 +73,8 @@ export default function CustomerLayout() {
       { key: "account", label: t("Tài khoản của tôi") },
       { key: "orders", label: t("Đơn mua") },
       { key: "settings", label: t("Cài đặt") },
-      ...(s.user?.role === "admin" && s.user.is_active !== false
+      ...(["admin", "manager"].includes(s.user?.role) &&
+      s.user.is_active !== false
         ? [{ key: "management", label: t("Quản lý") }]
         : []),
       { key: "logout", label: t("Đăng xuất"), danger: true },

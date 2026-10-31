@@ -18,9 +18,14 @@ export function mapOrder(order, email = "") {
     createdAt: order.created_at,
     completedAt: order.completed_at,
     statusCode: order.status,
-    status: order.payment_status === "refunded" ? "Hoàn tiền" :
-      order.status === "confirmed" && order.deposit_status === "paid" && Number(order.paid_amount) < Number(order.total_amount)
-        ? "Đã cọc" : orderLabels[order.status] || order.status_label || order.status,
+    status:
+      order.payment_status === "refunded"
+        ? "Hoàn tiền"
+        : order.status === "confirmed" &&
+            order.deposit_status === "paid" &&
+            Number(order.paid_amount) < Number(order.total_amount)
+          ? "Đã cọc"
+          : orderLabels[order.status] || order.status_label || order.status,
     total: Number(order.total_amount ?? 0),
     subtotal: Number(order.subtotal ?? 0),
     shipping: Number(order.shipping_fee ?? 0),

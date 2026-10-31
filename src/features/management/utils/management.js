@@ -39,7 +39,9 @@ export function todayRevenue(orders, now = new Date()) {
 }
 export { statusFlow } from "../constants/management";
 export function nextStatuses(order) {
-  return (order.allowed_next_statuses || []).map(({ code }) => orderLabels[code]).filter(Boolean);
+  return (order.allowed_next_statuses || [])
+    .map(({ code }) => orderLabels[code])
+    .filter(Boolean);
 }
 export function transitionOrder(order, status, shipment = {}) {
   if (!nextStatuses(order).includes(status))
@@ -49,7 +51,10 @@ export function transitionOrder(order, status, shipment = {}) {
     (!shipment.tracking?.trim() || !shipment.carrier?.trim())
   )
     throw new Error("Vui lòng nhập đơn vị vận chuyển và mã vận đơn.");
-  if (status === "Đã hoàn thành" && order.paid < order.total)
+  if (
+    status === "Đã hoàn thành" &&
+    Number(order.paid || 0) < Number(order.total)
+  )
     throw new Error("Cần xác nhận đủ thanh toán trước khi hoàn thành.");
   return {
     ...order,

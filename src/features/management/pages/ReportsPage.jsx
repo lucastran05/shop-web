@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DownloadOutlined } from "@ant-design/icons";
 import ReportCharts from "../components/ReportCharts";
 
-import { Input, Select, Table } from "antd";
+import { InputNumber, Select, Table } from "antd";
 import { useManagement } from "../hooks/useManagement";
 
 import { money } from "../../../shared/utils/format";
@@ -59,13 +59,12 @@ export default function ReportsPage() {
   return (
     <>
       <div className="mg-toolbar">
-        <Input
-          type="number"
+        <InputNumber
           aria-label="Năm báo cáo"
           min={2000}
           max={2100}
           value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
+          onChange={(val) => val && setYear(val)}
         />
         <Select
           aria-label="Kỳ báo cáo"

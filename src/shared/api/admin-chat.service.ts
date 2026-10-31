@@ -27,7 +27,10 @@ export interface AdminCreateConversationResponse extends AdminSendMessageRespons
 export class AdminChatService {
   constructor(private readonly http: HttpClient) {}
   delete(id: ID, options?: RequestOptions): Promise<ApiResponse<unknown>> {
-    return this.http.delete(`/api/v1/chat/conversations/${pathId(id)}`, options);
+    return this.http.delete(
+      `/api/v1/chat/conversations/${pathId(id)}`,
+      options,
+    );
   }
   list(
     query?: KeywordQuery,

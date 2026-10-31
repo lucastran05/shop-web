@@ -1,7 +1,7 @@
 import Button from "../components/ManagementButton";
 import { useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
-import { Alert, App, Avatar, Drawer, Dropdown, Spin, Tooltip } from "antd";
+import { Alert, App, Avatar, Badge, Drawer, Dropdown, Spin, Tooltip } from "antd";
 import { userError } from "../../../shared/utils/userError";
 import {
   AppstoreOutlined,
@@ -66,9 +66,11 @@ export default function ManagementLayout() {
         <Icon aria-hidden="true" />
         <span>{label}</span>
         {path === "orders" && (
-          <small>
-            {s.orders.filter((o) => o.status === "Chờ xác nhận").length}
-          </small>
+          <Badge
+            count={s.orders.filter((o) => o.status === "Chờ xác nhận").length}
+            size="small"
+            style={{ marginLeft: "auto" }}
+          />
         )}
       </NavLink>
     </Tooltip>

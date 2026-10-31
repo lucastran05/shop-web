@@ -1,7 +1,7 @@
 import Button from "../components/ManagementButton";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Select, Space, Table, Empty } from "antd";
+import { Select, Space, Table, Empty, Progress } from "antd";
 import { ArrowRightOutlined, TrophyOutlined } from "@ant-design/icons";
 import { useManagement } from "../hooks/useManagement";
 import { orderColumns } from "../components/orderColumns";
@@ -59,13 +59,14 @@ export default function DashboardPage() {
                 <img src={product.image || "/product-placeholder.svg"} alt="" />
                 <div className="mg-top-product-info">
                   <strong>{product.name}</strong>
-                  <div className="mg-chart-track">
-                    <div
-                      style={{
-                        width: `${(product.quantity / topProducts[0].quantity) * 100}%`,
-                      }}
-                    />
-                  </div>
+                  <Progress
+                    percent={Math.round(
+                      (product.quantity / topProducts[0].quantity) * 100,
+                    )}
+                    showInfo={false}
+                    size="small"
+                    strokeColor="#79a962"
+                  />
                 </div>
                 <span className="mg-top-quantity">
                   <strong>{product.quantity}</strong> đã bán

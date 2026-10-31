@@ -52,7 +52,10 @@ export default function ManagementRoutes() {
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="vouchers" element={<VouchersPage />} />
             <Route path="messages" element={<MessagesPage />} />
-            <Route path="reports" element={<Navigate to="/management" replace />} />
+            <Route
+              path="reports"
+              element={<Navigate to="/management" replace />}
+            />
             <Route path="users" element={<AccountsRoute />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route

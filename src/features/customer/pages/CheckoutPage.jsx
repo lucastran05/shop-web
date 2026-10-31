@@ -13,6 +13,8 @@ import {
   Select,
   Spin,
   Tag,
+  Modal,
+  Divider,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -29,7 +31,6 @@ import { calculateCheckout } from "../../../shared/utils/checkout";
 import AddressFields from "../../../shared/components/AddressFields";
 import PaymentPanel from "../components/PaymentPanel";
 import CopyCode from "../../../shared/components/CopyCode";
-import { Modal } from "antd";
 import { api, ApiError } from "../../../shared/api";
 import { mapProductDetail } from "../../../shared/adapters/productAdapter";
 
@@ -104,7 +105,9 @@ export default function Checkout() {
       .then(([order, session]) => {
         if (!active) return;
         setPlaced(order.data);
-        setPaymentSession(session?.data?.order_id === order.data.id ? session.data : null);
+        setPaymentSession(
+          session?.data?.order_id === order.data.id ? session.data : null,
+        );
         setStep(2);
       })
       .catch((error) => {
@@ -638,7 +641,9 @@ export default function Checkout() {
                     : "Đơn hàng đã được tạo",
                 )}
               </h2>
-              <p>{t("Mã đơn")} <CopyCode value={placed.code} /></p>
+              <p>
+                {t("Mã đơn")} <CopyCode value={placed.code} />
+              </p>
             </div>
           </div>
           <div className="receipt-totals">
@@ -940,7 +945,10 @@ export default function Checkout() {
                           setCouponPreview(null);
                         }}
                       />
-                      <Button onClick={() => applyCoupon()} loading={checkingCoupon}>
+                      <Button
+                        onClick={() => applyCoupon()}
+                        loading={checkingCoupon}
+                      >
                         {t("Áp dụng")}
                       </Button>
                     </div>
@@ -959,7 +967,7 @@ export default function Checkout() {
                 <span>{t("Phí giao hàng")}</span>
                 <b>{money(shipping)}</b>
               </p>
-              <hr />
+              <Divider style={{ margin: "22px 0" }} />
               <p className="total">
                 <span>{t("Tổng cộng")}</span>
                 <b>{money(total)}</b>

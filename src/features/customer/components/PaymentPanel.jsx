@@ -43,26 +43,35 @@ export default function PaymentPanel({ order, paymentSession, onOrderUpdate }) {
     }
   }
 
-  const terminal = ["cancelled", "returned", "refunded"].includes(order.statusCode || order.status);
-  usePolling(async () => {
+  const terminal = ["cancelled", "returned", "refunded"].includes(
+    order.statusCode || order.status,
+  );
+  usePolling(
+    async () => {
       const { data } = await api.payments.get(session.id);
       if ("order" in data && "expires_at" in data) {
-            setSession(data);
-            onOrderUpdate?.(data.order);
-            setError(null);
+        setSession(data);
+        onOrderUpdate?.(data.order);
+        setError(null);
       }
-  }, {
-    enabled: Boolean(session?.id) && !terminal && order.payment_status !== "paid" && ["pending", "processing"].includes(session.status),
-    intervalMs: 5000,
-    onError: (requestError) => setError(
-              requestError instanceof ApiError
-                ? userError(requestError)
-                : t("Không thể kiểm tra trạng thái thanh toán"),
-            ),
-  });
+    },
+    {
+      enabled:
+        Boolean(session?.id) &&
+        !terminal &&
+        order.payment_status !== "paid" &&
+        ["pending", "processing"].includes(session.status),
+      intervalMs: 5000,
+      onError: (requestError) =>
+        setError(
+          requestError instanceof ApiError
+            ? userError(requestError)
+            : t("Không thể kiểm tra trạng thái thanh toán"),
+        ),
+    },
+  );
 
-  if (terminal)
-    return null;
+  if (terminal) return null;
   if (order.payment_status === "paid")
     return (
       <Alert
@@ -88,7 +97,11 @@ export default function PaymentPanel({ order, paymentSession, onOrderUpdate }) {
       <Alert
         type={Number(order.paid_amount) > 0 ? "info" : "error"}
         showIcon
-        title={t(Number(order.paid_amount) > 0 ? "Thanh toán phần còn lại" : "Đơn hàng đã được tạo nhưng chưa khởi tạo được thanh toán")}
+        title={t(
+          Number(order.paid_amount) > 0
+            ? "Thanh toán phần còn lại"
+            : "Đơn hàng đã được tạo nhưng chưa khởi tạo được thanh toán",
+        )}
         description={
           <>
             {error && <p>{error}</p>}

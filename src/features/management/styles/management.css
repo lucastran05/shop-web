@@ -274,10 +274,9 @@
 }
 .mg-variant {
   display: grid;
-  grid-template-columns: 132px minmax(140px, 1.5fr) minmax(110px, 1fr) minmax(
-      110px,
-      1fr
-    ) minmax(110px, 1fr) 90px 40px;
+  grid-template-columns:
+    132px minmax(140px, 1.5fr) minmax(110px, 1fr) minmax(110px, 1fr)
+    minmax(110px, 1fr) 90px 40px;
   gap: 12px;
   align-items: start;
 }
@@ -1184,6 +1183,21 @@
 .mg-conversation-search > .ant-btn {
   width: 100%;
   margin-bottom: 12px;
+}
+.mg-order-progress {
+  padding: 20px 0 24px;
+}
+.mg-order-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mg-order-modal .ant-modal-body {
+  max-height: calc(100dvh - 230px);
+}
+.mg-order-hint {
+  margin-bottom: 20px;
 }
 .mg-chat-header > .ant-btn:last-child {
   flex-shrink: 0;

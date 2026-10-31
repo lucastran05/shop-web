@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { PreferencesContext } from "./preferences";
+import { createContext, useState, useEffect } from "react";
 import { getDeviceTimeZone, validTimeZone } from "../utils/format";
 import { normalizeCatalogPreferences } from "./catalogPreferences";
+
+export const PreferencesContext = createContext(null);
 export function PreferencesProvider({ children }) {
   const [catalogPreferences, setCatalogPreferences] = useState(() => {
     try {

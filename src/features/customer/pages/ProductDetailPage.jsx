@@ -16,6 +16,7 @@ import {
   Image,
   Empty,
   Spin,
+  Typography,
 } from "antd";
 import { ShoppingCartOutlined } from "@ant-design/icons";
 import { money } from "../../../shared/utils/format";
@@ -126,7 +127,9 @@ function ProductView({ p, relatedProducts }) {
           <div className="detail-price">
             <strong>{money(v.price)}</strong>
             {v.oldPrice > v.price && (
-              <del title={t("Giá gốc")}>{money(v.oldPrice)}</del>
+              <Typography.Text delete type="secondary" title={t("Giá gốc")}>
+                {money(v.oldPrice)}
+              </Typography.Text>
             )}
           </div>
           <ExpandableText text={p.description} />

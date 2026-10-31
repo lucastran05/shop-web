@@ -98,9 +98,11 @@ export class ChatAndNotificationsService {
       options,
     );
   }
-  markConversationRead(options?: RequestOptions): Promise<ApiResponse<{
-    updatedCount: number;
-  }>> {
+  markConversationRead(options?: RequestOptions): Promise<
+    ApiResponse<{
+      updatedCount: number;
+    }>
+  > {
     return this.http.patch("/api/v1/chat/read-all", undefined, options);
   }
   notifications(

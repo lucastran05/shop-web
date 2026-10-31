@@ -101,7 +101,7 @@ export default function UsersPage() {
             danger
             disabled={!selected.length}
           >
-            Xóa đã chọn
+            Xóa đã chọn ({selected.length})
           </Button>
         </Popconfirm>
       </div>
@@ -129,7 +129,11 @@ export default function UsersPage() {
           {
             title: "Trạng thái",
             dataIndex: "active",
-            render: (active) => (active ? "Hoạt động" : "Đã khóa"),
+            render: (active) => (
+              <Tag color={active ? "success" : "default"}>
+                {active ? "Hoạt động" : "Đã khóa"}
+              </Tag>
+            ),
           },
           {
             title: "Thao tác",
