@@ -6,7 +6,7 @@ import {
   UndoOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import { statusTag } from "../components/orderColumns";
+import { orderColumns, statusTag } from "../components/orderColumns";
 import { useState } from "react";
 import { App, Button, Input, Modal, Space, Table, Tooltip } from "antd";
 import { useManagement } from "../hooks/useManagement";
@@ -125,12 +125,7 @@ export default function PaymentsPage() {
         scroll={{ x: 1230 }}
         dataSource={rows}
         columns={[
-          {
-            title: "Mã đơn",
-            dataIndex: "code",
-            width: 80,
-            render: (value) => <CopyCode value={value} />,
-          },
+          orderColumns[0],
           {
             title: "Khách hàng",
             render: (_, o) => o.recipient?.name || o.owner,

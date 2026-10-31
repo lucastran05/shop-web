@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { App } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Context } from "./shop";
-import { Button, Result, Spin } from "antd";
-import { userError } from "../utils/userError";
+import PageLoading from "../components/PageLoading";
+import RequestError from "../components/RequestError";
 import {
   listAll,
   mapMessage,
@@ -450,17 +450,12 @@ export function ShopProvider({ children }) {
       ...changed.map((item) => updateCartItem(item.key, item)),
     ]);
   }
-  if (authLoading) return <Spin fullscreen />;
+  if (authLoading) return <PageLoading />;
   if (sessionError)
     return (
-      <Result
-        status="warning"
-        title={userError(sessionError)}
-        extra={
-          <Button onClick={() => setSessionAttempt((value) => value + 1)}>
-            Thử lại
-          </Button>
-        }
+      <RequestError
+        error={sessionError}
+        onRetry={() => setSessionAttempt((value) => value + 1)}
       />
     );
   return (

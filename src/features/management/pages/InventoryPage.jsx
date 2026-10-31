@@ -4,13 +4,10 @@ import { EditOutlined, HistoryOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { App, Form, Input, InputNumber, Modal, Table, Tag } from "antd";
 import { useManagement } from "../hooks/useManagement";
-import {
-  filterInventory,
-  stockStatus,
-  isLowStock,
-} from "../utils/management";
+import { filterInventory, stockStatus, isLowStock } from "../utils/management";
 import BulkActions from "../components/BulkActions";
 import { userError } from "../../../shared/utils/userError";
+import ExpandableText from "../../../shared/components/ExpandableText";
 
 export default function InventoryPage() {
   const s = useManagement(),
@@ -109,7 +106,11 @@ export default function InventoryPage() {
         scroll={{ x: 650 }}
         dataSource={filtered}
         columns={[
-          { title: "Sản phẩm", dataIndex: "product" },
+          {
+            title: "Sản phẩm",
+            dataIndex: "product",
+            render: (name) => <ExpandableText text={name} maxLength={40} />,
+          },
           {
             title: "Biến thể",
             dataIndex: "label",
@@ -236,7 +237,11 @@ export default function InventoryPage() {
               dataIndex: "at",
               render: (x) => new Date(x).toLocaleString("vi-VN"),
             },
-            { title: "Sản phẩm", dataIndex: "product" },
+            {
+              title: "Sản phẩm",
+              dataIndex: "product",
+              render: (name) => <ExpandableText text={name} maxLength={40} />,
+            },
             { title: "Biến thể", dataIndex: "variant" },
             { title: "Thay đổi", dataIndex: "delta" },
             { title: "Lý do", dataIndex: "reason" },

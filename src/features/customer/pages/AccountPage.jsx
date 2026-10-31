@@ -3,17 +3,8 @@ import { useTranslation } from "react-i18next";
 import AddressFields from "../../../shared/components/AddressFields";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import {
-  Form,
-  Input,
-  Button,
-  App,
-  Tabs,
-  Modal,
-  Tag,
-  Empty,
-  Popconfirm,
-} from "antd";
+import { Form, Input, Button, App, Modal, Tag, Empty, Popconfirm } from "antd";
+import { UserOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import { useShop } from "../../../shared/shop/useShop";
 import { api, ApiError } from "../../../shared/api";
 function AccountContent() {
@@ -28,8 +19,7 @@ function AccountContent() {
   const [editing, setEditing] = useState(null),
     [addresses, setAddresses] = useState([]),
     [loadingAddresses, setLoadingAddresses] = useState(true),
-    [addressForm] = Form.useForm(),
-    [passwordForm] = Form.useForm();
+    [addressForm] = Form.useForm();
   useEffect(() => {
     let active = true;
     api.addresses
@@ -118,20 +108,6 @@ function AccountContent() {
       message.error(userError(error));
     }
   }
-  async function changePassword(values) {
-    try {
-      await api.auth.changePassword({
-        current_password: values.current,
-        new_password: values.next,
-        new_password_confirmation: values.confirm,
-      });
-      setUser(null);
-      passwordForm.resetFields();
-      message.success(t("Đổi mật khẩu thành công. Vui lòng đăng nhập lại."));
-    } catch (error) {
-      message.error(userError(error));
-    }
-  }
   const profile = (
     <Form layout="vertical" initialValues={user} onFinish={saveProfile}>
       <Form.Item
@@ -165,7 +141,7 @@ function AccountContent() {
         <Empty description={t("Chưa có địa chỉ đã lưu")} />
       ) : (
         addresses.map((a) => (
-          <div className="panel" style={{ marginTop: 16 }} key={a.id}>
+          <div className="account-address" key={a.id}>
             <strong>
               {a.recipient_name} · {a.recipient_phone}
             </strong>
@@ -196,73 +172,30 @@ function AccountContent() {
       )}
     </>
   );
-  const password = (
-    <>
-      <Form
-        form={passwordForm}
-        layout="vertical"
-        style={{ marginTop: 20 }}
-        onFinish={changePassword}
-      >
-        <Form.Item
-          name="current"
-          label={t("Mật khẩu hiện tại")}
-          rules={[{ required: true, message: t("Nhập mật khẩu hiện tại") }]}
-        >
-          <Input.Password autoComplete="off" />
-        </Form.Item>
-        <Form.Item
-          name="next"
-          label={t("Mật khẩu mới")}
-          rules={[
-            { required: true, message: t("Nhập mật khẩu mới") },
-            { min: 8, message: t("Tối thiểu 8 ký tự") },
-          ]}
-        >
-          <Input.Password autoComplete="off" />
-        </Form.Item>
-        <Form.Item
-          name="confirm"
-          label={t("Nhập lại mật khẩu mới")}
-          dependencies={["next"]}
-          rules={[
-            { required: true, message: t("Nhập lại mật khẩu") },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                return !value || value === getFieldValue("next")
-                  ? Promise.resolve()
-                  : Promise.reject(new Error(t("Mật khẩu không khớp")));
-              },
-            }),
-          ]}
-        >
-          <Input.Password autoComplete="off" />
-        </Form.Item>
-        <Button type="primary" htmlType="submit">
-          {t("Đổi mật khẩu")}
-        </Button>
-      </Form>
-    </>
-  );
   return (
-    <div className="page">
+    <div className="page account-page">
       <h1>{t("Tài khoản của bạn")}</h1>
-      <div className="panel" style={{ marginTop: 24 }}>
-        <Tabs
-          items={[
-            {
-              key: "profile",
-              label: t("Thông tin cá nhân"),
-              children: profile,
-            },
-            {
-              key: "addresses",
-              label: t("Địa chỉ nhận hàng"),
-              children: addressPanel,
-            },
-            { key: "password", label: t("Đổi mật khẩu"), children: password },
-          ]}
-        />
+      <div className="account-panel">
+        <section
+          className="account-section"
+          aria-labelledby="account-profile-heading"
+        >
+          <h2 id="account-profile-heading">
+            <UserOutlined aria-hidden="true" />
+            {t("Thông tin cá nhân")}
+          </h2>
+          <div className="account-section-content">{profile}</div>
+        </section>
+        <section
+          className="account-section"
+          aria-labelledby="account-address-heading"
+        >
+          <h2 id="account-address-heading">
+            <EnvironmentOutlined aria-hidden="true" />
+            {t("Địa chỉ nhận hàng")}
+          </h2>
+          <div className="account-section-content">{addressPanel}</div>
+        </section>
       </div>
       <Modal
         open={!!editing}

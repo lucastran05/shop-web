@@ -192,29 +192,7 @@ export default function ProductReviews({ productId }) {
       {/* Khu vực viết đánh giá: chỉ khách hàng đã mua và nhận hàng thành công mới viết được */}
       <div className="review-action-area" style={{ marginBottom: 24 }}>
         {!s.user ? (
-          <div className="review-permission-box not-logged-in">
-            <Alert
-              type="info"
-              showIcon
-              message={t("Đánh giá sản phẩm")}
-              description={
-                <span>
-                  <Link
-                    to={
-                      "/login?next=" +
-                      encodeURIComponent("/products/" + productId)
-                    }
-                  >
-                    {t("Đăng nhập để đánh giá")}
-                  </Link>
-                  {" — "}
-                  {t(
-                    "Chỉ khách hàng đã mua và nhận hàng thành công mới có thể gửi nhận xét.",
-                  )}
-                </span>
-              }
-            />
-          </div>
+          <></>
         ) : canWriteReview ? (
           <div className="review-form-wrapper">
             <Form
@@ -321,30 +299,18 @@ export default function ProductReviews({ productId }) {
           </div>
         ) : (hasPurchased && hasInTransitOrder) ||
           apiEligibility?.reason === "not_delivered" ? null : (
-          <div className="review-permission-box not-purchased">
-            <Alert
-              type="warning"
-              showIcon
-              message={t("Chưa thể đánh giá sản phẩm")}
-              description={t(
-                "Chỉ những khách hàng đã mua sản phẩm này và nhận hàng thành công mới có thể gửi đánh giá.",
-              )}
-            />
-          </div>
+          <></>
         )}
       </div>
 
       {/* Danh sách đánh giá của những người khác (luôn hiển thị khi xem sản phẩm) */}
       <div className="reviews-list">
-        <h3>{t("Đánh giá từ khách hàng")}</h3>
         {reviews.length ? (
           reviews.map((r) => (
             <article className="review-item" key={r.id}>
               <div className="review-author-line">
                 <strong>{r.name}</strong>
-                <Tag color="cyan" style={{ marginLeft: 8 }}>
-                  ✓ {t("Đã mua hàng")}
-                </Tag>
+               
               </div>
               <Rate disabled value={r.rating} />
               <time dateTime={r.createdAt}>

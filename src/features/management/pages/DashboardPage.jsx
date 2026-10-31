@@ -1,38 +1,90 @@
 import Button from "../components/ManagementButton";
 import { Link } from "react-router-dom";
-import { Space, Table } from "antd";
+import { useState } from "react";
+import { Select, Space, Table, Empty } from "antd";
+import { ArrowRightOutlined, TrophyOutlined } from "@ant-design/icons";
 import { useManagement } from "../hooks/useManagement";
 import { orderColumns } from "../components/orderColumns";
 
 import Stats from "../components/Stats";
 import ReportCharts from "../components/ReportCharts";
+import { buildDashboardData, orderPeriod } from "../utils/dashboard";
 export default function DashboardPage() {
   const s = useManagement();
-  const year = new Date().getFullYear();
-  const orders = s.orders.filter(
-    (order) => new Date(order.createdAt).getFullYear() === year,
-  );
-  const rows = Array.from({ length: 12 }, (_, month) => ({
-    id: month,
-    label: `T${month + 1}`,
-    revenue: orders
-      .filter(
-        (order) =>
-          order.status === "Đã hoàn thành" &&
-          new Date(order.createdAt).getMonth() === month,
-      )
-      .reduce((sum, order) => sum + order.total, 0),
-  }));
+  const currentYear = orderPeriod(new Date()).year;
+  const [year, setYear] = useState(currentYear);
+  const years = [
+    ...new Set([
+      currentYear,
+      ...s.orders
+        .map((order) => orderPeriod(order.createdAt)?.year)
+        .filter(Boolean),
+    ]),
+  ].sort((a, b) => b - a);
+  const { rows, orders, topProducts } = buildDashboardData(s.orders, year);
   return (
     <>
+      <h1 className="mg-dashboard-title">Tổng quan kinh doanh</h1>
       <Stats orders={s.orders} products={s.products} showToday />
-      <p className="mg-period-caption">Hoạt động kinh doanh năm {year}</p>
+      <div className="mg-dashboard-period">
+        <div>
+          <h2>Phân tích kinh doanh</h2>
+          <p>Thống kê theo ngày tạo đơn · Giờ Việt Nam</p>
+        </div>
+        <Select
+          aria-label="Năm thống kê"
+          value={year}
+          onChange={setYear}
+          options={years.map((value) => ({ value, label: `Năm ${value}` }))}
+        />
+      </div>
       <ReportCharts rows={rows} orders={orders} />
+      <section
+        className="mg-chart-card mg-top-products"
+        aria-label="Sản phẩm bán chạy"
+      >
+        <div className="mg-chart-heading">
+          <div>
+            <h2>
+              <TrophyOutlined /> Sản phẩm bán chạy
+            </h2>
+            <p>Top 5 theo số lượng trong đơn hoàn thành · Năm {year}</p>
+          </div>
+        </div>
+        {topProducts.length ? (
+          <div className="mg-top-product-list">
+            {topProducts.map((product, index) => (
+              <div className="mg-top-product" key={product.id}>
+                <span className="mg-top-rank">{index + 1}</span>
+                <img src={product.image || "/product-placeholder.svg"} alt="" />
+                <div className="mg-top-product-info">
+                  <strong>{product.name}</strong>
+                  <div className="mg-chart-track">
+                    <div
+                      style={{
+                        width: `${(product.quantity / topProducts[0].quantity) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <span className="mg-top-quantity">
+                  <strong>{product.quantity}</strong> đã bán
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="Chưa có sản phẩm bán ra từ đơn hoàn thành trong năm này"
+          />
+        )}
+      </section>
       <div className="mg-section">
         <Space className="mg-toolbar">
           <h2>Đơn hàng gần đây</h2>
           <Link to="/management/orders">
-            <Button>Quản lý đơn hàng</Button>
+            <Button icon={<ArrowRightOutlined />}>Quản lý đơn hàng</Button>
           </Link>
         </Space>
         <Table

@@ -2,8 +2,8 @@ import { userError } from "../../../shared/utils/userError";
 import { useTranslation } from "react-i18next";
 import ExpandableText from "../../../shared/components/ExpandableText";
 import ProductReviews from "../components/ProductReviews";
-import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Breadcrumb,
   Radio,
@@ -25,6 +25,16 @@ import { api, ApiError } from "../../../shared/api";
 import { mapProductDetail } from "../../../shared/adapters/productAdapter";
 function ProductView({ p, relatedProducts }) {
   const { t } = useTranslation();
+  const { hash } = useLocation();
+  useLayoutEffect(() => {
+    if (hash === "#reviews") {
+      document
+        .getElementById("reviews")
+        ?.scrollIntoView({ block: "start", behavior: "instant" });
+    } else {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [p.id, hash]);
   const [variantId, setVariantId] = useState(p.variants[0]?.id),
     [qty, setQty] = useState(1),
     [picture, setPicture] = useState(0);
@@ -59,18 +69,36 @@ function ProductView({ p, relatedProducts }) {
     }
   }
   return (
-    <div className="page">
+    <div className="page product-detail-page">
       <Breadcrumb
+        className="product-breadcrumb"
         items={[
           { title: <Link to="/">{t("Trang chủ")}</Link> },
-          { title: t(p.category) },
-          { title: p.name },
+          {
+            title: (
+              <Link
+                className="breadcrumb-label breadcrumb-category"
+                title={t(p.category)}
+                to={"/?category=" + encodeURIComponent(p.category)}
+              >
+                {t(p.category)}
+              </Link>
+            ),
+          },
+          {
+            title: (
+              <span className="breadcrumb-label" title={p.name}>
+                {p.name}
+              </span>
+            ),
+          },
         ]}
       />
       <div className="detail-grid panel">
         <div className="detail-image">
           {pictures[picture] ? (
             <Image
+              classNames={{ popup: { root: "product-image-preview" } }}
               src={pictures[picture]}
               alt={`${p.name} · ${v.label}`}
               fallback="/product-placeholder.svg"
@@ -96,7 +124,10 @@ function ProductView({ p, relatedProducts }) {
           <Tag>{t(p.category)}</Tag>
           <h1>{p.name}</h1>
           <div className="detail-price">
-            {money(v.price)} {v.oldPrice && <del>{money(v.oldPrice)}</del>}
+            <strong>{money(v.price)}</strong>
+            {v.oldPrice > v.price && (
+              <del title={t("Giá gốc")}>{money(v.oldPrice)}</del>
+            )}
           </div>
           <ExpandableText text={p.description} />
           <Tag color={v.stock ? "success" : "default"}>
@@ -104,13 +135,7 @@ function ProductView({ p, relatedProducts }) {
               ? t("Còn {{count}} sản phẩm", { count: v.stock })
               : t("Tạm hết hàng")}
           </Tag>
-          {p.deposit && (
-            <Tag color="#468432">
-              {t("Hỗ trợ đặt cọc {{percent}}%", {
-                percent: p.deposit_rate,
-              })}
-            </Tag>
-          )}
+
           <h4>{t("Phân loại sản phẩm")}</h4>
           <Radio.Group
             className="variant-options"
@@ -126,7 +151,9 @@ function ProductView({ p, relatedProducts }) {
               label: (
                 <span className="variant-option">
                   <img src={v.image} alt="" />
-                  <span>{t(v.label) + (v.color ? " · " + t(v.color) : "")}</span>
+                  <span>
+                    {t(v.label) + (v.color ? " · " + t(v.color) : "")}
+                  </span>
                 </span>
               ),
             }))}

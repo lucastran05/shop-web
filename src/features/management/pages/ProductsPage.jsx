@@ -20,6 +20,8 @@ import { useManagement } from "../hooks/useManagement";
 import { money } from "../../../shared/utils/format";
 import ProductImageInput from "../components/ProductImageInput";
 import { userError } from "../../../shared/utils/userError";
+import { getVariantImages } from "../../../shared/adapters/productAdapter";
+import ExpandableText from "../../../shared/components/ExpandableText";
 
 export default function ProductsPage() {
   const s = useManagement(),
@@ -54,12 +56,13 @@ export default function ProductsPage() {
     setOpen(true);
   }
   async function save(values) {
+    const images = getVariantImages(values.variants);
     const p = {
       ...editing,
       ...values,
       id: editing?.id || Date.now(),
-      image: values.image || "",
-      images: values.image ? [values.image] : [],
+      image: images[0] || "",
+      images,
       attributes: editing?.attributes || [],
       variants: values.variants.map((v) => ({
         ...editing?.variants.find((variant) => variant.id === v.id),
@@ -128,7 +131,7 @@ export default function ProductsPage() {
             title: "Sản phẩm",
             dataIndex: "name",
             render: (name, p) => (
-              <Space>
+              <Space align="start">
                 <Image
                   className="mg-thumb"
                   src={p.image}
@@ -136,7 +139,7 @@ export default function ProductsPage() {
                   width={44}
                   height={44}
                 />
-                <span>{name}</span>
+                <ExpandableText text={name} maxLength={40} />
               </Space>
             ),
           },
@@ -246,14 +249,7 @@ export default function ProductsPage() {
               </Form.Item>
             </section>
             <section className="mg-form-section">
-              <h3>Ảnh & hiển thị</h3>
-              <Form.Item name="image" label="Ảnh sản phẩm">
-                <ProductImageInput
-                  onLoadingChange={(loading) =>
-                    setImageLoading((count) => count + (loading ? 1 : -1))
-                  }
-                />
-              </Form.Item>
+              <h3>Hiển thị & đặt cọc</h3>
               <Space wrap>
                 <Form.Item
                   name="active"
@@ -332,6 +328,35 @@ export default function ProductsPage() {
                         rules={[{ required: true, message: "Nhập giá" }]}
                       >
                         <InputNumber min={0} precision={0} />
+                      </Form.Item>
+                      <Form.Item
+                        name={[field.name, "oldPrice"]}
+                        label="Giá gốc (đ)"
+                        tooltip="Để trống nếu không hiển thị giá gốc. Giá gốc phải lớn hơn giá bán."
+                        dependencies={[["variants", field.name, "price"]]}
+                        rules={[
+                          ({ getFieldValue }) => ({
+                            validator(_, value) {
+                              return value == null ||
+                                value >
+                                  getFieldValue([
+                                    "variants",
+                                    field.name,
+                                    "price",
+                                  ])
+                                ? Promise.resolve()
+                                : Promise.reject(
+                                    new Error("Giá gốc phải lớn hơn giá bán"),
+                                  );
+                            },
+                          }),
+                        ]}
+                      >
+                        <InputNumber
+                          min={1}
+                          precision={0}
+                          placeholder="Không áp dụng"
+                        />
                       </Form.Item>
                       <Form.Item
                         name={[field.name, "stock"]}

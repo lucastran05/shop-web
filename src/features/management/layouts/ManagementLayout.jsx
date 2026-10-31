@@ -1,13 +1,16 @@
 import Button from "../components/ManagementButton";
 import { useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
-import { Alert, App, Avatar, Drawer, Spin } from "antd";
+import { Alert, App, Avatar, Drawer, Dropdown, Spin, Tooltip } from "antd";
 import { userError } from "../../../shared/utils/userError";
 import {
   AppstoreOutlined,
   DatabaseOutlined,
   InboxOutlined,
   MenuOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  ExportOutlined,
   MessageOutlined,
   ShoppingOutlined,
   TeamOutlined,
@@ -15,7 +18,7 @@ import {
   LogoutOutlined,
   ShopOutlined,
   SettingOutlined,
-  ReloadOutlined,
+  DownOutlined,
   TagsOutlined,
 } from "@ant-design/icons";
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
@@ -43,7 +46,7 @@ export default function ManagementLayout() {
   const s = useManagement(),
     location = useLocation();
   const [mobile, setMobile] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const { message } = App.useApp();
   const pathname = location.pathname.replace(/\/+$/, "");
   const contentClass =
@@ -53,26 +56,28 @@ export default function ManagementLayout() {
     }[pathname] || "";
   if (!s.session) return <Navigate to="/management/login" replace />;
   const navLink = ([path, label, Icon]) => (
-    <NavLink
-      key={path}
-      end
-      to={`/management${path ? "/" + path : ""}`}
-      onClick={() => setMobile(false)}
-    >
-      <Icon aria-hidden="true" />
-      <span>{label}</span>
-      {path === "orders" && (
-        <small>
-          {s.orders.filter((o) => o.status === "Chờ xác nhận").length}
-        </small>
-      )}
-    </NavLink>
+    <Tooltip key={path} title={label} placement="right">
+      <NavLink
+        end
+        to={`/management${path ? "/" + path : ""}`}
+        aria-label={label}
+        onClick={() => setMobile(false)}
+      >
+        <Icon aria-hidden="true" />
+        <span>{label}</span>
+        {path === "orders" && (
+          <small>
+            {s.orders.filter((o) => o.status === "Chờ xác nhận").length}
+          </small>
+        )}
+      </NavLink>
+    </Tooltip>
   );
-  const nav = (
+  const renderNav = (compact = false) => (
     <>
-      <Link className="mg-brand" to="/management">
+      <Link className="mg-brand" to="/management" aria-label={shopConfig.name}>
         <span className="mg-brand-mark">
-          <ShopOutlined />
+          <img src="/logo/logo.svg" alt="" width="40" height="36" />
         </span>
         <span className="mg-brand-text">
           <span className="mg-brand-name">{shopConfig.name}</span>
@@ -84,10 +89,11 @@ export default function ManagementLayout() {
         {navigationGroups.map((group) => (
           <details
             className="mg-nav-group"
-            key={`${pathname}-${group.label}`}
-            open={group.paths.some(
-              (path) => pathname === `/management/${path}`,
-            )}
+            key={`${pathname}-${compact}-${group.label}`}
+            open={
+              compact ||
+              group.paths.some((path) => pathname === `/management/${path}`)
+            }
           >
             <summary>{group.label}</summary>
             {navigation
@@ -100,14 +106,22 @@ export default function ManagementLayout() {
           </details>
         ))}
       </nav>
-      <div className="mg-sidebar-bottom">
-        <Link to="/">↗ Xem cửa hàng</Link>
-      </div>
     </>
   );
   return (
-    <div className="mg-root">
-      <aside className="mg-sidebar">{nav}</aside>
+    <div className={collapsed ? "mg-root mg-sidebar-collapsed" : "mg-root"}>
+      <aside className="mg-sidebar" id="management-sidebar">
+        {renderNav(collapsed)}
+        <Button
+          className="mg-sidebar-toggle"
+          type="text"
+          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          aria-label={collapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+          aria-expanded={!collapsed}
+          aria-controls="management-sidebar"
+          onClick={() => setCollapsed((value) => !value)}
+        />
+      </aside>
       <Drawer
         rootClassName="mg-navigation-drawer"
         title="Điều hướng"
@@ -115,7 +129,7 @@ export default function ManagementLayout() {
         open={mobile}
         onClose={() => setMobile(false)}
       >
-        {nav}
+        {renderNav()}
       </Drawer>
       <div className="mg-workspace">
         <header className="mg-header">
@@ -127,43 +141,50 @@ export default function ManagementLayout() {
               onClick={() => setMobile(true)}
             />
           </div>
-          <div className="mg-profile">
-            <Button
-              type="text"
-              aria-label="Làm mới dữ liệu"
-              icon={<ReloadOutlined />}
-              loading={refreshing}
-              onClick={async () => {
-                setRefreshing(true);
-                try {
-                  await s.refresh();
-                } finally {
-                  setRefreshing(false);
-                }
-              }}
-            />
-            <Avatar style={{ background: "#eef5e9", color: "#468432" }}>
-              {s.session.name?.trim().charAt(0).toUpperCase()}
-            </Avatar>
-            <span>
-              <strong>{s.session.name}</strong>
-              <small>
-                {s.session.role === "admin"
-                  ? "Quản trị viên"
-                  : "Quản lý cửa hàng"}
-              </small>
-            </span>
-            <Button
-              type="text"
-              aria-label="Đăng xuất quản trị"
-              icon={<LogoutOutlined />}
-              onClick={() =>
-                s
-                  .setSession(null)
-                  .catch((error) => message.error(userError(error)))
-              }
-            />
-          </div>
+          <Dropdown
+            trigger={["click"]}
+            placement="bottomRight"
+            menu={{
+              items: [
+                {
+                  key: "storefront",
+                  icon: <ExportOutlined />,
+                  label: <Link to="/">Xem cửa hàng</Link>,
+                },
+                { type: "divider" },
+                {
+                  key: "logout",
+                  icon: <LogoutOutlined />,
+                  label: "Đăng xuất",
+                  danger: true,
+                  onClick: () =>
+                    s
+                      .setSession(null)
+                      .catch((error) => message.error(userError(error))),
+                },
+              ],
+            }}
+          >
+            <button
+              type="button"
+              className="mg-profile"
+              aria-label="Menu tài khoản"
+              aria-haspopup="menu"
+            >
+              <Avatar style={{ background: "#eef5e9", color: "#468432" }}>
+                {s.session.name?.trim().charAt(0).toUpperCase()}
+              </Avatar>
+              <span>
+                <strong>{s.session.name}</strong>
+                <small>
+                  {s.session.role === "admin"
+                    ? "Quản trị viên"
+                    : "Quản lý cửa hàng"}
+                </small>
+              </span>
+              <DownOutlined aria-hidden="true" />
+            </button>
+          </Dropdown>
         </header>
         <main className={`mg-main ${contentClass}`}>
           {s.error && (

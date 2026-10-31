@@ -272,7 +272,10 @@ export function ManagementProvider({ children }) {
             ? ""
             : variant.image || "",
         price: variant.price,
-        old_price: variant.oldPrice ?? variant.old_price ?? null,
+        old_price:
+          variant.oldPrice !== undefined
+            ? variant.oldPrice
+            : (variant.old_price ?? null),
         stock_quantity: variant.stock,
       })),
     };

@@ -2,7 +2,6 @@ import { userError } from "../../../shared/utils/userError";
 import Button from "../components/ManagementButton";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { App, Form, Input } from "antd";
-import { ShopOutlined } from "@ant-design/icons";
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
 import { useManagement } from "../hooks/useManagement";
 import { useState } from "react";
@@ -47,7 +46,7 @@ export default function LoginPage() {
     <div className="mg-login">
       <div className="mg-login-card">
         <span className="mg-brand-mark">
-          <ShopOutlined />
+          <img src="/logo/logo.svg" alt="" width="54" height="48" />
         </span>
         <p className="mg-eyebrow">{shopConfig.name}</p>
         <h1>Đăng nhập quản lý</h1>

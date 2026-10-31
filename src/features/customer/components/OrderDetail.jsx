@@ -1,4 +1,5 @@
 import { Button, Modal, Tag, Timeline } from "antd";
+import { CloseOutlined, StarOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePreferences } from "../../../shared/preferences/usePreferences";
@@ -19,7 +20,11 @@ export default function OrderDetail({ order, onClose }) {
       width={1080}
       className="order-detail-modal"
       onCancel={onClose}
-      footer={<Button onClick={onClose}>{t("Đóng")}</Button>}
+      footer={
+        <Button icon={<CloseOutlined />} onClick={onClose}>
+          {t("Đóng")}
+        </Button>
+      }
     >
       {order && (
         <>
@@ -58,6 +63,7 @@ export default function OrderDetail({ order, onClose }) {
                             className="order-review-btn"
                             to={`/products/${item.id}#reviews`}
                           >
+                            <StarOutlined aria-hidden="true" />{" "}
                             {t("Viết đánh giá")}
                           </Link>
                         )}

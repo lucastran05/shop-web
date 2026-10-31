@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AutoComplete, Input } from "antd";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
 import { matchesProduct } from "../../../shared/utils/search";
@@ -9,14 +9,21 @@ export default function HeaderSearch() {
   const { t } = useTranslation(),
     { products } = useShop(),
     navigate = useNavigate(),
+    location = useLocation(),
     [params] = useSearchParams();
-  const [value, setValue] = useState(params.get("search") || "");
+  const [value, setValue] = useState(
+    params.get("search") || params.get("q") || "",
+  );
   const results = value.trim()
     ? products.filter((p) => matchesProduct(p, value, true))
     : [];
   function search() {
-    const next = new URLSearchParams();
+    const next = new URLSearchParams(
+      location.pathname === "/" ? params : undefined,
+    );
+    next.delete("q");
     if (value.trim()) next.set("search", value.trim());
+    else next.delete("search");
     navigate("/" + (next.size ? "?" + next.toString() : ""));
   }
   const options = results.slice(0, 6).map((p) => ({

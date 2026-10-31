@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
-import { Spin } from "antd";
+import PageLoading from "../../shared/components/PageLoading";
 const CustomerRoutes = lazy(
   () => import("../../features/customer/routes/CustomerRoutes"),
 );
@@ -10,7 +10,7 @@ const ManagementRoutes = lazy(
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<Spin fullscreen />}>
+    <Suspense fallback={<PageLoading />}>
       <Routes>
         <Route path="/management/*" element={<ManagementRoutes />} />
         <Route path="*" element={<CustomerRoutes />} />

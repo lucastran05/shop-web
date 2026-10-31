@@ -7,7 +7,29 @@ import {
 } from "../../../shared/constants/shop";
 import { useEffect, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import { Tabs, Empty, Tag, Button, Modal, Pagination, Spin } from "antd";
+import {
+  Tabs,
+  Empty,
+  Tag,
+  Button,
+  Modal,
+  Pagination,
+  Spin,
+  Tooltip,
+} from "antd";
+import {
+  ShoppingOutlined,
+  ArrowRightOutlined,
+  EyeOutlined,
+  CloseCircleOutlined,
+  StarOutlined,
+  ClockCircleOutlined,
+  InboxOutlined,
+  TruckOutlined,
+  CheckCircleOutlined,
+  UndoOutlined,
+  CalendarOutlined,
+} from "@ant-design/icons";
 import { useShop } from "../../../shared/shop/useShop";
 import { money } from "../../../shared/utils/format";
 import OrderDetail from "../components/OrderDetail";
@@ -15,6 +37,16 @@ import CopyCode from "../../../shared/components/CopyCode";
 import { api } from "../../../shared/api";
 import { App } from "antd";
 import { userError } from "../../../shared/utils/userError";
+import RequestError from "../../../shared/components/RequestError";
+
+const statusAppearance = {
+  "Chờ xác nhận": { icon: <ClockCircleOutlined />, color: "gold" },
+  "Đang chuẩn bị hàng": { icon: <InboxOutlined />, color: "cyan" },
+  "Đang giao hàng": { icon: <TruckOutlined />, color: "blue" },
+  "Đã hoàn thành": { icon: <CheckCircleOutlined />, color: "green" },
+  "Đã hủy": { icon: <CloseCircleOutlined />, color: "default" },
+  "Hoàn hàng / Hoàn tiền": { icon: <UndoOutlined />, color: "purple" },
+};
 export default function Orders() {
   const { t } = useTranslation();
   const { timeZone } = usePreferences();
@@ -24,6 +56,9 @@ export default function Orders() {
     [selectedDetail, setDetail] = useState(null),
     [cancel, setCancel] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+  const [cancelling, setCancelling] = useState(false);
   const [page, setPage] = useState(1);
   const refreshOrders = s.refreshOrders;
   const userId = s.user?.id;
@@ -31,14 +66,19 @@ export default function Orders() {
     if (!userId) return;
     let active = true;
     refreshOrders()
-      .catch((error) => message.error(t(userError(error))))
+      .then(() => {
+        if (active) setLoadError(null);
+      })
+      .catch((error) => {
+        if (active) setLoadError(error);
+      })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [userId, refreshOrders, message, t]);
+  }, [userId, refreshOrders, attempt]);
   const detail =
     selectedDetail && s.orders.find((o) => o.id === selectedDetail.id);
   if (!s.user) return <Navigate to="/login?next=/orders" replace />;
@@ -48,19 +88,28 @@ export default function Orders() {
     );
   const currentPage = Math.min(page, Math.max(1, Math.ceil(orders.length / 5)));
   async function cancelOrder() {
+    if (cancelling) return;
+    setCancelling(true);
     try {
       await api.orders.cancel(cancel.id, {
         reason: "Khách hàng yêu cầu hủy đơn",
       });
-      await s.refreshOrders();
       setCancel(null);
+      await s.refreshOrders().catch(setLoadError);
     } catch (error) {
       message.error(t(userError(error)));
+    } finally {
+      setCancelling(false);
     }
   }
   return (
-    <div className="page">
-      <h1>{t("Đơn mua của bạn")}</h1>
+    <div className="page orders-page">
+      <div className="orders-heading">
+        <h1>{t("Đơn mua của bạn")}</h1>
+        <Button href="/#collection" icon={<ArrowRightOutlined />}>
+          {t("Tiếp tục mua sắm")}
+        </Button>
+      </div>
       <Tabs
         activeKey={tab}
         onChange={(value) => {
@@ -69,22 +118,49 @@ export default function Orders() {
         }}
         items={["all", ...orderStatuses].map((v) => ({
           key: v,
-          label: v === "all" ? t("Tất cả") + " (" + all.length + ")" : t(v),
+          icon: v === "all" ? <ShoppingOutlined /> : statusAppearance[v]?.icon,
+          label: (
+            <span className="orders-tab-label">
+              {v === "all" ? t("Tất cả") : t(v)}{" "}
+              <span>
+                {v === "all"
+                  ? all.length
+                  : all.filter((o) => orderStatusGroup(o.status) === v).length}
+              </span>
+            </span>
+          ),
         }))}
       />
+      {loadError && !loading && (
+        <RequestError
+          error={loadError}
+          onRetry={() => {
+            setLoading(true);
+            setAttempt((value) => value + 1);
+          }}
+        />
+      )}
       {loading ? (
-        <Spin />
+        <div className="orders-loading" role="status">
+          <Spin size="large" />
+          <p>{t("Đang tải…")}</p>
+        </div>
       ) : orders.length ? (
         orders.slice((currentPage - 1) * 5, currentPage * 5).map((o) => (
-          <section className="panel order" key={o.id}>
+          <section className="order-card" key={o.id}>
             <div className="order-head">
-              <strong>
-                {t("Đơn hàng")} <CopyCode value={o.code} />
-              </strong>
-              <span>{formatDateTime(o.createdAt, timeZone)}</span>
-              <Tag color={o.status === "Đã hủy" ? "default" : "orange"}>
+              <div className="order-code">
+                <InboxOutlined aria-hidden="true" />
+                <strong title={o.code}>{o.code}</strong>
+                <CopyCode value={o.code} />
+              </div>
+              <Tag {...statusAppearance[orderStatusGroup(o.status)]}>
                 {t(orderStatusGroup(o.status))}
               </Tag>
+            </div>
+            <div className="order-date">
+              <CalendarOutlined aria-hidden="true" />
+              {formatDateTime(o.createdAt, timeZone)}
             </div>
             {o.items.map((p) => {
               const isDelivered = [
@@ -94,50 +170,70 @@ export default function Orders() {
                 "Giao thành công",
               ].includes(o.statusCode || o.status);
               return (
-                <div className="mini-product" key={p.key}>
-                  <img src={p.image} alt={p.name} />
-                  <div>
+                <div className="order-product" key={p.key}>
+                  <img
+                    src={p.image || "/product-placeholder.svg"}
+                    alt={p.name}
+                  />
+                  <div className="order-product-info">
                     <Link to={"/products/" + p.id}>{p.name}</Link>
                     <small>
-                      {t(p.color)} / {t(p.variantLabel)} × {p.quantity}
+                      {[p.color, p.variantLabel]
+                        .filter(Boolean)
+                        .map((value) => t(value))
+                        .join(" / ")}{" "}
+                      · {t("Số lượng")}: {p.quantity}
                     </small>
                   </div>
                   <b>{money(p.price * p.quantity)}</b>
                   {isDelivered && (
-                    <Link
-                      to={"/products/" + p.id + "#reviews"}
-                      className="order-review-btn"
-                      style={{
-                        marginLeft: 12,
-                        fontSize: "13px",
-                        whiteSpace: "nowrap",
-                        color: "#468432",
-                      }}
-                    >
-                      ⭐ {t("Đánh giá")}
-                    </Link>
+                    <Tooltip title={t("Đánh giá")}>
+                      <Link
+                        to={"/products/" + p.id + "#reviews"}
+                        className="order-action-link"
+                        aria-label={t("Đánh giá") + ": " + p.name}
+                      >
+                        <StarOutlined />
+                      </Link>
+                    </Tooltip>
                   )}
                 </div>
               );
             })}
             <div className="order-bottom">
-              <strong>
-                {t("Tổng tiền")}: {money(o.total)}
-              </strong>
-              <Button onClick={() => setDetail(o)}>{t("Xem chi tiết")}</Button>
+              <div className="order-card-total">
+                <span>{t("Tổng tiền")}</span>
+                <strong>{money(o.total)}</strong>
+              </div>
+              <Tooltip title={t("Xem chi tiết")}>
+                <Button
+                  className="order-action"
+                  type="text"
+                  icon={<EyeOutlined />}
+                  aria-label={t("Xem chi tiết")}
+                  onClick={() => setDetail(o)}
+                />
+              </Tooltip>
               {o.allowed_actions?.includes("cancel") && (
-                <Button danger onClick={() => setCancel(o)}>
-                  {t("Hủy đơn")}
-                </Button>
+                <Tooltip title={t("Hủy đơn")}>
+                  <Button
+                    className="order-action"
+                    type="text"
+                    icon={<CloseCircleOutlined />}
+                    aria-label={t("Hủy đơn")}
+                    danger
+                    onClick={() => setCancel(o)}
+                  />
+                </Tooltip>
               )}
             </div>
           </section>
         ))
-      ) : (
+      ) : !loadError ? (
         <Empty description={t("Chưa có đơn hàng trong mục này")}>
           <Link to="/">{t("Tiếp tục mua sắm")}</Link>
         </Empty>
-      )}
+      ) : null}
       {!loading && (
         <Pagination
           className="pagination"
@@ -158,6 +254,11 @@ export default function Orders() {
         okText={t("Xác nhận hủy")}
         cancelText={t("Giữ đơn")}
         okButtonProps={{ danger: true }}
+        confirmLoading={cancelling}
+        cancelButtonProps={{ disabled: cancelling }}
+        closable={!cancelling}
+        maskClosable={!cancelling}
+        keyboard={!cancelling}
       >
         <p>{t("Chỉ có thể hủy khi shop chưa xác nhận đơn.")}</p>
       </Modal>

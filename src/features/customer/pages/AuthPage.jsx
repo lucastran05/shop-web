@@ -1,6 +1,5 @@
 import { userError } from "../../../shared/utils/userError";
 import { useTranslation } from "react-i18next";
-import { shopConfig } from "../../../shared/constants/shop";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Form, Input, Tabs, App } from "antd";
@@ -65,8 +64,15 @@ export default function Auth() {
   return (
     <div className="auth-page">
       <div className="auth-art">
-        <h1>{shopConfig.name}</h1>
-        <p>{t("Đăng nhập để đặt hàng và theo dõi đơn hàng của bạn.")}</p>
+        <h1>
+          <img
+            className="auth-logo"
+            src="/logo/logo-full-text.svg"
+            alt="Bloomora"
+            width="1774"
+            height="887"
+          />
+        </h1>
       </div>
       <div className="auth-form">
         <h2>{t("Tài khoản khách hàng")}</h2>

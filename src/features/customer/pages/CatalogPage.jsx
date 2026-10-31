@@ -2,75 +2,63 @@ import { useShopConfig } from "../../../shared/shop/useShopConfig";
 import { useSearchParams } from "react-router-dom";
 import {
   Button,
-  Input,
   Select,
   Checkbox,
-  Slider,
   InputNumber,
   Empty,
   Pagination,
-  Tag,
   Alert,
 } from "antd";
-import {
-  LeftOutlined,
-  RightOutlined,
-  ShoppingOutlined,
-} from "@ant-design/icons";
-import { useEffect, useRef, useState } from "react";
+import { ArrowRightOutlined, FilterOutlined } from "@ant-design/icons";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
-import { matchesProduct } from "../../../shared/utils/search";
-import { money } from "../../../shared/utils/format";
+import {
+  getCatalogFilters,
+  filterCatalogProducts,
+  MAX_FILTER_PRICE,
+} from "../../../shared/utils/search";
 import ProductCard from "../components/ProductCard";
+import FeaturedProducts from "../components/FeaturedProducts";
+import { usePreferences } from "../../../shared/preferences/usePreferences";
 export default function Catalog() {
   const { t } = useTranslation(),
     { products, categories, catalogLoading, catalogError } = useShop(),
     shopConfig = useShopConfig(),
     [params, setParams] = useSearchParams();
-  const featuredRow = useRef(null);
-  const featuredProducts = products.filter((product) => product.featured);
-  const q = params.get("q") || "",
-    search = params.get("search") || "",
-    category = params.get("category") || "",
-    featured = params.get("featured") === "true";
-  const maxCatalogPrice = Math.max(1, ...products.map((p) => p.price)),
-    [price, setPrice] = useState([0, 1]),
-    [stock, setStock] = useState(false),
-    [sort, setSort] = useState("popular"),
-    [pageSize, setPageSize] = useState(6),
-    [pageState, setPage] = useState({ query: params.toString(), value: 1 });
-  useEffect(() => {
-    setPrice((current) => (current[1] === 1 ? [0, maxCatalogPrice] : current));
-  }, [maxCatalogPrice]);
+  const { catalogPreferences, setCatalogPreferences } = usePreferences();
+  const filters = getCatalogFilters(params, catalogPreferences.defaultSort);
+  const { query: search, category, price, stock, featured, sort } = filters;
+  const pageSize = catalogPreferences.pageSize;
+  const [pageState, setPage] = useState({ query: params.toString(), value: 1 });
   function changePage(value) {
     setPage({ query: params.toString(), value });
   }
-  function update(key, value) {
+  function update(values, replace = false) {
     const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
+    next.delete("q");
+    if (search) next.set("search", search);
+    for (const [key, value] of Object.entries(values)) {
+      if (value !== "" && value !== null) next.set(key, String(value));
+      else next.delete(key);
+    }
     setPage({ query: next.toString(), value: 1 });
-    setParams(next);
+    setParams(next, { replace });
   }
-  const list = products
-    .filter(
-      (p) =>
-        (!category || category === "Tất cả" || p.category === category) &&
-        matchesProduct(p, q) &&
-        matchesProduct(p, search, true) &&
-        p.price >= price[0] &&
-        p.price <= price[1] &&
-        (!stock || p.stock > 0) &&
-        (!featured || p.featured),
-    )
-    .sort((a, b) =>
-      sort === "low"
-        ? a.price - b.price
-        : sort === "high"
-          ? b.price - a.price
-          : Number(b.featured || false) - Number(a.featured || false),
-    );
+  const categoryProducts = filterCatalogProducts(products, {
+    ...filters,
+    category: "",
+  });
+  const list = categoryProducts.filter(
+    (p) => !category || category === "Tất cả" || p.category === category,
+  );
+  const hasFilters =
+    category ||
+    price[0] > 0 ||
+    price[1] < MAX_FILTER_PRICE ||
+    stock ||
+    featured ||
+    sort !== catalogPreferences.defaultSort;
   const page = Math.min(
     pageState.query === params.toString() ? pageState.value : 1,
     Math.max(1, Math.ceil(list.length / pageSize)),
@@ -78,52 +66,22 @@ export default function Catalog() {
   return (
     <>
       <section className="hero">
-        <div>
-          <Tag color="#468432">{shopConfig.name}</Tag>
-          <h1>{t("Chào mừng đến với {{name}}", { name: shopConfig.name })}</h1>
+        <div className="hero-content">
+          <span className="hero-brand">{shopConfig.name}</span>
+          <h1>{t("Khám phá lựa chọn dành cho bạn")}</h1>
           <p>
             {t("Tìm kiếm sản phẩm, lựa chọn phân loại và đặt hàng trực tuyến.")}
           </p>
+          <Button type="primary" size="large" href="#collection">
+            {t("Khám phá sản phẩm")}
+            <ArrowRightOutlined />
+          </Button>
         </div>
-        <ShoppingOutlined className="hero-icon" />
+        <div className="hero-art" aria-hidden="true">
+          <img src="/logo/logo.svg" alt="" width="812" height="729" />
+        </div>
       </section>
-      {featuredProducts.length > 0 && (
-        <section
-          className="collection featured-products"
-          aria-label={t("Sản phẩm nổi bật")}
-        >
-          <div className="section-heading">
-            <h2>{t("Sản phẩm nổi bật")}</h2>
-            <div className="featured-controls">
-              <Button
-                icon={<LeftOutlined />}
-                aria-label={t("Sản phẩm trước")}
-                onClick={() =>
-                  featuredRow.current?.scrollBy({
-                    left: -featuredRow.current.clientWidth,
-                    behavior: "smooth",
-                  })
-                }
-              />
-              <Button
-                icon={<RightOutlined />}
-                aria-label={t("Sản phẩm tiếp theo")}
-                onClick={() =>
-                  featuredRow.current?.scrollBy({
-                    left: featuredRow.current.clientWidth,
-                    behavior: "smooth",
-                  })
-                }
-              />
-            </div>
-          </div>
-          <div className="featured-product-row" ref={featuredRow}>
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} p={product} />
-            ))}
-          </div>
-        </section>
-      )}
+      <FeaturedProducts />
       <section className="collection" id="collection">
         <div className="section-heading">
           <div>
@@ -131,7 +89,7 @@ export default function Catalog() {
             {search && (
               <p>
                 {t("Kết quả tìm kiếm cho: {{query}}", { query: search })}{" "}
-                <Button type="link" onClick={() => update("search", "")}>
+                <Button type="link" onClick={() => update({ search: "" })}>
                   {t("Xóa tìm kiếm")}
                 </Button>
               </p>
@@ -140,77 +98,84 @@ export default function Catalog() {
         </div>
         <div className="catalog-layout">
           <aside className="filters">
+            <div className="filter-heading">
+              <h3>
+                <FilterOutlined aria-hidden="true" /> {t("Bộ lọc")}
+              </h3>
+              <Button
+                type="link"
+                disabled={!hasFilters}
+                onClick={() =>
+                  update({
+                    category: null,
+                    min_price: null,
+                    max_price: null,
+                    in_stock: null,
+                    featured: null,
+                    sort: null,
+                  })
+                }
+              >
+                {t("Xóa bộ lọc")}
+              </Button>
+            </div>
             <h3>{t("Danh mục")}</h3>
             {["", ...categories.map((item) => item.name)].map((c) => (
               <button
                 className={category === c ? "category selected" : "category"}
                 key={c || "all"}
-                onClick={() => update("category", c)}
+                aria-pressed={category === c}
+                onClick={() => update({ category: c })}
               >
                 <span>{c ? t(c) : t("Tất cả")}</span>
                 <span>
                   {c
-                    ? (categories.find((item) => item.name === c)
-                        ?.product_count ?? 0)
-                    : products.length}
+                    ? categoryProducts.filter((p) => p.category === c).length
+                    : categoryProducts.length}
                 </span>
               </button>
             ))}
             <hr />
             <h3>{t("Khoảng giá")}</h3>
-            <Slider
-              range
-              aria-label={t("Khoảng giá")}
-              min={0}
-              max={maxCatalogPrice}
-              step={1000}
-              value={price}
-              onChange={(v) => {
-                setPrice(v);
-                changePage(1);
-              }}
-            />
-            <p className="price-range">
-              {money(price[0])}
-              <span>{money(price[1])}</span>
-            </p>
             <div className="price-inputs">
-              <InputNumber
-                aria-label={t("Giá từ")}
-                min={0}
-                max={price[1]}
-                precision={0}
-                value={price[0]}
-                onChange={(v) => {
-                  if (v !== null) {
-                    setPrice([Math.min(v, price[1]), price[1]]);
-                    changePage(1);
-                  }
-                }}
-              />
-              <span>–</span>
-              <InputNumber
-                aria-label={t("Giá đến")}
-                min={price[0]}
-                max={maxCatalogPrice}
-                precision={0}
-                value={price[1]}
-                onChange={(v) => {
-                  if (v !== null) {
-                    setPrice([price[0], Math.max(v, price[0])]);
-                    changePage(1);
-                  }
-                }}
-              />
+              <label>
+                <span>{t("Giá từ")}</span>
+                <InputNumber
+                  aria-label={t("Giá từ")}
+                  min={0}
+                  max={price[1]}
+                  precision={0}
+                  addonAfter="₫"
+                  placeholder="0"
+                  value={params.has("min_price") ? price[0] : null}
+                  onChange={(v) => {
+                    update({ min_price: v }, true);
+                  }}
+                />
+              </label>
+              <label>
+                <span>{t("Giá đến")}</span>
+                <InputNumber
+                  aria-label={t("Giá đến")}
+                  min={price[0]}
+                  max={MAX_FILTER_PRICE}
+                  precision={0}
+                  addonAfter="₫"
+                  placeholder={t("Không giới hạn")}
+                  value={params.has("max_price") ? price[1] : null}
+                  onChange={(v) => {
+                    update({ max_price: v }, true);
+                  }}
+                />
+              </label>
             </div>
             <hr />
             <h3>{t("Lựa chọn khác")}</h3>
             <Checkbox
               checked={stock}
-              onChange={(e) => {
-                setStock(e.target.checked);
-                changePage(1);
-              }}
+              onChange={(e) =>
+                update({ in_stock: e.target.checked ? "true" : null })
+              }
             >
               {t("Còn hàng")}
             </Checkbox>
@@ -218,41 +183,23 @@ export default function Catalog() {
             <Checkbox
               checked={featured}
               onChange={(e) =>
-                update("featured", e.target.checked ? "true" : "")
+                update({ featured: e.target.checked ? "true" : null })
               }
             >
               {t("Sản phẩm nổi bật")}
             </Checkbox>
-            <Button
-              type="link"
-              onClick={() => {
-                setParams({});
-                setPrice([0, maxCatalogPrice]);
-                setStock(false);
-                setSort("popular");
-                setPage({ query: "", value: 1 });
-              }}
-            >
-              {t("Xóa bộ lọc")}
-            </Button>
           </aside>
           <div>
             <div className="catalog-toolbar">
               <span>{t("{{count}} sản phẩm", { count: list.length })}</span>
-              <Input.Search
-                aria-label={t("Tìm trong danh sách sản phẩm")}
-                placeholder={t("Tìm theo tên sản phẩm…")}
-                value={q}
-                onChange={(e) => update("q", e.target.value)}
-                style={{ maxWidth: 250 }}
-              />
               <Select
                 aria-label={t("Sắp xếp sản phẩm")}
                 value={sort}
-                onChange={(v) => {
-                  setSort(v);
-                  changePage(1);
-                }}
+                onChange={(v) =>
+                  update({
+                    sort: v === catalogPreferences.defaultSort ? null : v,
+                  })
+                }
                 options={[
                   { value: "popular", label: t("Nổi bật nhất") },
                   { value: "low", label: t("Giá tăng dần") },
@@ -271,7 +218,7 @@ export default function Catalog() {
             ) : list.length ? (
               <div className="product-grid">
                 {list.slice((page - 1) * pageSize, page * pageSize).map((p) => (
-                  <ProductCard key={p.id} p={p} />
+                  <ProductCard key={p.id} p={p} showFeatured={false} />
                 ))}
               </div>
             ) : (
@@ -284,7 +231,10 @@ export default function Catalog() {
               total={list.length}
               onChange={(value, size) => {
                 if (size !== pageSize) {
-                  setPageSize(size);
+                  setCatalogPreferences({
+                    ...catalogPreferences,
+                    pageSize: size,
+                  });
                   changePage(1);
                 } else changePage(value);
               }}

@@ -9,7 +9,17 @@ export const orderColumns = [
   {
     title: "Mã đơn",
     dataIndex: "code",
-    render: (value) => <CopyCode value={value} />,
+    width: 160,
+    render: (value) => (
+      <span className="mg-order-code">
+        <span title={value}>
+          {value?.length > 8
+            ? `${value.slice(0, 4)}…${value.slice(-4)}`
+            : value}
+        </span>
+        <CopyCode value={value} />
+      </span>
+    ),
   },
   { title: "Khách hàng", render: (_, o) => o.recipient?.name || o.owner },
   {

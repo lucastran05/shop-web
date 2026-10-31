@@ -72,6 +72,12 @@ export interface ProductsResponse extends ListResponse<ProductSummary> {
 }
 export class ProductsService {
   constructor(private readonly http: HttpClient) {}
+  featured(
+    page = 1,
+    options?: RequestOptions,
+  ): Promise<ProductsResponse> {
+    return this.http.get("/api/v1/products/featured", { page }, options);
+  }
   list(
     query?: ProductsQuery,
     options?: RequestOptions,

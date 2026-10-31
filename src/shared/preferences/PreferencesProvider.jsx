@@ -1,7 +1,27 @@
 import { useState, useEffect } from "react";
 import { PreferencesContext } from "./preferences";
 import { getDeviceTimeZone, validTimeZone } from "../utils/format";
+import { normalizeCatalogPreferences } from "./catalogPreferences";
 export function PreferencesProvider({ children }) {
+  const [catalogPreferences, setCatalogPreferences] = useState(() => {
+    try {
+      return normalizeCatalogPreferences(
+        JSON.parse(localStorage.getItem("abc-catalog-preferences")),
+      );
+    } catch {
+      return normalizeCatalogPreferences(null);
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "abc-catalog-preferences",
+        JSON.stringify(catalogPreferences),
+      );
+    } catch {
+      /* optional persistence */
+    }
+  }, [catalogPreferences]);
   const [timeZone, setZone] = useState(() => {
     try {
       const stored = localStorage.getItem("abc-time-zone");
@@ -21,7 +41,14 @@ export function PreferencesProvider({ children }) {
     if (validTimeZone(zone)) setZone(zone);
   };
   return (
-    <PreferencesContext.Provider value={{ timeZone, setTimeZone }}>
+    <PreferencesContext.Provider
+      value={{
+        timeZone,
+        setTimeZone,
+        catalogPreferences,
+        setCatalogPreferences,
+      }}
+    >
       {children}
     </PreferencesContext.Provider>
   );

@@ -10,6 +10,9 @@ export const antThemeConfig = {
     fontFamily: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`,
   },
   components: {
+    Spin: {
+      colorBgMask: '#f5f5f5',
+    },
     Button: {
       borderRadius: 6,
       controlHeight: 38,

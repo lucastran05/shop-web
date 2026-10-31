@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, Tag, Empty } from "antd";
 import { PushpinOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import { money } from "../../../shared/utils/format";
-export default function ProductCard({ p }) {
+export default function ProductCard({ p, showFeatured = true }) {
   const { t } = useTranslation();
   return (
     <Link to={"/products/" + p.id} className="product-card">
@@ -14,13 +14,16 @@ export default function ProductCard({ p }) {
             {p.image ? (
               <img src={p.image} alt={p.name} loading="lazy" />
             ) : (
-              <Empty description={t("Chưa có ảnh sản phẩm")} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty
+                description={t("Chưa có ảnh sản phẩm")}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
             )}
             <div className="product-tags">
               {!p.stock ? (
-                <Tag>{t("Hết hàng")}</Tag>
-              ) : p.featured ? (
-                <Tag color="#468432" icon={<PushpinOutlined />}>
+                <Tag className="product-badge sold-out">{t("Hết hàng")}</Tag>
+              ) : showFeatured && p.featured ? (
+                <Tag className="product-badge" icon={<PushpinOutlined />}>
                   {t("Nổi bật")}
                 </Tag>
               ) : null}
@@ -32,12 +35,16 @@ export default function ProductCard({ p }) {
         <h3 title={p.name}>{p.name}</h3>
         <div className="product-price">
           <strong>{money(p.price)}</strong>
-          {p.oldPrice && <del>{money(p.oldPrice)}</del>}
+          {p.oldPrice > p.price && (
+            <del title={t("Giá gốc")}>{money(p.oldPrice)}</del>
+          )}
         </div>
-        <span className="card-link">
-          {t("Xem chi tiết")}
-          <ArrowRightOutlined />
-        </span>
+        <div className="product-card-footer">
+          <span className="card-link">
+            {t("Xem chi tiết")}
+            <ArrowRightOutlined />
+          </span>
+        </div>
       </Card>
     </Link>
   );

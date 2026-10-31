@@ -1,3 +1,13 @@
+export function getVariantImages(variants) {
+  return [
+    ...new Set(
+      variants
+        .map((variant) => variant.image)
+        .filter((image) => image && image !== "/product-placeholder.svg"),
+    ),
+  ];
+}
+
 export function mapProductSummary(product) {
   return {
     ...product,

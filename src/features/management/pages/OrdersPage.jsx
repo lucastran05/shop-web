@@ -1,6 +1,7 @@
 import { userError } from "../../../shared/utils/userError";
 import Button from "../components/ManagementButton";
 import CopyCode from "../../../shared/components/CopyCode";
+import ExpandableText from "../../../shared/components/ExpandableText";
 import { orderColumns, statusTag } from "../components/orderColumns";
 import { useEffect, useRef, useState } from "react";
 import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
@@ -116,9 +117,13 @@ export default function OrdersPage() {
           allowClear
           value={status}
           onChange={setStatus}
-          options={[...statusFlow, "Đã cọc", "Đã hủy", "Hoàn hàng", "Hoàn tiền"].map(
-            (value) => ({ value }),
-          )}
+          options={[
+            ...statusFlow,
+            "Đã cọc",
+            "Đã hủy",
+            "Hoàn hàng",
+            "Hoàn tiền",
+          ].map((value) => ({ value }))}
         />
         <Popconfirm
           title="Xóa các đơn hàng đã chọn? Chỉ đơn đã hủy chưa thanh toán mới được xóa."
@@ -248,7 +253,13 @@ export default function OrdersPage() {
                 lineKey: `${detail.id}-${i}`,
               }))}
               columns={[
-                { title: "Sản phẩm", dataIndex: "name" },
+                {
+                  title: "Sản phẩm",
+                  dataIndex: "name",
+                  render: (name) => (
+                    <ExpandableText text={name} maxLength={40} />
+                  ),
+                },
                 { title: "Biến thể", dataIndex: "variantLabel" },
                 { title: "Số lượng", dataIndex: "quantity" },
                 { title: "Đơn giá", dataIndex: "price", render: money },
@@ -273,7 +284,9 @@ export default function OrdersPage() {
                     <Input
                       placeholder="Ví dụ: GHN"
                       disabled={
-                        ["cancelled", "returned", "refunded"].includes(detail.statusCode) ||
+                        ["cancelled", "returned", "refunded"].includes(
+                          detail.statusCode,
+                        ) ||
                         ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(
                           detail.status,
                         )
@@ -283,7 +296,9 @@ export default function OrdersPage() {
                   <Form.Item name="tracking" label="Mã vận đơn">
                     <Input
                       disabled={
-                        ["cancelled", "returned", "refunded"].includes(detail.statusCode) ||
+                        ["cancelled", "returned", "refunded"].includes(
+                          detail.statusCode,
+                        ) ||
                         ["Đã hủy", "Hoàn tiền", "Đã hoàn tiền"].includes(
                           detail.status,
                         )
