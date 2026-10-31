@@ -14,6 +14,7 @@ import {
 } from "../adapters/viewAdapters";
 import { shopConfig } from "../constants/shop";
 import { api } from "../api";
+import { createSessionStore, SESSION_STORAGE_KEY } from "../api/session-store";
 import { mapProductSummary } from "../adapters/productAdapter";
 import { usePolling } from "../hooks/usePolling";
 import { useChatSocket } from "../hooks/useChatSocket";
@@ -64,6 +65,38 @@ export function ShopProvider({ children }) {
       });
     });
   }, [location, message, navigate]);
+  useEffect(() => {
+    let storage;
+    try {
+      storage = createSessionStore(window.localStorage);
+    } catch {
+      return;
+    }
+    async function syncSession(event) {
+      if (event.key && event.key !== SESSION_STORAGE_KEY) return;
+      const tokens = storage.read();
+      if (!tokens) {
+        api.http.clearTokens();
+        setUser(null);
+        return;
+      }
+      api.http.setTokens(tokens);
+      setSessionError(null);
+      try {
+        const { data } = await api.auth.getProfile();
+        if (api.http.getAccessToken() !== tokens.accessToken) return;
+        setUser(data);
+      } catch (error) {
+        if (api.http.getAccessToken() !== tokens.accessToken) return;
+        if ([401, 403].includes(error.status)) {
+          api.http.clearTokens("expired");
+          setUser(null);
+        } else setSessionError(error);
+      }
+    }
+    window.addEventListener("storage", syncSession);
+    return () => window.removeEventListener("storage", syncSession);
+  }, []);
   useEffect(() => {
     let active = true;
     setAuthLoading(true);

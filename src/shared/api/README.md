@@ -98,7 +98,7 @@ hiển thị trạng thái trống; không lấy lại dữ liệu nghiệp vụ
 
 ## Xác thực và request đồng thời
 
-- Instance dùng trong trình duyệt lưu token trong `sessionStorage`; tải lại trang trong cùng tab vẫn giữ phiên, còn đóng tab sẽ yêu cầu đăng nhập lại.
+- Instance dùng trong trình duyệt lưu token trong `localStorage`; phiên được khôi phục sau khi tải lại trang hoặc mở tab mới. Thay đổi đăng nhập/đăng xuất ở một tab được đồng bộ và hồ sơ vẫn được xác thực lại qua `/me`.
   Khi tải lại trang, ShopProvider kiểm tra `/me` trước khi mở các trang cần đăng nhập.
   Role hiển thị lấy từ backend; dữ liệu user cũ trong trình duyệt không cấp quyền quản trị.
   Logout, đổi mật khẩu và phiên hết hiệu lực xóa token đã lưu.
@@ -218,8 +218,3 @@ Các điểm sau vẫn cần đối chiếu thêm khi thay đổi backend:
    `from/to/group_by/date_basis/timezone` chưa được áp dụng đầy đủ vào truy vấn
    như docs mô tả. Service vẫn gửi các query được đặc tả và giữ nguyên kết quả
    server; cần hoàn thiện truy vấn backend trước khi đối chiếu báo cáo theo ngày/quý.
-
-## Kiểm tra
-
-Bộ kiểm thử transport và client đã được chạy rồi gỡ theo yêu cầu ngày 26/10/2026.
-Xem báo cáo kiểm thử tại thư mục gốc dự án.

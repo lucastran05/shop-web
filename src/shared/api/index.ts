@@ -4,7 +4,14 @@ import { createSessionStore } from "./session-store";
 function getBrowserSessionStore() {
   if (typeof window === "undefined") return undefined;
   try {
-    return createSessionStore(window.sessionStorage);
+    const store = createSessionStore(window.localStorage);
+    if (!store.read()) {
+      try {
+        const previousSession = createSessionStore(window.sessionStorage).read();
+        if (previousSession) store.write(previousSession);
+      } catch {}
+    }
+    return store;
   } catch {
     return undefined;
   }

@@ -33,6 +33,8 @@ Node.js 22.12+ hoặc 24. `npm.cmd` tránh lỗi execution policy của PowerShe
 
 ## Cấu trúc source
 
+Đọc code theo luồng: **page/component** hiển thị giao diện → hook/context giữ trạng thái → service trong `shared/api` gửi request → adapter chuyển response cho giao diện. Bắt đầu ở `src/main.jsx`, rồi xem `src/app/routes/AppRoutes.jsx` để tìm nhóm trang customer hoặc management.
+
 ```text
 src/
 ├── app/                    # App, routing gốc, CSS/theme
@@ -60,4 +62,4 @@ Upload qua backend có JWT, dữ liệu ảnh nằm trong bucket MinIO private. 
 
 Ảnh review tối đa 2 MB; product/avatar tối đa 10 MB, 1–3 file mỗi request. Tài khoản admin/manager dùng **Quản lý → Sản phẩm → Tải ảnh từ máy tính**. ProductImageInput giữ bước tối ưu kích thước ảnh trước khi upload.
 
-Token lưu theo tab trong sessionStorage; đóng tab sẽ mất phiên. Dữ liệu nghiệp vụ lấy từ backend, không tự tạo thành công khi request lỗi. Theme, ngôn ngữ và các URL trang hiện tại được giữ lại.
+Token được lưu trong localStorage để giữ phiên sau khi tải lại và mở tab mới; đăng nhập/đăng xuất được đồng bộ giữa các tab. Dữ liệu nghiệp vụ lấy từ backend, không tự tạo thành công khi request lỗi. Theme, ngôn ngữ và các URL trang hiện tại được giữ lại.
