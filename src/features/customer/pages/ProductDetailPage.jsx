@@ -241,7 +241,8 @@ function ProductView({ p, relatedProducts }) {
             size="small"
             column={1}
             items={[
-              ...p.attributes.map((a, i) => ({
+              // Chỉ hiện thuộc tính có nhãn; thuộc tính nội bộ như visibility không có nhãn
+              ...p.attributes.filter((a) => a.label).map((a, i) => ({
                 key: i,
                 label: t(a.label),
                 children: t(a.value),

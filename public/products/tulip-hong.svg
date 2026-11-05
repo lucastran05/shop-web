@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-label="Bó tulip Hà Lan">
+  <rect width="480" height="480" rx="24" fill="#fdedf3"/>
+  <circle cx="240" cy="230" r="190" fill="#ffffff" opacity=".45"/>
+  <ellipse cx="240" cy="440" rx="150" ry="14" fill="#000" opacity=".06"/>
+  <g transform="translate(202.3 232) rotate(-59.4)">
+    <path d="M0 0 Q22.2 -31.7 0 -63.3 Q-22.2 -31.7 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -58.2" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(218.7 232) rotate(-15.2)">
+    <path d="M0 0 Q21.6 -30.9 0 -61.8 Q-21.6 -30.9 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -56.9" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(322.5 232) rotate(14.9)">
+    <path d="M0 0 Q23.1 -33 0 -66 Q-23.1 -33 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -60.7" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(251.7 232) rotate(-11.4)">
+    <path d="M0 0 Q24.5 -35 0 -70.1 Q-24.5 -35 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -64.5" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(324.2 232) rotate(-22.9)">
+    <path d="M0 0 Q22.2 -31.7 0 -63.4 Q-22.2 -31.7 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -58.3" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(228 232) rotate(-16.7)">
+    <path d="M0 0 Q24.8 -35.4 0 -70.7 Q-24.8 -35.4 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -65.1" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(273.2 232) rotate(-55.1)">
+    <path d="M0 0 Q31.8 -45.4 0 -90.8 Q-31.8 -45.4 0 0Z" fill="#4f8a3c"/>
+    <path d="M0 0 L0 -83.5" stroke="#37612a" stroke-width="1.5"/>
+  </g><g transform="translate(240 136)">
+    <path d="M-20.4 -10.2 Q-23.8 23.8 0 25.5 Q23.8 23.8 20.4 -10.2 L10.2 -1.7 L0 -18.7 L-10.2 -1.7 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -13.6 L0 20.4" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(174 172)">
+    <path d="M-24.1 -12.1 Q-28.1 28.1 0 30.2 Q28.1 28.1 24.1 -12.1 L12.1 -2 L0 -22.1 L-12.1 -2 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -16.1 L0 24.1" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(306 172)">
+    <path d="M-24.9 -12.5 Q-29.1 29.1 0 31.1 Q29.1 29.1 24.9 -12.5 L12.5 -2.1 L0 -22.8 L-12.5 -2.1 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -16.6 L0 24.9" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(206.4 214)">
+    <path d="M-21.8 -10.9 Q-25.4 25.4 0 27.3 Q25.4 25.4 21.8 -10.9 L10.9 -1.8 L0 -20 L-10.9 -1.8 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -14.5 L0 21.8" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(273.6 214)">
+    <path d="M-20.9 -10.4 Q-24.4 24.4 0 26.1 Q24.4 24.4 20.9 -10.4 L10.4 -1.7 L0 -19.1 L-10.4 -1.7 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -13.9 L0 20.9" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(144 220)">
+    <path d="M-23.7 -11.9 Q-27.7 27.7 0 29.7 Q27.7 27.7 23.7 -11.9 L11.9 -2 L0 -21.8 L-11.9 -2 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -15.8 L0 23.7" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(336 220)">
+    <path d="M-23.1 -11.6 Q-27 27 0 28.9 Q27 27 23.1 -11.6 L11.6 -1.9 L0 -21.2 L-11.6 -1.9 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -15.4 L0 23.1" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g><g transform="translate(240 196)">
+    <path d="M-24.4 -12.2 Q-28.4 28.4 0 30.5 Q28.4 28.4 24.4 -12.2 L12.2 -2 L0 -22.3 L-12.2 -2 Z" fill="#ee7fa8" stroke="#be6686" stroke-width="2"/>
+    <path d="M0 -16.2 L0 24.4" stroke="#be6686" stroke-width="2" opacity=".5"/>
+  </g>
+    <path d="M120 230 L240 430 L360 230 Q300 270 240 262 Q180 270 120 230Z" fill="#f6eef1" stroke="#d8d1d4" stroke-width="3"/>
+    <path d="M150 238 L240 430 L205 252Z" fill="#d8d1d4" opacity=".35"/>
+    <path d="M206 330 Q240 316 274 330 L268 346 Q240 334 212 346Z" fill="#d67297"/>
+    <path d="M240 336 l-38 34 l10 6 l28 -28 l28 28 l10 -6z" fill="#d67297"/>
+</svg>

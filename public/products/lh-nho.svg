@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480" role="img" aria-label="Cây lưỡi hổ">
+  <rect width="480" height="480" rx="24" fill="#e6ece3"/>
+  <circle cx="240" cy="230" r="190" fill="#ffffff" opacity=".45"/>
+  <ellipse cx="240" cy="440" rx="150" ry="14" fill="#000" opacity=".06"/>
+  <path d="M168 330 Q162 198.40149715729058 180 110.66916192881763 Q198 198.40149715729058 192 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M188 330 Q182 203.9602306606248 200 119.933717767708 Q218 203.9602306606248 212 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M208 330 Q202 222.91957872686908 220 151.53263121144846 Q238 222.91957872686908 232 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M228 330 Q222 239.98252236144617 240 179.9708706024103 Q258 239.98252236144617 252 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M248 330 Q242 206.53384409006685 260 124.22307348344475 Q278 206.53384409006685 272 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M268 330 Q262 190.6163933998905 280 97.69398899981752 Q298 190.6163933998905 292 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M288 330 Q282 222.6809868682176 300 151.13497811369598 Q318 222.6809868682176 312 330Z" fill="#4c7a34" stroke="#d9c45a" stroke-width="4"/><path d="M160 330 L320 330 L300.8 430 L179.2 430Z" fill="#c8705a"/>
+    <rect x="152" y="324" width="176" height="22" rx="8" fill="#b0634f"/>
+</svg>

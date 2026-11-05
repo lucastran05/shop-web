@@ -1,7 +1,5 @@
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { useSaved } from "../../../shared/hooks/useSaved";
-
-export const ManagementContext = createContext(null);
 import { useShop } from "../../../shared/shop/useShop";
 import { api } from "../../../shared/api";
 import { mapProductDetail } from "../../../shared/adapters/productAdapter";
@@ -15,6 +13,8 @@ import { userError } from "../../../shared/utils/userError";
 import { usePolling } from "../../../shared/hooks/usePolling";
 import { useChatSocket } from "../../../shared/hooks/useChatSocket";
 import { mergeMessages } from "../../../shared/utils/mergeMessages";
+
+export const ManagementContext = createContext(null);
 
 export function ManagementProvider({ children }) {
   const shop = useShop();

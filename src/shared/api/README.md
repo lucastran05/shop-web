@@ -17,8 +17,6 @@ src/shared/api/
   api-error.ts                   # Lỗi HTTP/network/protocol có kiểu
   common.types.ts                # Envelope, pagination, token, lỗi, ID
   *.service.ts                   # 19 domain, request/query/response types cùng file
-  integrations/
-    payment-webhook.service.ts   # SYS01, dành cho tích hợp phía server
 ```
 
 | Docs | File                               | API instance          | Phương thức                                                                                    |
