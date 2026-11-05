@@ -1090,11 +1090,16 @@ hr {
   line-height: 1.8;
   white-space: pre-line;
 }
+/* Khung logo tròn giống .hero-art ở trang chủ */
 .shop-info-hero > img {
   flex-shrink: 0;
-  padding: 16px;
-  border-radius: 24px;
+  width: 180px;
+  height: 180px;
+  padding: 22px;
+  border: 1px solid #fff;
+  border-radius: 50%;
   background: #ffffff80;
+  box-shadow: 0 0 0 14px #ffffff30;
   object-fit: contain;
 }
 .shop-info-hero .shop-links {
@@ -1202,6 +1207,7 @@ hr {
     width: 80px;
     height: 80px;
     padding: 8px;
+    box-shadow: 0 0 0 8px #ffffff30;
   }
   .shop-info-grid {
     grid-template-columns: 1fr;

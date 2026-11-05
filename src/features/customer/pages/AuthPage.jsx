@@ -67,10 +67,10 @@ export default function Auth() {
         <h1>
           <img
             className="auth-logo"
-            src="/logo/logo-full-text.svg"
+            src="/logo/logo.svg"
             alt="Bloomora"
-            width="1774"
-            height="887"
+            width="800"
+            height="800"
           />
         </h1>
       </div>

@@ -2,9 +2,6 @@ import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { App } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageLoading from "../components/PageLoading";
-
-export const ShopContext = createContext(null);
-export const Context = ShopContext;
 import RequestError from "../components/RequestError";
 import {
   listAll,
@@ -19,6 +16,17 @@ import { mapProductSummary } from "../adapters/productAdapter";
 import { usePolling } from "../hooks/usePolling";
 import { useChatSocket } from "../hooks/useChatSocket";
 import { mergeMessages } from "../utils/mergeMessages";
+
+export const ShopContext = createContext(null);
+
+const mapNotification = (item, owner) => ({
+  ...item,
+  owner,
+  text: item.content,
+  read: item.is_read,
+  createdAt: item.created_at,
+});
+
 export function ShopProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -175,15 +183,7 @@ export function ShopProvider({ children }) {
     const rows = await listAll((query) =>
       api.chatAndNotifications.notifications(query),
     );
-    setNotifications(
-      rows.map((item) => ({
-        ...item,
-        owner: user?.email,
-        text: item.content,
-        read: item.is_read,
-        createdAt: item.created_at,
-      })),
-    );
+    setNotifications(rows.map((item) => mapNotification(item, user?.email)));
   }
   useEffect(() => {
     let active = true;
@@ -195,15 +195,7 @@ export function ShopProvider({ children }) {
     listAll((query) => api.chatAndNotifications.notifications(query))
       .then((rows) => {
         if (active)
-          setNotifications(
-            rows.map((item) => ({
-              ...item,
-              owner: user.email,
-              text: item.content,
-              read: item.is_read,
-              createdAt: item.created_at,
-            })),
-          );
+          setNotifications(rows.map((item) => mapNotification(item, user.email)));
       })
       .catch(() => {});
     return () => {
@@ -335,7 +327,7 @@ export function ShopProvider({ children }) {
   function logout() {
     return api.auth.logout().finally(() => setUser(null));
   }
-  function setItemsFromServer(cartResponse) {
+  function mapCartItems(cartResponse) {
     return cartResponse.data.items.map((item) => ({
       key: item.id,
       id: item.product_id,
@@ -352,15 +344,19 @@ export function ShopProvider({ children }) {
       selected: true,
     }));
   }
+  // Cập nhật giỏ từ server nhưng giữ lựa chọn checkbox hiện tại của từng dòng
+  function applyServerCart(cartResponse) {
+    setItems((old) => {
+      const selected = new Map(old.map((item) => [item.key, item.selected]));
+      return mapCartItems(cartResponse).map((item) => ({
+        ...item,
+        selected: selected.get(item.key) ?? true,
+      }));
+    });
+  }
   function refreshCart() {
     return api.cart.get().then((response) => {
-      const selected = new Map(items.map((item) => [item.key, item.selected]));
-      setItems(
-        setItemsFromServer(response).map((item) => ({
-          ...item,
-          selected: selected.get(item.key) ?? true,
-        })),
-      );
+      applyServerCart(response);
       return response.data;
     });
   }
@@ -399,7 +395,7 @@ export function ShopProvider({ children }) {
     api.cart
       .get()
       .then((response) => {
-        if (active) setItems(setItemsFromServer(response));
+        if (active) setItems(mapCartItems(response));
       })
       .catch((error) => {
         console.error("Unable to load the authenticated cart", error);
@@ -408,20 +404,17 @@ export function ShopProvider({ children }) {
       active = false;
     };
   }, [userId, isManagement]);
-  function add(product, variantId, quantity) {
-    if (!user || !Number.isInteger(quantity) || quantity < 1) return null;
+  async function add(product, variantId, quantity) {
     const variant = product.variants.find((item) => item.id === variantId);
-    if (!variant || variant.stock_quantity < 1) return null;
-    return api.cart
-      .add({
+    if (!user || !Number.isInteger(quantity) || quantity < 1 || !(variant?.stock_quantity > 0))
+      throw new Error("Invalid cart item");
+    applyServerCart(
+      await api.cart.add({
         product_id: product.id,
         variant_id: variantId,
         quantity,
-      })
-      .then((response) => {
-        setItems(setItemsFromServer(response));
-        return response.data.items.at(-1)?.id ?? null;
-      });
+      }),
+    );
   }
   function updateCartItem(id, patch) {
     const current = items.find((item) => item.key === id);
@@ -434,30 +427,10 @@ export function ShopProvider({ children }) {
       );
       return Promise.resolve();
     }
-    return api.cart
-      .update(id, { quantity: patch.quantity })
-      .then((response) => {
-        const selected = new Map(
-          items.map((item) => [item.key, item.selected]),
-        );
-        setItems(
-          setItemsFromServer(response).map((item) => ({
-            ...item,
-            selected: selected.get(item.key) ?? true,
-          })),
-        );
-      });
+    return api.cart.update(id, { quantity: patch.quantity }).then(applyServerCart);
   }
   function removeCartItem(id) {
-    return api.cart.remove(id).then((response) => {
-      const selected = new Map(items.map((item) => [item.key, item.selected]));
-      setItems(
-        setItemsFromServer(response).map((item) => ({
-          ...item,
-          selected: selected.get(item.key) ?? true,
-        })),
-      );
-    });
+    return api.cart.remove(id).then(applyServerCart);
   }
   function setCart(update) {
     const next = typeof update === "function" ? update(items) : update;
@@ -494,7 +467,7 @@ export function ShopProvider({ children }) {
       />
     );
   return (
-    <Context.Provider
+    <ShopContext.Provider
       value={{
         shopInfo,
         setShopInfo,
@@ -532,6 +505,6 @@ export function ShopProvider({ children }) {
       }}
     >
       {children}
-    </Context.Provider>
+    </ShopContext.Provider>
   );
 }

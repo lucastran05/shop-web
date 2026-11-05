@@ -86,21 +86,3 @@ export function transitionOrder(order, status, shipment = {}) {
     ],
   };
 }
-export function adjustStock(products, productId, variantId, delta) {
-  if (!Number.isInteger(delta) || delta === 0)
-    throw new Error("Số lượng điều chỉnh phải là số nguyên khác 0.");
-  const product = products.find((p) => p.id === productId),
-    variant = product?.variants.find((v) => v.id === variantId);
-  if (!variant || variant.stock + delta < 0)
-    throw new Error("Số lượng tồn kho không được âm.");
-  return products.map((p) =>
-    p.id !== productId
-      ? p
-      : {
-          ...p,
-          variants: p.variants.map((v) =>
-            v.id !== variantId ? v : { ...v, stock: v.stock + delta },
-          ),
-        },
-  );
-}
