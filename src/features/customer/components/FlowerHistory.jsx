@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Alert, App, Button, Popconfirm } from "antd";
+import { useState } from "react";
+import { Alert, Button, Popconfirm } from "antd";
 import {
   ArrowLeftOutlined,
   ClockCircleOutlined,
@@ -7,8 +7,6 @@ import {
   HistoryOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
-import { api } from "../../../shared/api";
-import { userError } from "../../../shared/utils/userError";
 import {
   flowerDisplayName,
   scoreLevel,
@@ -16,123 +14,95 @@ import {
 import FlowerMatch from "./FlowerMatch";
 import FlowerIcon from "./FlowerIcon";
 import FlowerHistoryImage from "./FlowerHistoryImage";
+import { useFlowerHistory } from "./useFlowerHistory";
 import "./FlowerHistory.css";
 
-const PAGE_SIZE = 12;
+// Tab Lịch sử trong popup nhận diện.
+//   FlowerHistory    chọn hiển thị: đang tải / lỗi / trống / lưới ảnh / chi tiết
+//   HistoryGrid      lưới ảnh, nhóm theo ngày
+//   HistoryDetail    một lần nhận diện: ảnh gốc + kết quả + các loài gần giống
+// Dữ liệu và các thao tác gọi API nằm trong hook useFlowerHistory.
 
-// Calendar-day distance between a date and today (0 = today, 1 = yesterday).
+const toPercent = (score) => `${(score * 100).toFixed(1)}%`;
+const localeOf = (lang) => (lang === "en" ? "en-US" : "vi-VN");
+
+// Số ngày lịch giữa thời điểm value và hôm nay (0 = hôm nay, 1 = hôm qua).
 function daysAgo(value) {
-  const date = new Date(value);
-  const today = new Date();
-  const start = (d) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  return Math.round((start(today) - start(date)) / 86400000);
+  const startOfDay = (date) =>
+    new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  return Math.round((startOfDay(new Date()) - startOfDay(new Date(value))) / 86400000);
 }
 
-// Saved identifications of the signed-in user: list, detail, delete one, delete all.
+// Gom các mục (đã sắp mới nhất trước) thành nhóm theo nhãn ngày, giữ nguyên thứ tự.
+function groupByDay(items, labelOf) {
+  const groups = [];
+  for (const item of items) {
+    const label = labelOf(item.createdAt);
+    const last = groups[groups.length - 1];
+    if (last?.label === label) last.items.push(item);
+    else groups.push({ label, items: [item] });
+  }
+  return groups;
+}
+
 export default function FlowerHistory({ onIdentify }) {
-  const { t, i18n } = useTranslation();
-  const { message } = App.useApp();
-  const lang = i18n.resolvedLanguage;
-  const locale = lang === "en" ? "en-US" : "vi-VN";
-  const [items, setItems] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState("");
-  const [reload, setReload] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [deleting, setDeleting] = useState("");
+  const history = useFlowerHistory();
+  const [selected, setSelected] = useState(null); // mục đang xem chi tiết
 
-  useEffect(() => {
-    const controller = new AbortController();
-    api.flowers
-      .history({ page: 1, limit: PAGE_SIZE }, { signal: controller.signal })
-      .then((res) => {
-        if (controller.signal.aborted) return;
-        setItems(res.data);
-        setPagination(res.pagination);
-      })
-      .catch((err) => {
-        if (!controller.signal.aborted) setError(userError(err));
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, [reload]);
-
-  function retry() {
-    setError("");
-    setLoading(true);
-    setReload((value) => value + 1);
-  }
-
-  async function loadMore() {
-    setLoadingMore(true);
-    try {
-      const res = await api.flowers.history({
-        page: pagination.page + 1,
-        limit: PAGE_SIZE,
-      });
-      // Skip ids already shown in case new entries shifted the pages.
-      setItems((prev) => {
-        const seen = new Set(prev.map((item) => item.id));
-        return [...prev, ...res.data.filter((item) => !seen.has(item.id))];
-      });
-      setPagination(res.pagination);
-    } catch (err) {
-      message.error(t(userError(err)));
-    } finally {
-      setLoadingMore(false);
-    }
-  }
-
-  async function remove(id) {
-    setDeleting(id);
-    try {
-      await api.flowers.deleteHistoryItem(id);
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      setPagination((prev) => prev && { ...prev, total: prev.total - 1 });
-      if (selected?.id === id) setSelected(null);
-    } catch (err) {
-      message.error(t(userError(err)));
-    } finally {
-      setDeleting("");
-    }
+  async function removeItem(id) {
+    const removed = await history.remove(id);
+    if (removed && selected?.id === id) setSelected(null);
   }
 
   async function clearAll() {
-    setDeleting("all");
-    try {
-      await api.flowers.clearHistory();
-      setItems([]);
-      setPagination(
-        (prev) => prev && { ...prev, page: 1, total: 0, total_pages: 1 },
-      );
-      setSelected(null);
-    } catch (err) {
-      message.error(t(userError(err)));
-    } finally {
-      setDeleting("");
-    }
+    if (await history.clearAll()) setSelected(null);
   }
 
-  const formatTime = (value) =>
-    new Date(value).toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  const formatFull = (value) =>
-    new Date(value).toLocaleString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  if (selected)
+    return (
+      <HistoryDetail
+        item={selected}
+        deleting={history.deleting === selected.id}
+        onBack={() => setSelected(null)}
+        onDelete={() => removeItem(selected.id)}
+      />
+    );
+  if (history.loading) return <HistorySkeleton />;
+  if (history.error) return <HistoryError message={history.error} onRetry={history.retry} />;
+  if (!history.items.length) return <HistoryEmpty onIdentify={onIdentify} />;
 
-  // Day headings: "Hôm nay", "Hôm qua", otherwise weekday and date.
+  return (
+    <HistoryGrid
+      history={history}
+      onOpen={setSelected}
+      onDelete={removeItem}
+      onClearAll={clearAll}
+    />
+  );
+}
+
+// Nút xóa có hộp xác nhận, dùng cho cả ô trong lưới và trang chi tiết.
+function ConfirmDelete({ onConfirm, children }) {
+  const { t } = useTranslation();
+  return (
+    <Popconfirm
+      title={t("Xóa lần nhận diện này?")}
+      okText={t("Xóa")}
+      cancelText={t("Hủy")}
+      okButtonProps={{ danger: true }}
+      onConfirm={onConfirm}
+    >
+      {children}
+    </Popconfirm>
+  );
+}
+
+function HistoryGrid({ history, onOpen, onDelete, onClearAll }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage;
+  const locale = localeOf(lang);
+
+  // Nhãn nhóm: "Hôm nay", "Hôm qua", còn lại là thứ và ngày.
   function dayLabel(value) {
     const diff = daysAgo(value);
     if (diff === 0) return t("Hôm nay");
@@ -144,220 +114,191 @@ export default function FlowerHistory({ onIdentify }) {
       year: "numeric",
     });
   }
-  // Items arrive newest first, so consecutive grouping keeps the order.
-  const groups = [];
-  for (const item of items) {
-    const label = dayLabel(item.createdAt);
-    const last = groups[groups.length - 1];
-    if (last?.label === label) last.items.push(item);
-    else groups.push({ label, items: [item] });
-  }
-
-  const confirmDelete = (id, button) => (
-    <Popconfirm
-      title={t("Xóa lần nhận diện này?")}
-      okText={t("Xóa")}
-      cancelText={t("Hủy")}
-      okButtonProps={{ danger: true }}
-      onConfirm={() => remove(id)}
-    >
-      {button}
-    </Popconfirm>
-  );
-
-  if (selected) {
-    const others = selected.candidates.slice(1);
-    return (
-      <div className="fh-detail">
-        <div className="fh-detail-bar">
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => setSelected(null)}
-          >
-            {t("Lịch sử")}
-          </Button>
-          <span className="fh-detail-time">
-            <ClockCircleOutlined /> {formatFull(selected.createdAt)}
-          </span>
-        </div>
-        <div className="fh-detail-grid">
-          <FlowerHistoryImage
-            id={selected.id}
-            hasImage={selected.hasImage}
-            alt={t("Ảnh hoa đã nhận diện")}
-            className="fh-detail-photo"
-            fit="contain"
-          />
-          <div className="fh-detail-info">
-            <FlowerMatch candidate={selected} />
-            {others.length > 0 && (
-              <section className="fh-similar">
-                <h4>{t("Các loài gần giống")}</h4>
-                <ul>
-                  {others.map((item) => {
-                    const name = flowerDisplayName(item, lang);
-                    return (
-                      <li key={item.scientificName}>
-                        <span className="fh-similar-name">
-                          <strong>{name}</strong>
-                          {name !== item.scientificName && (
-                            <i>{item.scientificName}</i>
-                          )}
-                        </span>
-                        <span
-                          className={`fh-similar-bar is-${scoreLevel(item.score)}`}
-                          aria-hidden="true"
-                        >
-                          <span
-                            style={{ width: `${Math.max(item.score * 100, 3)}%` }}
-                          />
-                        </span>
-                        <span className="fh-similar-score">
-                          {(item.score * 100).toFixed(1)}%
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            )}
-            <div className="fh-detail-actions">
-              {confirmDelete(
-                selected.id,
-                <Button
-                  type="text"
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={deleting === selected.id}
-                >
-                  {t("Xóa khỏi lịch sử")}
-                </Button>,
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading)
-    return (
-      <div className="fh-grid" aria-busy="true">
-        {Array.from({ length: 6 }, (_, i) => (
-          <span key={i} className="fh-skeleton" />
-        ))}
-      </div>
-    );
-
-  if (error)
-    return (
-      <Alert
-        type="error"
-        showIcon
-        title={t(error)}
-        action={<Button onClick={retry}>{t("Thử lại")}</Button>}
-      />
-    );
-
-  if (!items.length)
-    return (
-      <div className="fh-empty">
-        <span className="fh-empty-icon">
-          <HistoryOutlined />
-        </span>
-        <h3>{t("Bạn chưa nhận diện loài hoa nào")}</h3>
-        <p>
-          {t(
-            "Mỗi lần nhận diện, ảnh và kết quả sẽ được lưu tại đây để bạn xem lại.",
-          )}
-        </p>
-        <Button type="primary" icon={<FlowerIcon />} onClick={onIdentify}>
-          {t("Nhận diện hoa")}
-        </Button>
-      </div>
-    );
+  const formatTime = (value) =>
+    new Date(value).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="flower-history">
       <div className="fh-head">
-        <p>
-          {t("Đã lưu {{count}} lần nhận diện", {
-            count: pagination?.total ?? items.length,
-          })}
-        </p>
+        <p>{t("Đã lưu {{count}} lần nhận diện", { count: history.total })}</p>
         <Popconfirm
           title={t("Xóa toàn bộ lịch sử nhận diện?")}
           okText={t("Xóa tất cả")}
           cancelText={t("Hủy")}
           okButtonProps={{ danger: true }}
-          onConfirm={clearAll}
+          onConfirm={onClearAll}
         >
           <Button
             type="text"
             danger
             size="small"
             icon={<DeleteOutlined />}
-            loading={deleting === "all"}
+            loading={history.deleting === "all"}
           >
             {t("Xóa tất cả")}
           </Button>
         </Popconfirm>
       </div>
-      {groups.map((group) => (
+
+      {groupByDay(history.items, dayLabel).map((group) => (
         <section className="fh-group" key={group.label}>
           <h4>{group.label}</h4>
           <ul className="fh-grid">
-            {group.items.map((item) => {
-              const name = flowerDisplayName(item, lang);
-              return (
-                <li key={item.id} className="fh-tile">
-                  <button
-                    type="button"
-                    className="fh-tile-open"
-                    onClick={() => setSelected(item)}
-                  >
-                    <FlowerHistoryImage
-                      id={item.id}
-                      hasImage={item.hasImage}
-                      alt=""
-                      className="fh-tile-photo"
-                    />
-                    <span
-                      className={`fh-tile-score is-${scoreLevel(item.score)}`}
-                    >
-                      {(item.score * 100).toFixed(1)}%
-                    </span>
-                    <span className="fh-tile-body">
-                      <strong>{name}</strong>
-                      <i>{item.scientificName}</i>
-                      <small>{formatTime(item.createdAt)}</small>
-                    </span>
-                  </button>
-                  {confirmDelete(
-                    item.id,
-                    <Button
-                      shape="circle"
-                      size="small"
-                      className="fh-tile-delete"
-                      icon={<DeleteOutlined />}
-                      aria-label={t("Xóa khỏi lịch sử")}
-                      loading={deleting === item.id}
-                    />,
-                  )}
-                </li>
-              );
-            })}
+            {group.items.map((item) => (
+              <li key={item.id} className="fh-tile">
+                <button type="button" className="fh-tile-open" onClick={() => onOpen(item)}>
+                  <FlowerHistoryImage
+                    id={item.id}
+                    hasImage={item.hasImage}
+                    alt=""
+                    className="fh-tile-photo"
+                  />
+                  <span className={`fh-tile-score is-${scoreLevel(item.score)}`}>
+                    {toPercent(item.score)}
+                  </span>
+                  <span className="fh-tile-body">
+                    <strong>{flowerDisplayName(item, lang)}</strong>
+                    <i>{item.scientificName}</i>
+                    <small>{formatTime(item.createdAt)}</small>
+                  </span>
+                </button>
+                <ConfirmDelete onConfirm={() => onDelete(item.id)}>
+                  <Button
+                    shape="circle"
+                    size="small"
+                    className="fh-tile-delete"
+                    icon={<DeleteOutlined />}
+                    aria-label={t("Xóa khỏi lịch sử")}
+                    loading={history.deleting === item.id}
+                  />
+                </ConfirmDelete>
+              </li>
+            ))}
           </ul>
         </section>
       ))}
-      {pagination && pagination.page < pagination.total_pages && (
+
+      {history.hasMore && (
         <div className="fh-more">
-          <Button onClick={loadMore} loading={loadingMore}>
+          <Button onClick={history.loadMore} loading={history.loadingMore}>
             {t("Xem thêm")}
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function HistoryDetail({ item, deleting, onBack, onDelete }) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage;
+  const similar = item.candidates.slice(1); // phần tử đầu chính là loài đang xem
+  const takenAt = new Date(item.createdAt).toLocaleString(localeOf(lang), {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  return (
+    <div className="fh-detail">
+      <div className="fh-detail-bar">
+        <Button type="text" icon={<ArrowLeftOutlined />} onClick={onBack}>
+          {t("Lịch sử")}
+        </Button>
+        <span className="fh-detail-time">
+          <ClockCircleOutlined /> {takenAt}
+        </span>
+      </div>
+
+      <div className="fh-detail-grid">
+        <FlowerHistoryImage
+          id={item.id}
+          hasImage={item.hasImage}
+          alt={t("Ảnh hoa đã nhận diện")}
+          className="fh-detail-photo"
+          fit="contain"
+        />
+        <div className="fh-detail-info">
+          <FlowerMatch candidate={item} />
+
+          {similar.length > 0 && (
+            <section className="fh-similar">
+              <h4>{t("Các loài gần giống")}</h4>
+              <ul>
+                {similar.map((other) => {
+                  const name = flowerDisplayName(other, lang);
+                  return (
+                    <li key={other.scientificName}>
+                      <span className="fh-similar-name">
+                        <strong>{name}</strong>
+                        {name !== other.scientificName && <i>{other.scientificName}</i>}
+                      </span>
+                      <span
+                        className={`fh-similar-bar is-${scoreLevel(other.score)}`}
+                        aria-hidden="true"
+                      >
+                        <span style={{ width: `${Math.max(other.score * 100, 3)}%` }} />
+                      </span>
+                      <span className="fh-similar-score">{toPercent(other.score)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          <div className="fh-detail-actions">
+            <ConfirmDelete onConfirm={onDelete}>
+              <Button type="text" danger icon={<DeleteOutlined />} loading={deleting}>
+                {t("Xóa khỏi lịch sử")}
+              </Button>
+            </ConfirmDelete>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Các ô xám nhấp nháy trong lúc tải trang đầu.
+function HistorySkeleton() {
+  return (
+    <div className="fh-grid" aria-busy="true">
+      {Array.from({ length: 6 }, (_, i) => (
+        <span key={i} className="fh-skeleton" />
+      ))}
+    </div>
+  );
+}
+
+function HistoryError({ message, onRetry }) {
+  const { t } = useTranslation();
+  return (
+    <Alert
+      type="error"
+      showIcon
+      title={t(message)}
+      action={<Button onClick={onRetry}>{t("Thử lại")}</Button>}
+    />
+  );
+}
+
+function HistoryEmpty({ onIdentify }) {
+  const { t } = useTranslation();
+  return (
+    <div className="fh-empty">
+      <span className="fh-empty-icon">
+        <HistoryOutlined />
+      </span>
+      <h3>{t("Bạn chưa nhận diện loài hoa nào")}</h3>
+      <p>
+        {t("Mỗi lần nhận diện, ảnh và kết quả sẽ được lưu tại đây để bạn xem lại.")}
+      </p>
+      <Button type="primary" icon={<FlowerIcon />} onClick={onIdentify}>
+        {t("Nhận diện hoa")}
+      </Button>
     </div>
   );
 }

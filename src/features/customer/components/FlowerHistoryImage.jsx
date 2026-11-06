@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { api } from "../../../shared/api";
 import FlowerIcon from "./FlowerIcon";
 
-// Loads a private history photo with the user's token and shows it via an object URL.
-// Without a photo (or while it loads) a soft flower placeholder fills the same box.
+// Hiện ảnh riêng tư của một lần nhận diện.
+// Thẻ <img> không tự gửi Bearer token, nên tải ảnh bằng API (kèm token) dạng Blob
+// rồi hiển thị qua object URL. Chưa có ảnh hoặc đang tải thì hiện icon bông hoa.
 export default function FlowerHistoryImage({ id, hasImage, alt, className, fit }) {
   const [state, setState] = useState({ id: null, url: "", failed: false });
 
@@ -23,11 +24,11 @@ export default function FlowerHistoryImage({ id, hasImage, alt, className, fit }
       });
     return () => {
       controller.abort();
-      if (url) URL.revokeObjectURL(url);
+      if (url) URL.revokeObjectURL(url); // giải phóng bộ nhớ của ảnh cũ
     };
   }, [id, hasImage]);
 
-  // Ignore a URL that belongs to a previous id while the new one loads.
+  // Khi đổi sang id khác, bỏ qua URL của ảnh cũ trong lúc ảnh mới đang tải.
   const current = state.id === id ? state : { url: "", failed: false };
   const loading = hasImage && !current.url && !current.failed;
   return (

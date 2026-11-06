@@ -349,6 +349,16 @@
   text-align: right;
   padding-top: 16px;
 }
+/*
+ * Nút chỉ có icon trong cột Thao tác.
+ * Có 3 kiểu, mỗi kiểu gồm trạng thái thường và trạng thái hover:
+ *   - Mặc định (Xem, Sửa): icon xám, nền trong suốt.
+ *   - Primary (Xác nhận, Giao hàng): icon xanh trên nền xanh nhạt
+ *     để nổi bật vì là bước xử lý chính.
+ *   - Danger (Hủy, Hoàn hàng): icon đỏ.
+ */
+
+/* Khung chung: nút vuông 36px, icon nằm giữa, bỏ viền và bóng */
 .mg-icon-action.ant-btn {
   width: 36px;
   height: 36px;
@@ -361,6 +371,17 @@
   border-color: transparent;
   box-shadow: none;
 }
+.mg-icon-action.ant-btn:not(:disabled):hover,
+.mg-icon-action.ant-btn:not(:disabled):active {
+  color: #468432;
+  background: #eef5e9;
+  border-color: transparent;
+}
+
+/*
+ * Kiểu primary. Antd mặc định cho nút primary chữ trắng, nếu để nền
+ * trong suốt thì icon trắng sẽ chìm vào nền bảng. Vì vậy phải tự đặt màu.
+ */
 .mg-icon-action.ant-btn.ant-btn-primary:not(:disabled) {
   color: #468432;
   background: #eef5e9;
@@ -374,12 +395,8 @@
   color: rgba(0, 0, 0, 0.25);
   background: transparent;
 }
-.mg-icon-action.ant-btn:not(:disabled):hover,
-.mg-icon-action.ant-btn:not(:disabled):active {
-  color: #468432;
-  background: #eef5e9;
-  border-color: transparent;
-}
+
+/* Kiểu danger */
 .mg-icon-action.ant-btn.ant-btn-dangerous:not(:disabled) {
   color: #ff4d4f;
 }
@@ -387,6 +404,7 @@
 .mg-icon-action.ant-btn.ant-btn-dangerous:not(:disabled):active {
   background: #fff1f0;
 }
+
 .mg-action-cell {
   white-space: nowrap;
 }

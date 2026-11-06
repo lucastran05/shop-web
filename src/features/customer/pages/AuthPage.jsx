@@ -1,7 +1,7 @@
 import { userError } from "../../../shared/utils/userError";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, Form, Input, Tabs, App } from "antd";
 import { useShop } from "../../../shared/shop/useShop";
 import { api } from "../../../shared/api";
@@ -146,6 +146,11 @@ export default function Auth() {
             {t(tab === "login" ? "Đăng nhập" : "Tạo tài khoản")}
           </Button>
         </Form>
+        {tab === "login" && (
+          <p style={{ marginTop: 16 }}>
+            <Link to="/forgot-password">{t("Quên mật khẩu?")}</Link>
+          </p>
+        )}
       </div>
     </div>
   );

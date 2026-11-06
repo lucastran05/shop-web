@@ -3,11 +3,10 @@ import Button from "../components/ManagementButton";
 import CopyCode from "../../../shared/components/CopyCode";
 import ExpandableText from "../../../shared/components/ExpandableText";
 import { orderColumns, statusTag } from "../components/orderColumns";
+import OrderRowActions from "../components/OrderRowActions";
 import { useState } from "react";
 import {
   DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
   ShoppingOutlined,
   ClockCircleOutlined,
   InboxOutlined,
@@ -42,7 +41,6 @@ import { orderLabels } from "../../../shared/adapters/viewAdapters";
 import {
   orderStatuses,
   orderStatusGroup,
-  isAwaitingPayment,
   canAdminConfirm,
   canCancelOrder,
 } from "../../../shared/constants/shop";
@@ -148,86 +146,6 @@ export default function OrdersPage() {
     }
   }
 
-  function renderQuickActions(o) {
-    const group = orderStatusGroup(o.status);
-    const next = nextStatuses(o);
-    if (isAwaitingPayment(o)) return null;
-
-    if (group === "Chờ xác nhận" && next.includes("Đã xác nhận")) {
-      return (
-        <Popconfirm
-          title="Xác nhận đơn hàng này?"
-          onConfirm={() => quickAdvance(o, "Đã xác nhận")}
-          okText="Xác nhận"
-          cancelText="Quay lại"
-          disabled={saving}
-        >
-          <Button
-            size="small"
-            type="primary"
-            className="mg-icon-action"
-            icon={<CheckCircleOutlined />}
-            aria-label="Xác nhận đơn"
-            disabled={saving}
-          />
-        </Popconfirm>
-      );
-    }
-
-    if (group === "Đang chuẩn bị hàng" && next.includes("Đang giao hàng")) {
-      return (
-        <Button
-          size="small"
-          type="primary"
-          className="mg-icon-action"
-          icon={<TruckOutlined />}
-          aria-label="Nhập vận chuyển và giao hàng"
-          disabled={saving}
-          onClick={() => show(o, "shipment")}
-        />
-      );
-    }
-
-    if (group === "Đang giao hàng") {
-      return (
-        <>
-          {next.includes("Giao thành công") && (
-            <Popconfirm
-              title="Xác nhận đã giao hàng thành công?"
-              onConfirm={() => quickAdvance(o, "Giao thành công")}
-              okText="Đã giao hàng"
-              cancelText="Quay lại"
-              disabled={saving}
-            >
-              <Button
-                size="small"
-                type="primary"
-                className="mg-icon-action"
-                icon={<CheckCircleOutlined />}
-                aria-label="Xác nhận đã giao hàng"
-                disabled={saving}
-              />
-            </Popconfirm>
-          )}
-          {next.includes("Hoàn hàng") && (
-            <Button
-              size="small"
-              danger
-              className="mg-icon-action"
-              icon={<UndoOutlined />}
-              aria-label="Hoàn hàng"
-              disabled={saving}
-              onClick={() => {
-                show(o, "return");
-                setExceptionStatus("Hoàn hàng");
-              }}
-            />
-          )}
-        </>
-      );
-    }
-    return null;
-  }
   function show(o, nextMode) {
     setExceptionStatus(null);
     setReason("");
@@ -364,35 +282,21 @@ export default function OrdersPage() {
             align: "center",
             width: 200,
             className: "mg-action-cell",
-            render: (_, o) => (
-              <Space size={4} wrap>
-                {renderQuickActions(o)}
-                <Button
-                  icon={<EyeOutlined />}
-                  aria-label={`Chi tiết đơn của ${o.recipient?.name || "khách hàng"}`}
-                  onClick={() => show(o, "view")}
-                  title="Chi tiết"
-                  className="mg-icon-action"
-                />
-                <Button
-                  icon={<EditOutlined />}
-                  aria-label={`Xử lý đơn của ${o.recipient?.name || "khách hàng"}`}
-                  onClick={() => show(o, "edit")}
-                  title="Xử lý đơn"
-                  className="mg-icon-action"
-                />
-                {canCancelOrder(o) && (
-                  <Button
-                    size="small"
-                    danger
-                    className="mg-icon-action"
-                    icon={<CloseCircleOutlined />}
-                    aria-label="Hủy đơn"
-                    disabled={saving}
-                    onClick={() => promptCancel(o)}
-                  />
-                )}
-              </Space>
+            render: (_, order) => (
+              <OrderRowActions
+                order={order}
+                saving={saving}
+                onConfirm={(o) => quickAdvance(o, "Đã xác nhận")}
+                onShip={(o) => show(o, "shipment")}
+                onDelivered={(o) => quickAdvance(o, "Giao thành công")}
+                onReturn={(o) => {
+                  show(o, "return");
+                  setExceptionStatus("Hoàn hàng");
+                }}
+                onView={(o) => show(o, "view")}
+                onEdit={(o) => show(o, "edit")}
+                onCancel={promptCancel}
+              />
             ),
           },
         ]}

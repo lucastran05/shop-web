@@ -1,7 +1,7 @@
 import Icon from "@ant-design/icons";
 
-// Ant Design has no flower icon: five outlined petals around a filled center,
-// drawn on a 24px grid with currentColor so it follows button and text colors.
+// Ant Design không có icon bông hoa nên tự vẽ: 5 cánh viền quanh nhụy tô đặc.
+// Dùng currentColor để icon tự lấy màu chữ của nút hoặc tab chứa nó.
 function FlowerSvg() {
   return (
     <svg

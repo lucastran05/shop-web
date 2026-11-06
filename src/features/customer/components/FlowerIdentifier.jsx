@@ -17,112 +17,124 @@ import { userError } from "../../../shared/utils/userError";
 import FlowerMatch from "./FlowerMatch";
 import FlowerIcon from "./FlowerIcon";
 import FlowerHistory from "./FlowerHistory";
+import { useFlowerCamera } from "./useFlowerCamera";
+
+// Nội dung popup "Nhận diện hoa".
+//
+// Cấu trúc:
+//   FlowerIdentifier   chưa đăng nhập -> LoginPrompt, đã đăng nhập -> FlowerTabs
+//   FlowerTabs         2 tab: Nhận diện (IdentifyPanel) và Lịch sử (FlowerHistory)
+//   IdentifyPanel      giữ state: ảnh đã chọn, đang gửi, lỗi, kết quả
+//     PhotoSource      cột trái: chọn ảnh / camera / ảnh xem trước + nút Nhận diện
+//     ResultPanel      cột phải: hướng dẫn, đang tải, không tìm thấy hoặc kết quả
+
+const MAX_PHOTO_SIZE = 10 * 1024 * 1024; // 10 MB, cùng giới hạn với backend
+const ACCEPTED_TYPES = ["image/jpeg", "image/png"];
+
+// Trả về thông báo lỗi nếu ảnh không hợp lệ, chuỗi rỗng nếu hợp lệ.
+function validatePhoto(file) {
+  if (!ACCEPTED_TYPES.includes(file.type) || !file.size || file.size > MAX_PHOTO_SIZE)
+    return "Chọn ảnh JPEG/PNG từ 1 byte đến 10 MB";
+  return "";
+}
 
 export default function FlowerIdentifier() {
-  const { t } = useTranslation();
   const { user } = useShop();
-  if (!user)
-    return (
-      <div className="flower-login">
-        <span className="flower-hero-icon">
-          <CameraOutlined />
-        </span>
-        <h3>{t("Tìm loài hoa qua một bức ảnh")}</h3>
-        <p>
-          {t(
-            "Chụp hoặc tải ảnh để khám phá tên hoa và tìm sản phẩm phù hợp trong shop.",
-          )}
-        </p>
-        <Link
-          className="flower-login-link"
-          to="/login?next=%2F%3Fidentify%3Dflower"
-        >
-          <LockOutlined /> {t("Đăng nhập để nhận diện hoa")}
-        </Link>
-        <small>{t("Ảnh và kết quả được lưu riêng trong lịch sử tài khoản của bạn")}</small>
-      </div>
-    );
+  if (!user) return <LoginPrompt />;
+  // key = user.id: đổi tài khoản thì toàn bộ state của popup được tạo mới.
   return <FlowerTabs key={user.id} />;
 }
 
-// Identify and History share the popup. The identify tab stays mounted while hidden
-// so the chosen photo and result survive a quick look at the history.
+function LoginPrompt() {
+  const { t } = useTranslation();
+  return (
+    <div className="flower-login">
+      <span className="flower-hero-icon">
+        <CameraOutlined />
+      </span>
+      <h3>{t("Tìm loài hoa qua một bức ảnh")}</h3>
+      <p>
+        {t(
+          "Chụp hoặc tải ảnh để khám phá tên hoa và tìm sản phẩm phù hợp trong shop.",
+        )}
+      </p>
+      {/* Đăng nhập xong quay lại trang chủ và tự mở lại popup */}
+      <Link className="flower-login-link" to="/login?next=%2F%3Fidentify%3Dflower">
+        <LockOutlined /> {t("Đăng nhập để nhận diện hoa")}
+      </Link>
+      <small>
+        {t("Ảnh và kết quả được lưu riêng trong lịch sử tài khoản của bạn")}
+      </small>
+    </div>
+  );
+}
+
+// Tab Nhận diện luôn được giữ lại (chỉ ẩn đi) khi xem Lịch sử,
+// để quay lại vẫn còn ảnh và kết quả đang xem.
 function FlowerTabs() {
   const { t } = useTranslation();
   const [tab, setTab] = useState("identify");
-  const leaveIdentify = useRef(null);
+  // IdentifyPanel gắn vào đây hàm tắt camera, gọi trước khi chuyển sang tab Lịch sử.
+  const stopCameraRef = useRef(null);
+
+  function changeTab(next) {
+    if (next !== "identify") stopCameraRef.current?.();
+    setTab(next);
+  }
+
   return (
     <>
       <Segmented
         className="flower-tabs"
         value={tab}
-        onChange={(next) => {
-          if (next !== "identify") leaveIdentify.current?.();
-          setTab(next);
-        }}
+        onChange={changeTab}
         options={[
           { value: "identify", label: t("Nhận diện"), icon: <FlowerIcon /> },
           { value: "history", label: t("Lịch sử"), icon: <HistoryOutlined /> },
         ]}
       />
-      <FlowerIdentifierContent
-        active={tab === "identify"}
-        onLeaveRef={leaveIdentify}
-      />
-      {tab === "history" && (
-        <FlowerHistory onIdentify={() => setTab("identify")} />
-      )}
+      <IdentifyPanel visible={tab === "identify"} stopCameraRef={stopCameraRef} />
+      {tab === "history" && <FlowerHistory onIdentify={() => setTab("identify")} />}
     </>
   );
 }
 
-function FlowerIdentifierContent({ active, onLeaveRef }) {
+function IdentifyPanel({ visible, stopCameraRef }) {
   const { t, i18n } = useTranslation();
-  const [savedId, setSavedId] = useState(null);
-  const [file, setFile] = useState(null),
-    [preview, setPreview] = useState("");
-  const [camera, setCamera] = useState(false),
-    [cameraLoading, setCameraLoading] = useState(false);
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const [candidates, setCandidates] = useState(null);
-  const video = useRef(null),
-    stream = useRef(null),
-    cameraGeneration = useRef(0),
-    request = useRef(null),
-    input = useRef(null);
+  const [file, setFile] = useState(null); // ảnh sẽ gửi đi
+  const [preview, setPreview] = useState(""); // object URL để hiện ảnh xem trước
+  const [busy, setBusy] = useState(false); // đang chờ backend nhận diện
+  const [error, setError] = useState("");
+  const [candidates, setCandidates] = useState(null); // null = chưa nhận diện lần nào
+  const [savedId, setSavedId] = useState(null); // id bản ghi lịch sử vừa lưu
+  const inputRef = useRef(null); // <input type="file"> ẩn
+  const requestRef = useRef(null); // AbortController của request đang chạy
 
-  function stopCamera() {
-    cameraGeneration.current += 1;
-    stream.current?.getTracks().forEach((track) => track.stop());
-    stream.current = null;
-  }
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview);
-    },
-    [preview],
-  );
-  useEffect(
-    () => () => {
-      stopCamera();
-      request.current?.abort();
-    },
-    [],
-  );
+  const camera = useFlowerCamera({ onPhoto: choosePhoto, onError: setError });
+  const closeCamera = camera.close;
+
+  // Cho FlowerTabs gọi được closeCamera() khi đổi tab.
   useEffect(() => {
-    if (camera && video.current) video.current.srcObject = stream.current;
-  }, [camera]);
-  // The tab bar calls this before showing History, so the camera never runs hidden.
-  useEffect(() => {
-    onLeaveRef.current = () => {
-      stopCamera();
-      setCamera(false);
-      setCameraLoading(false);
-    };
+    stopCameraRef.current = closeCamera;
   });
-  function chooseFile(next) {
-    request.current?.abort();
+
+  // Giải phóng object URL cũ mỗi khi đổi ảnh, tránh rò bộ nhớ.
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  // Đóng popup giữa chừng: hủy request đang gửi.
+  useEffect(() => () => requestRef.current?.abort(), []);
+
+  function openFilePicker() {
+    inputRef.current?.click();
+  }
+
+  // Chọn ảnh mới (từ máy hoặc từ camera): xóa kết quả cũ và hủy request đang chạy.
+  function choosePhoto(next) {
+    requestRef.current?.abort();
     setBusy(false);
     setCandidates(null);
     setSavedId(null);
@@ -130,263 +142,262 @@ function FlowerIdentifierContent({ active, onLeaveRef }) {
     setFile(null);
     setPreview("");
     if (!next) return;
-    if (
-      !["image/jpeg", "image/png"].includes(next.type) ||
-      !next.size ||
-      next.size > 10 * 1024 * 1024
-    ) {
-      setError("Chọn ảnh JPEG/PNG từ 1 byte đến 10 MB");
+
+    const problem = validatePhoto(next);
+    if (problem) {
+      setError(problem);
       return;
     }
-    stopCamera();
-    setCamera(false);
-    setCameraLoading(false);
+    closeCamera();
     setFile(next);
     setPreview(URL.createObjectURL(next));
   }
-  async function openCamera() {
-    stopCamera();
-    setCamera(false);
+
+  function openCamera() {
     setError("");
-    setCameraLoading(true);
-    const generation = cameraGeneration.current;
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error();
-      const next = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      if (cameraGeneration.current !== generation) {
-        next.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      stream.current = next;
-      setCamera(true);
-    } catch {
-      if (cameraGeneration.current === generation)
-        setError(
-          "Không mở được camera. Hãy cấp quyền camera, dùng HTTPS hoặc tải ảnh lên.",
-        );
-    } finally {
-      if (cameraGeneration.current === generation) setCameraLoading(false);
-    }
+    camera.open();
   }
-  function capture() {
-    const element = video.current;
-    if (!element?.videoWidth) {
-      setError("Camera chưa sẵn sàng, hãy thử lại");
-      return;
-    }
-    const generation = cameraGeneration.current;
-    const canvas = document.createElement("canvas");
-    canvas.width = element.videoWidth;
-    canvas.height = element.videoHeight;
-    canvas.getContext("2d").drawImage(element, 0, 0);
-    canvas.toBlob(
-      (blob) => {
-        if (cameraGeneration.current !== generation) return;
-        if (blob)
-          chooseFile(new File([blob], "flower.jpg", { type: "image/jpeg" }));
-        else setError("Không chụp được ảnh, hãy thử lại");
-      },
-      "image/jpeg",
-      0.9,
-    );
-  }
+
   async function identify() {
-    if (!file || busy || (request.current && !request.current.signal.aborted))
-      return;
+    const requestRunning = requestRef.current && !requestRef.current.signal.aborted;
+    if (!file || busy || requestRunning) return;
+
     const controller = new AbortController();
-    request.current = controller;
+    requestRef.current = controller;
     setBusy(true);
     setError("");
     setSavedId(null);
     setCandidates(null);
+
     try {
       const { data } = await api.flowers.identify(file, {
         signal: controller.signal,
         lang: i18n.resolvedLanguage === "en" ? "en" : "vi",
       });
-      if (!controller.signal.aborted) {
-        setSavedId(data.historyId || null);
-        setCandidates(data.candidates);
-      }
+      if (controller.signal.aborted) return; // đã chọn ảnh khác trong lúc chờ
+      setSavedId(data.historyId || null);
+      setCandidates(data.candidates);
     } catch (err) {
-      if (!controller.signal.aborted)
-        setError(
-          err.kind === "http" && err.payload?.status === "error"
-            ? err.message
-            : userError(err),
-        );
+      if (controller.signal.aborted) return;
+      // Lỗi từ backend đã có thông báo tiếng Việt rõ ràng, dùng luôn.
+      const fromBackend = err.kind === "http" && err.payload?.status === "error";
+      setError(fromBackend ? err.message : userError(err));
     } finally {
-      if (request.current === controller) {
-        request.current = null;
+      // Chỉ request mới nhất được tắt trạng thái busy.
+      if (requestRef.current === controller) {
+        requestRef.current = null;
         setBusy(false);
       }
     }
   }
-  // Pl@ntNet results arrive sorted by score, so the first one is the best match.
-  const top = candidates?.[0];
+
   return (
-    <div className="flower-identifier" hidden={!active}>
+    <div className="flower-identifier" hidden={!visible}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED_TYPES.join(",")}
+        hidden
+        onChange={(event) => {
+          if (event.target.files?.[0]) choosePhoto(event.target.files[0]);
+          event.target.value = ""; // cho phép chọn lại đúng file vừa chọn
+        }}
+      />
       <div className="flower-workspace">
-        <section className="flower-source" aria-label={t("Ảnh hoa của bạn")}>
-          <div className="flower-section-heading">
-            <h3>{t("Ảnh hoa của bạn")}</h3>
-            <span>JPG, PNG · 10 MB</span>
-          </div>
-          <input
-            ref={input}
-            type="file"
-            accept="image/jpeg,image/png"
-            hidden
-            onChange={(event) => {
-              if (event.target.files?.[0]) chooseFile(event.target.files[0]);
-              event.target.value = "";
-            }}
-          />
-          {camera ? (
-            <div className="flower-photo-stage">
-              <video
-                ref={video}
-                autoPlay
-                playsInline
-                muted
-                aria-label={t("Xem trước camera")}
-              />
-              <div className="flower-camera-actions">
-                <Button
-                  type="primary"
-                  icon={<CameraOutlined />}
-                  onClick={capture}
-                >
-                  {t("Chụp ảnh này")}
-                </Button>
-                <Button
-                  onClick={() => {
-                    stopCamera();
-                    setCamera(false);
-                  }}
-                >
-                  {t("Đóng camera")}
-                </Button>
-              </div>
-            </div>
-          ) : preview ? (
-            <button
-              type="button"
-              className="flower-photo-stage is-clickable"
-              onClick={() => input.current?.click()}
-              title={t("Đổi ảnh")}
-            >
-              <img src={preview} alt={t("Ảnh hoa đã chọn")} />
-              <span className="flower-file-name">{file.name}</span>
-              <span className="flower-change-photo">
-                <UploadOutlined /> {t("Đổi ảnh")}
-              </span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="flower-upload-zone"
-              onClick={() => input.current?.click()}
-            >
-              <span className="flower-hero-icon">
-                <UploadOutlined />
-              </span>
-              <strong>{t("Thêm ảnh một bông hoa")}</strong>
-              <span>{t("Chọn ảnh từ điện thoại hoặc máy tính")}</span>
-              <span className="flower-upload-label">{t("Chọn ảnh")}</span>
-            </button>
-          )}
-          <div className="flower-source-actions">
-            <Tooltip title={t(file ? "Chụp lại" : "Chụp ảnh")}>
-              <Button
-                size="large"
-                icon={<CameraOutlined />}
-                aria-label={t(file ? "Chụp lại" : "Chụp ảnh")}
-                onClick={openCamera}
-                loading={cameraLoading}
-                disabled={camera || busy}
-              />
-            </Tooltip>
-            <Button
-              block
-              size="large"
-              type="primary"
-              icon={<FlowerIcon />}
-              loading={busy}
-              disabled={!file || camera || cameraLoading}
-              onClick={identify}
-            >
-              {t(busy ? "Đang nhận diện…" : "Nhận diện hoa")}
-            </Button>
-          </div>
-          {cameraLoading && (
-            <Button
-              type="link"
-              onClick={() => {
-                stopCamera();
-                setCameraLoading(false);
-              }}
-            >
-              {t("Hủy mở camera")}
-            </Button>
-          )}
-        </section>
-        <section className="flower-results" aria-live="polite" aria-busy={busy}>
-          <div className="flower-section-heading">
-            <h3>{t("Kết quả nhận diện")}</h3>
-          </div>
-          {error && <Alert type="error" showIcon title={t(error)} />}
-          {busy ? (
-            <div className="flower-result-placeholder">
-              <Spin size="large" />
-              <h4>{t("Đang tìm loài hoa phù hợp")}</h4>
-              <p>{t("Kết quả sẽ xuất hiện ở đây trong giây lát.")}</p>
-            </div>
-          ) : candidates?.length === 0 ? (
-            <div className="flower-result-placeholder">
-              <ScanOutlined className="flower-placeholder-icon" />
-              <h4>{t("Chưa tìm thấy loài hoa phù hợp")}</h4>
-              <p>{t("Thử ảnh rõ hơn, chụp gần một bông hoa và đủ sáng.")}</p>
-              <Button onClick={() => input.current?.click()}>
-                {t("Chọn ảnh khác")}
-              </Button>
-            </div>
-          ) : top ? (
-            <>
-              <FlowerMatch candidate={top} />
-              {savedId && (
-                <p className="flower-saved-note">
-                  <CheckCircleOutlined /> {t("Đã lưu")}
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="flower-result-placeholder">
-              <ScanOutlined className="flower-placeholder-icon" />
-              <h4>{t("Bông hoa này tên gì?")}</h4>
-              <p>
-                {t(
-                  "Thêm một bức ảnh rồi nhấn Nhận diện hoa. Bạn sẽ thấy tên hoa và các loài gần giống tại đây.",
-                )}
-              </p>
-            </div>
-          )}
-        </section>
+        <PhotoSource
+          videoRef={camera.videoRef}
+          cameraOpen={camera.isOpen}
+          cameraStarting={camera.isStarting}
+          onCapture={camera.capture}
+          onCloseCamera={closeCamera}
+          file={file}
+          preview={preview}
+          busy={busy}
+          onPickFile={openFilePicker}
+          onOpenCamera={openCamera}
+          onIdentify={identify}
+        />
+        <ResultPanel
+          busy={busy}
+          error={error}
+          candidates={candidates}
+          saved={Boolean(savedId)}
+          onPickFile={openFilePicker}
+        />
       </div>
       <div className="flower-privacy">
         <LockOutlined />
         <p>
-          {t(
-            "Ảnh được xử lí bởi.",
-          )}{" "}
+          {t("Ảnh được xử lí bởi.")}{" "}
           <a href="https://my.plantnet.org/" target="_blank" rel="noreferrer">
             Pl@ntNet
           </a>
         </p>
       </div>
     </div>
+  );
+}
+
+// Cột trái: một trong ba trạng thái (camera đang mở / đã có ảnh / chưa có ảnh) + hàng nút.
+function PhotoSource({
+  videoRef,
+  cameraOpen,
+  cameraStarting,
+  onCapture,
+  onCloseCamera,
+  file,
+  preview,
+  busy,
+  onPickFile,
+  onOpenCamera,
+  onIdentify,
+}) {
+  const { t } = useTranslation();
+  const cameraLabel = t(file ? "Chụp lại" : "Chụp ảnh");
+
+  let stage;
+  if (cameraOpen) {
+    stage = (
+      <div className="flower-photo-stage">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-label={t("Xem trước camera")}
+        />
+        <div className="flower-camera-actions">
+          <Button type="primary" icon={<CameraOutlined />} onClick={onCapture}>
+            {t("Chụp ảnh này")}
+          </Button>
+          <Button onClick={onCloseCamera}>{t("Đóng camera")}</Button>
+        </div>
+      </div>
+    );
+  } else if (preview) {
+    // Bấm vào ảnh xem trước để chọn ảnh khác.
+    stage = (
+      <button
+        type="button"
+        className="flower-photo-stage is-clickable"
+        onClick={onPickFile}
+        title={t("Đổi ảnh")}
+      >
+        <img src={preview} alt={t("Ảnh hoa đã chọn")} />
+        <span className="flower-file-name">{file.name}</span>
+        <span className="flower-change-photo">
+          <UploadOutlined /> {t("Đổi ảnh")}
+        </span>
+      </button>
+    );
+  } else {
+    stage = (
+      <button type="button" className="flower-upload-zone" onClick={onPickFile}>
+        <span className="flower-hero-icon">
+          <UploadOutlined />
+        </span>
+        <strong>{t("Thêm ảnh một bông hoa")}</strong>
+        <span>{t("Chọn ảnh từ điện thoại hoặc máy tính")}</span>
+        <span className="flower-upload-label">{t("Chọn ảnh")}</span>
+      </button>
+    );
+  }
+
+  return (
+    <section className="flower-source" aria-label={t("Ảnh hoa của bạn")}>
+      <div className="flower-section-heading">
+        <h3>{t("Ảnh hoa của bạn")}</h3>
+        <span>JPG, PNG · 10 MB</span>
+      </div>
+      {stage}
+      <div className="flower-source-actions">
+        <Tooltip title={cameraLabel}>
+          <Button
+            size="large"
+            icon={<CameraOutlined />}
+            aria-label={cameraLabel}
+            onClick={onOpenCamera}
+            loading={cameraStarting}
+            disabled={cameraOpen || busy}
+          />
+        </Tooltip>
+        <Button
+          block
+          size="large"
+          type="primary"
+          icon={<FlowerIcon />}
+          loading={busy}
+          disabled={!file || cameraOpen || cameraStarting}
+          onClick={onIdentify}
+        >
+          {t(busy ? "Đang nhận diện…" : "Nhận diện hoa")}
+        </Button>
+      </div>
+      {cameraStarting && (
+        <Button type="link" onClick={onCloseCamera}>
+          {t("Hủy mở camera")}
+        </Button>
+      )}
+    </section>
+  );
+}
+
+// Cột phải. candidates: null = chưa nhận diện, [] = không tìm thấy, [...] = có kết quả.
+function ResultPanel({ busy, error, candidates, saved, onPickFile }) {
+  const { t } = useTranslation();
+  // Kết quả đã sắp theo điểm giảm dần, phần tử đầu là loài phù hợp nhất.
+  const best = candidates?.[0];
+
+  let content;
+  if (busy) {
+    content = (
+      <div className="flower-result-placeholder">
+        <Spin size="large" />
+        <h4>{t("Đang tìm loài hoa phù hợp")}</h4>
+        <p>{t("Kết quả sẽ xuất hiện ở đây trong giây lát.")}</p>
+      </div>
+    );
+  } else if (candidates?.length === 0) {
+    content = (
+      <div className="flower-result-placeholder">
+        <ScanOutlined className="flower-placeholder-icon" />
+        <h4>{t("Chưa tìm thấy loài hoa phù hợp")}</h4>
+        <p>{t("Thử ảnh rõ hơn, chụp gần một bông hoa và đủ sáng.")}</p>
+        <Button onClick={onPickFile}>{t("Chọn ảnh khác")}</Button>
+      </div>
+    );
+  } else if (best) {
+    content = (
+      <>
+        <FlowerMatch candidate={best} />
+        {saved && (
+          <p className="flower-saved-note">
+            <CheckCircleOutlined /> {t("Đã lưu")}
+          </p>
+        )}
+      </>
+    );
+  } else {
+    content = (
+      <div className="flower-result-placeholder">
+        <ScanOutlined className="flower-placeholder-icon" />
+        <h4>{t("Bông hoa này tên gì?")}</h4>
+        <p>
+          {t(
+            "Thêm một bức ảnh rồi nhấn Nhận diện hoa. Bạn sẽ thấy tên hoa và các loài gần giống tại đây.",
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="flower-results" aria-live="polite" aria-busy={busy}>
+      <div className="flower-section-heading">
+        <h3>{t("Kết quả nhận diện")}</h3>
+      </div>
+      {error && <Alert type="error" showIcon title={t(error)} />}
+      {content}
+    </section>
   );
 }

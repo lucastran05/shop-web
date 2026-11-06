@@ -75,6 +75,9 @@ export default function LoginPage() {
             Đăng nhập
           </Button>
         </Form>
+        <p style={{ marginTop: 16 }}>
+          <Link to="/forgot-password?from=management">Quên mật khẩu?</Link>
+        </p>
         <Link to="/">← Về cửa hàng</Link>
       </div>
     </div>

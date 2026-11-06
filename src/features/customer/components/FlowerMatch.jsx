@@ -8,7 +8,8 @@ import {
 
 const LEVEL_LABEL = { high: "Cao", medium: "Trung bình", low: "Thấp" };
 
-// Result card for one flower: used for a fresh identification and for history entries.
+// Thẻ kết quả của một loài hoa: tên, họ, độ phù hợp, ý nghĩa hoặc giới thiệu.
+// Dùng chung cho kết quả vừa nhận diện và trang chi tiết lịch sử.
 export default function FlowerMatch({ candidate }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage;
