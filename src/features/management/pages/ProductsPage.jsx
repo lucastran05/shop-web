@@ -1,6 +1,8 @@
+import { api } from "../../../shared/api";
+import { useTranslation } from "react-i18next";
 import Button from "../components/ManagementButton";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   App,
   Form,
@@ -31,6 +33,8 @@ const visibilityConfig = {
 };
 
 export default function ProductsPage() {
+  const { t } = useTranslation();
+  const [speciesOptions, setSpeciesOptions] = useState([]);
   const s = useManagement(),
     { message } = App.useApp(),
     [form] = Form.useForm();
@@ -40,6 +44,20 @@ export default function ProductsPage() {
     [selected, setSelected] = useState([]),
     [editing, setEditing] = useState(null),
     [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const controller = new AbortController();
+    api.adminProducts
+      .flowerSpecies({ signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted)
+          setSpeciesOptions(data.map((value) => ({ value })));
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) message.error(userError(error));
+      });
+    return () => controller.abort();
+  }, [open, message]);
   function edit(p) {
     setEditing(p);
     form.resetFields();
@@ -50,6 +68,7 @@ export default function ProductsPage() {
             visibility: p.visibility || (p.active ? "public" : "hidden"),
           }
         : {
+            flower_species: [],
             visibility: "public",
             featured: false,
             deposit: false,
@@ -263,6 +282,37 @@ export default function ProductsPage() {
                 rules={[{ required: true, message: "Chọn danh mục" }]}
               >
                 <Select options={s.categories.map((value) => ({ value }))} />
+              </Form.Item>
+              <Form.Item
+                name="flower_species"
+                label={t("Loài hoa")}
+                extra={t(
+                  "Nhập tên khoa học không kèm tác giả từ kết quả nhận diện. Có thể gắn nhiều loài cho một bó hoa.",
+                )}
+                rules={[
+                  {
+                    validator: (_, value = []) =>
+                      value.length <= 20 &&
+                      value.every(
+                        (name) =>
+                          name.trim().length > 0 &&
+                          name.trim().replace(/\s+/g, " ").length <= 150,
+                      )
+                        ? Promise.resolve()
+                        : Promise.reject(
+                            new Error(
+                              t("Tối đa 20 loài, mỗi tên từ 1 đến 150 ký tự"),
+                            ),
+                          ),
+                  },
+                ]}
+              >
+                <Select
+                  mode="tags"
+                  allowClear
+                  options={speciesOptions}
+                  maxCount={20}
+                />
               </Form.Item>
               <Form.Item name="description" label="Mô tả">
                 <Input.TextArea rows={4} />

@@ -257,6 +257,7 @@ export function ManagementProvider({ children }) {
       name: product.name,
       category_id: category?.id,
       description: product.description,
+      flower_species: product.flower_species,
       images: (product.images || [])
         .filter(Boolean)
         .map((image, index) =>

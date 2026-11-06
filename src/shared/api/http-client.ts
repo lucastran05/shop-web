@@ -266,6 +266,15 @@ export class HttpClient {
     });
   }
 
+  // Authenticated binary GET (e.g. private images); refreshes the token like other calls.
+  getBlob(path: string, query?: Query, options?: RequestOptions): Promise<Blob> {
+    return this.request("GET", path, {
+      ...options,
+      ...(query ? { query } : {}),
+      responseType: "blob",
+    });
+  }
+
   private async request<T>(
     method: string,
     path: string,

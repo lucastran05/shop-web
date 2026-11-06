@@ -1,0 +1,363 @@
+// Pl@ntNet has no Vietnamese common names, so map scientific names locally.
+// Species entries win over genus entries; unknown names fall back to the API.
+const SPECIES = {
+  "rosa chinensis": "Hoa hồng Trung Quốc",
+  "rosa rugosa": "Hoa hồng Nhật",
+  "rosa gallica": "Hoa hồng Pháp",
+  "lilium longiflorum": "Hoa loa kèn",
+  "lilium candidum": "Hoa huệ tây trắng",
+  "nelumbo nucifera": "Hoa sen",
+  "polianthes tuberosa": "Hoa huệ",
+  "agave amica": "Hoa huệ",
+  "chrysanthemum morifolium": "Hoa cúc",
+  "chrysanthemum indicum": "Cúc hoa vàng",
+  "glebionis coronaria": "Cúc tần ô",
+  "bellis perennis": "Cúc tây",
+  "leucanthemum vulgare": "Cúc dại",
+  "helianthus annuus": "Hoa hướng dương",
+  "gerbera jamesonii": "Hoa đồng tiền",
+  "dianthus caryophyllus": "Hoa cẩm chướng",
+  "dianthus chinensis": "Cẩm chướng gấm",
+  "hydrangea macrophylla": "Hoa cẩm tú cầu",
+  "jasminum sambac": "Hoa nhài",
+  "jasminum officinale": "Hoa lài",
+  "plumeria rubra": "Hoa sứ",
+  "plumeria obtusa": "Hoa sứ trắng",
+  "bougainvillea spectabilis": "Hoa giấy",
+  "bougainvillea glabra": "Hoa giấy",
+  "hibiscus rosa-sinensis": "Hoa dâm bụt",
+  "hibiscus mutabilis": "Hoa phù dung",
+  "ixora coccinea": "Hoa mẫu đơn ta",
+  "lagerstroemia speciosa": "Hoa bằng lăng",
+  "delonix regia": "Hoa phượng",
+  "prunus mume": "Hoa mơ",
+  "ochna integerrima": "Hoa mai vàng",
+  "prunus persica": "Hoa đào",
+  "prunus serrulata": "Hoa anh đào",
+  "michelia alba": "Hoa ngọc lan",
+  "magnolia champaca": "Hoa ngọc lan vàng",
+  "osmanthus fragrans": "Hoa mộc",
+  "gardenia jasminoides": "Hoa dành dành",
+  "tagetes erecta": "Hoa vạn thọ",
+  "tagetes patula": "Vạn thọ Pháp",
+  "celosia argentea": "Hoa mào gà",
+  "gomphrena globosa": "Hoa cúc bách nhật",
+  "zinnia elegans": "Hoa cúc lá nhám",
+  "cosmos bipinnatus": "Hoa cúc chuồn chuồn",
+  "cosmos sulphureus": "Hoa cúc chuồn vàng",
+  "catharanthus roseus": "Hoa dừa cạn",
+  "portulaca grandiflora": "Hoa mười giờ",
+  "portulaca oleracea": "Rau sam",
+  "impatiens balsamina": "Hoa móng tay",
+  "impatiens walleriana": "Hoa ngọc thảo",
+  "nerium oleander": "Hoa trúc đào",
+  "lantana camara": "Hoa ngũ sắc",
+  "tulipa gesneriana": "Hoa tulip",
+  "narcissus tazetta": "Hoa thủy tiên",
+  "hippeastrum puniceum": "Hoa loa kèn đỏ",
+  "zantedeschia aethiopica": "Hoa rum",
+  "anthurium andraeanum": "Hoa hồng môn",
+  "eustoma grandiflorum": "Hoa cát tường",
+  "gypsophila paniculata": "Hoa baby",
+  "limonium sinuatum": "Hoa salem",
+  "antirrhinum majus": "Hoa mõm sói",
+  "lavandula angustifolia": "Hoa oải hương",
+  "paeonia lactiflora": "Hoa mẫu đơn",
+  "paeonia suffruticosa": "Hoa mẫu đơn",
+  "camellia japonica": "Hoa trà",
+  "camellia sasanqua": "Hoa trà mi",
+  "phalaenopsis amabilis": "Lan hồ điệp",
+  "dendrobium nobile": "Lan hoàng thảo",
+  "nymphaea nouchali": "Hoa súng",
+  "viola tricolor": "Hoa păng xê",
+  "viola wittrockiana": "Hoa păng xê",
+  "petunia atkinsiana": "Hoa dạ yến thảo",
+  "begonia cucullata": "Hoa thu hải đường",
+  "pelargonium zonale": "Hoa phong lữ",
+  "cyclamen persicum": "Hoa anh thảo",
+  "freesia refracta": "Hoa lan Nam Phi",
+  "iris germanica": "Hoa diên vĩ",
+  "calendula officinalis": "Hoa cúc kim tiền",
+  "papaver rhoeas": "Hoa anh túc",
+  "syringa vulgaris": "Hoa tử đinh hương",
+  "wisteria sinensis": "Hoa tử đằng",
+  "rhododendron simsii": "Hoa đỗ quyên",
+  "rhododendron indicum": "Hoa đỗ quyên",
+};
+
+const GENUS = {
+  rosa: "Hoa hồng",
+  lilium: "Hoa ly",
+  chrysanthemum: "Hoa cúc",
+  helianthus: "Hoa hướng dương",
+  gerbera: "Hoa đồng tiền",
+  dianthus: "Hoa cẩm chướng",
+  hydrangea: "Hoa cẩm tú cầu",
+  jasminum: "Hoa nhài",
+  plumeria: "Hoa sứ",
+  bougainvillea: "Hoa giấy",
+  hibiscus: "Hoa dâm bụt",
+  ixora: "Hoa mẫu đơn ta",
+  lagerstroemia: "Hoa bằng lăng",
+  magnolia: "Hoa mộc lan",
+  michelia: "Hoa ngọc lan",
+  tagetes: "Hoa vạn thọ",
+  celosia: "Hoa mào gà",
+  zinnia: "Hoa cúc lá nhám",
+  cosmos: "Hoa cúc chuồn chuồn",
+  catharanthus: "Hoa dừa cạn",
+  portulaca: "Hoa mười giờ",
+  impatiens: "Hoa ngọc thảo",
+  tulipa: "Hoa tulip",
+  narcissus: "Hoa thủy tiên",
+  hippeastrum: "Hoa loa kèn đỏ",
+  zantedeschia: "Hoa rum",
+  anthurium: "Hoa hồng môn",
+  eustoma: "Hoa cát tường",
+  gypsophila: "Hoa baby",
+  limonium: "Hoa salem",
+  antirrhinum: "Hoa mõm sói",
+  lavandula: "Hoa oải hương",
+  paeonia: "Hoa mẫu đơn",
+  camellia: "Hoa trà",
+  phalaenopsis: "Lan hồ điệp",
+  dendrobium: "Lan hoàng thảo",
+  cymbidium: "Lan đại châu",
+  oncidium: "Lan vũ nữ",
+  orchis: "Hoa lan",
+  nelumbo: "Hoa sen",
+  nymphaea: "Hoa súng",
+  viola: "Hoa păng xê",
+  petunia: "Hoa dạ yến thảo",
+  begonia: "Hoa thu hải đường",
+  pelargonium: "Hoa phong lữ",
+  geranium: "Hoa phong lữ",
+  cyclamen: "Hoa anh thảo",
+  primula: "Hoa anh thảo",
+  freesia: "Hoa lan Nam Phi",
+  iris: "Hoa diên vĩ",
+  calendula: "Hoa cúc kim tiền",
+  papaver: "Hoa anh túc",
+  syringa: "Hoa tử đinh hương",
+  wisteria: "Hoa tử đằng",
+  rhododendron: "Hoa đỗ quyên",
+  azalea: "Hoa đỗ quyên",
+  gardenia: "Hoa dành dành",
+  osmanthus: "Hoa mộc",
+  nerium: "Hoa trúc đào",
+  lantana: "Hoa ngũ sắc",
+  bellis: "Hoa cúc tây",
+  leucanthemum: "Hoa cúc dại",
+  aster: "Hoa thạch thảo",
+  dahlia: "Hoa thược dược",
+  gladiolus: "Hoa lay ơn",
+  alstroemeria: "Hoa thủy tiên Peru",
+  ranunculus: "Hoa mao lương",
+  delphinium: "Hoa phi yến",
+  strelitzia: "Hoa thiên điểu",
+  heliconia: "Hoa mỏ két",
+  gomphrena: "Hoa cúc bách nhật",
+  calla: "Hoa rum",
+  hyacinthus: "Hoa lan dạ hương",
+  crocus: "Hoa nghệ tây",
+  fuchsia: "Hoa lồng đèn",
+  ageratum: "Hoa cứt lợn",
+  salvia: "Hoa xác pháo",
+  verbena: "Hoa cỏ roi ngựa",
+  callistephus: "Hoa cúc thúy",
+  brassica: "Hoa cải",
+};
+
+// Common symbolic meanings (language of flowers and Vietnamese custom), keyed by genus.
+const MEANINGS = {
+  rosa: {
+    vi: "Biểu tượng của tình yêu và sự lãng mạn. Hồng đỏ nói lên tình yêu nồng nàn, hồng trắng là sự trong sáng, hồng vàng là tình bạn và niềm vui.",
+    en: "A symbol of love and romance. Red roses express passionate love, white roses purity, and yellow roses friendship and joy.",
+  },
+  chrysanthemum: {
+    vi: "Tượng trưng cho sự trường thọ, lòng hiếu thảo và phẩm chất cao quý. Hoa cúc thường được dùng để chúc thọ ông bà, cha mẹ và bày trên bàn thờ ngày Tết.",
+    en: "Stands for longevity, filial respect and noble character. Often given to wish elders a long life and used on family altars at Tet.",
+  },
+  callistephus: {
+    vi: "Cúc thúy mang ý nghĩa của sự nhớ nhung, lòng chung thủy và tình cảm bền lâu.",
+    en: "China aster carries meanings of remembrance, fidelity and lasting affection.",
+  },
+  helianthus: {
+    vi: "Hướng dương luôn quay về phía mặt trời nên tượng trưng cho niềm tin, sự lạc quan, lòng trung thành và khát vọng vươn lên.",
+    en: "Always turning to the sun, the sunflower symbolizes faith, optimism, loyalty and ambition.",
+  },
+  lilium: {
+    vi: "Hoa ly tượng trưng cho sự thanh khiết, cao sang và lời chúc trăm năm hạnh phúc, nên rất hay có mặt trong tiệc cưới.",
+    en: "Lilies symbolize purity, elegance and wishes for a lasting marriage, which is why they are common at weddings.",
+  },
+  nelumbo: {
+    vi: "Hoa sen là biểu tượng của sự thanh cao, thuần khiết, gần bùn mà chẳng hôi tanh mùi bùn. Sen cũng gắn liền với Phật giáo và văn hóa Việt Nam.",
+    en: "The lotus symbolizes purity and grace rising untouched from the mud, and is closely tied to Buddhism and Vietnamese culture.",
+  },
+  gerbera: {
+    vi: "Hoa đồng tiền tượng trưng cho sự may mắn, tài lộc và niềm vui, thường dùng để chúc mừng khai trương hoặc năm mới.",
+    en: "Gerberas stand for luck, prosperity and cheerfulness, popular for openings and the new year.",
+  },
+  dianthus: {
+    vi: "Cẩm chướng tượng trưng cho tình mẫu tử và lòng biết ơn, thường được tặng mẹ và thầy cô.",
+    en: "Carnations represent a mother's love and gratitude, often given to mothers and teachers.",
+  },
+  hydrangea: {
+    vi: "Cẩm tú cầu tượng trưng cho sự chân thành và lòng biết ơn, những bông hoa nhỏ kết thành chùm còn gợi sự gắn kết, đoàn tụ.",
+    en: "Hydrangeas express heartfelt sincerity and gratitude, and their clustered blooms suggest togetherness.",
+  },
+  tulipa: {
+    vi: "Tulip tượng trưng cho tình yêu hoàn hảo. Tulip đỏ là lời tỏ tình, tulip vàng là niềm vui và sự ấm áp.",
+    en: "Tulips symbolize perfect love; red tulips declare love, yellow ones bring cheer and warmth.",
+  },
+  phalaenopsis: {
+    vi: "Lan hồ điệp tượng trưng cho sự sang trọng, quý phái và tài lộc, là loại hoa biếu Tết được ưa chuộng.",
+    en: "Moth orchids stand for luxury, refinement and prosperity, a favorite gift at Tet.",
+  },
+  dendrobium: {
+    vi: "Lan hoàng thảo tượng trưng cho vẻ đẹp thanh tao, sự may mắn và thịnh vượng.",
+    en: "Dendrobium orchids represent refined beauty, good fortune and prosperity.",
+  },
+  eustoma: {
+    vi: "Hoa cát tường mang ý nghĩa may mắn, tốt lành và lời cảm ơn chân thành.",
+    en: "Lisianthus carries meanings of good luck, blessings and heartfelt thanks.",
+  },
+  gypsophila: {
+    vi: "Hoa baby tượng trưng cho tình yêu trong sáng, thuần khiết và sự bền lâu.",
+    en: "Baby's breath symbolizes innocent, pure and everlasting love.",
+  },
+  lavandula: {
+    vi: "Oải hương tượng trưng cho sự thủy chung, chờ đợi và sự bình yên, thư thái.",
+    en: "Lavender represents devotion, patient waiting, serenity and calm.",
+  },
+  paeonia: {
+    vi: "Mẫu đơn được xem là vua của các loài hoa, tượng trưng cho sự giàu sang, phú quý và hạnh phúc viên mãn.",
+    en: "Known as the king of flowers, the peony symbolizes wealth, honor and a happy marriage.",
+  },
+  ochna: {
+    vi: "Mai vàng là biểu tượng ngày Tết miền Nam, tượng trưng cho phú quý, thịnh vượng và một năm mới sung túc.",
+    en: "Yellow apricot blossom is the Tet emblem of southern Vietnam, symbolizing wealth and a prosperous new year.",
+  },
+  orchis: {
+    vi: "Hoa lan tượng trưng cho vẻ đẹp thanh cao, sự quý phái và tình yêu tinh tế.",
+    en: "Orchids represent refined beauty, nobility and delicate love.",
+  },
+  jasminum: {
+    vi: "Hoa nhài tượng trưng cho sự trong trắng, giản dị và tình cảm dịu dàng.",
+    en: "Jasmine symbolizes purity, simplicity and gentle affection.",
+  },
+  bougainvillea: {
+    vi: "Hoa giấy tượng trưng cho tình yêu mộc mạc, bền bỉ và sức sống mãnh liệt.",
+    en: "Bougainvillea stands for simple, enduring love and strong vitality.",
+  },
+  delonix: {
+    vi: "Hoa phượng gắn với mùa hè và tuổi học trò, gợi những kỷ niệm và cảm xúc chia tay.",
+    en: "The flame tree is tied to summer and school days in Vietnam, evoking memories and farewells.",
+  },
+  narcissus: {
+    vi: "Thủy tiên tượng trưng cho sự khởi đầu mới, may mắn và sự thanh cao, thường chưng vào dịp Tết.",
+    en: "Narcissus symbolizes new beginnings, good luck and grace, often displayed at Tet.",
+  },
+  zantedeschia: {
+    vi: "Hoa rum tượng trưng cho vẻ đẹp tinh khiết, sự sang trọng và tình yêu chung thủy.",
+    en: "Calla lilies represent pure beauty, elegance and faithful love.",
+  },
+  anthurium: {
+    vi: "Hồng môn tượng trưng cho sự hiếu khách, may mắn và tài lộc, hay được tặng dịp khai trương.",
+    en: "Anthuriums symbolize hospitality, luck and abundance, a common gift for business openings.",
+  },
+  tagetes: {
+    vi: "Vạn thọ tượng trưng cho sự trường thọ, sức khỏe và bình an, thường chưng trên bàn thờ ngày Tết.",
+    en: "Marigolds stand for longevity, health and peace, often placed on altars at Tet.",
+  },
+  camellia: {
+    vi: "Hoa trà tượng trưng cho sự ngưỡng mộ, lòng chung thủy và vẻ đẹp hoàn hảo.",
+    en: "Camellias represent admiration, devotion and perfection.",
+  },
+  plumeria: {
+    vi: "Hoa sứ tượng trưng cho sự thanh khiết và sức sống bền bỉ, thường trồng ở đình chùa.",
+    en: "Frangipani symbolizes purity and enduring life, often planted at temples.",
+  },
+  iris: {
+    vi: "Diên vĩ tượng trưng cho niềm tin, hy vọng và sự thông thái.",
+    en: "Iris stands for faith, hope and wisdom.",
+  },
+  dahlia: {
+    vi: "Thược dược tượng trưng cho sự thanh lịch, lòng biết ơn và sự gắn bó lâu dài.",
+    en: "Dahlias represent elegance, gratitude and lasting commitment.",
+  },
+};
+
+const SPECIES_MEANINGS = {
+  // Broad genera (Prunus, Hibiscus, Lagerstroemia) only get meanings per species,
+  // otherwise e.g. Prunus triloba would show the peach blossom meaning.
+  "prunus persica": {
+    vi: "Hoa đào là biểu tượng của mùa xuân và ngày Tết miền Bắc, mang ý nghĩa may mắn, sức sống mới và xua đuổi điều xấu.",
+    en: "Peach blossom is the emblem of spring and Tet in northern Vietnam, bringing luck and new life and warding off bad fortune.",
+  },
+  "prunus mume": {
+    vi: "Hoa mơ (mai trắng) nở khi trời còn lạnh nên tượng trưng cho sự thanh cao, bền bỉ và niềm hy vọng đầu xuân.",
+    en: "Japanese apricot blossoms in the cold, symbolizing purity, perseverance and the hope of early spring.",
+  },
+  "prunus serrulata": {
+    vi: "Hoa anh đào tượng trưng cho vẻ đẹp mong manh, ngắn ngủi của cuộc sống và lời nhắc trân trọng hiện tại.",
+    en: "Cherry blossoms symbolize the fleeting beauty of life and a reminder to cherish the present.",
+  },
+  "hibiscus rosa-sinensis": {
+    vi: "Dâm bụt tượng trưng cho vẻ đẹp dịu dàng và sự nhiệt thành.",
+    en: "Hibiscus represents delicate beauty and warmth.",
+  },
+  "lagerstroemia speciosa": {
+    vi: "Bằng lăng tím tượng trưng cho tình yêu thuần khiết, thủy chung và những rung động đầu đời.",
+    en: "Crape myrtle represents pure, faithful love and first romance.",
+  },
+  "chrysanthemum indicum": {
+    vi: "Cúc hoa vàng tượng trưng cho sự trường thọ, sức khỏe và phẩm chất thanh cao. Hoa còn được dùng làm trà và vị thuốc thanh nhiệt.",
+    en: "Chrysanthemum indicum stands for longevity, health and noble character; its flowers are also used for herbal tea.",
+  },
+};
+
+function normalizeName(scientificName) {
+  return String(scientificName || "")
+    // Hybrid marker: "Chrysanthemum × morifolium" -> "Chrysanthemum morifolium"
+    .replace(/×\s*/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+// Order: local species name, Wikipedia name (exact species), then local genus name.
+export function vietnameseFlowerName(scientificName, wikiName = "") {
+  const key = normalizeName(scientificName);
+  if (!key) return "";
+  return SPECIES[key] || wikiName || GENUS[key.split(" ")[0]] || "";
+}
+
+// Symbolic meaning from local data first; otherwise the Wikipedia description.
+// kind tells the UI which heading to use.
+export function flowerMeaning(candidate, language) {
+  const key = normalizeName(candidate?.scientificName);
+  const lang = language === "en" ? "en" : "vi";
+  const entry = SPECIES_MEANINGS[key] || MEANINGS[key.split(" ")[0]];
+  if (entry) return { kind: "meaning", text: entry[lang] };
+  const text = candidate?.description?.[lang] || "";
+  return text ? { kind: "about", text } : null;
+}
+
+// Match level shown next to the score: high from 60%, medium from 30%.
+export function scoreLevel(score) {
+  return score >= 0.6 ? "high" : score >= 0.3 ? "medium" : "low";
+}
+
+// Name shown as the candidate title, chosen by the active UI language.
+export function flowerDisplayName(candidate, language) {
+  if (language !== "en") {
+    const vi = vietnameseFlowerName(
+      candidate.scientificName,
+      candidate.vietnameseName,
+    );
+    // No Vietnamese name anywhere: show the scientific name, never the English one.
+    return vi || candidate.scientificName;
+  }
+  return candidate.commonNames?.[0] || candidate.scientificName;
+}

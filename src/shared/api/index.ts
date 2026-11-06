@@ -33,6 +33,7 @@ export const api = createApi({
   ...(browserSessionStore ? { tokenStore: browserSessionStore } : {}),
 });
 
+export * from "./flowers.service";
 export * from "./create-api";
 export * from "./http-client";
 export * from "./api-error";

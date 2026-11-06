@@ -361,6 +361,19 @@
   border-color: transparent;
   box-shadow: none;
 }
+.mg-icon-action.ant-btn.ant-btn-primary:not(:disabled) {
+  color: #468432;
+  background: #eef5e9;
+}
+.mg-icon-action.ant-btn.ant-btn-primary:not(:disabled):hover,
+.mg-icon-action.ant-btn.ant-btn-primary:not(:disabled):active {
+  color: #fff;
+  background: #468432;
+}
+.mg-icon-action.ant-btn.ant-btn-primary:disabled {
+  color: rgba(0, 0, 0, 0.25);
+  background: transparent;
+}
 .mg-icon-action.ant-btn:not(:disabled):hover,
 .mg-icon-action.ant-btn:not(:disabled):active {
   color: #468432;

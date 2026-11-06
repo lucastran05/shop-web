@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { AutoComplete, Input } from "antd";
+import { AutoComplete, Input, Button, Modal, Tooltip } from "antd";
+import { CameraOutlined } from "@ant-design/icons";
+import FlowerIdentifier from "./FlowerIdentifier";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
@@ -14,6 +16,20 @@ export default function HeaderSearch() {
   const [value, setValue] = useState(
     params.get("search") || params.get("q") || "",
   );
+  const [identifyOpen, setIdentifyOpen] = useState(
+    params.get("identify") === "flower",
+  );
+  function closeIdentify() {
+    setIdentifyOpen(false);
+    if (params.get("identify") === "flower") {
+      const next = new URLSearchParams(params);
+      next.delete("identify");
+      navigate(
+        { pathname: location.pathname, search: next.toString() },
+        { replace: true },
+      );
+    }
+  }
   const results = value.trim()
     ? products.filter(
         (p) =>
@@ -52,28 +68,66 @@ export default function HeaderSearch() {
   if (value.trim())
     options.push({ value: "all-results", label: t("Xem tất cả kết quả") });
   return (
-    <AutoComplete
-      className="header-search"
-      value={value}
-      options={options}
-      onChange={(v, option) => {
-        if (!option?.label) setValue(v);
-      }}
-      onSelect={(v) => {
-        if (v === "all-results") search();
-        else navigate("/products/" + v.replace("product-", ""));
-      }}
-      popupMatchSelectWidth={360}
-      notFoundContent={t("Không tìm thấy sản phẩm phù hợp")}
-    >
-      <Input.Search
-        aria-label={t("Tìm kiếm toàn bộ sản phẩm")}
-        placeholder={t("Tìm theo tên hoặc mô tả…")}
+    <>
+      <AutoComplete
+        open={identifyOpen ? false : undefined}
+        className="header-search"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onSearch={search}
-        allowClear
-      />
-    </AutoComplete>
+        options={options}
+        onChange={(v, option) => {
+          if (!option?.label) setValue(v);
+        }}
+        onSelect={(v) => {
+          if (v === "all-results") search();
+          else navigate("/products/" + v.replace("product-", ""));
+        }}
+        popupMatchSelectWidth={360}
+        notFoundContent={t("Không tìm thấy sản phẩm phù hợp")}
+      >
+        <Input.Search
+          aria-label={t("Tìm kiếm toàn bộ sản phẩm")}
+          placeholder={t("Tìm theo tên hoặc mô tả…")}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onSearch={search}
+          suffix={
+            <Tooltip
+              open={identifyOpen ? false : undefined}
+              title={t("Nhận diện hoa bằng ảnh")}
+            >
+              <Button
+                className="flower-camera-trigger"
+                type="text"
+                icon={<CameraOutlined />}
+                aria-label={t("Nhận diện hoa bằng ảnh")}
+                aria-haspopup="dialog"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIdentifyOpen(true);
+                }}
+              />
+            </Tooltip>
+          }
+          allowClear
+        />
+      </AutoComplete>
+      <Modal
+        className="flower-identify-modal"
+        title={
+          <div className="flower-modal-heading">
+            <span>{t("TÌM HOA BẰNG HÌNH ẢNH")}</span>
+            <h2>{t("Nhận diện hoa")}</h2>
+          </div>
+        }
+        open={identifyOpen}
+        onCancel={closeIdentify}
+        footer={null}
+        width={960}
+        centered
+        destroyOnHidden
+      >
+        {identifyOpen && <FlowerIdentifier />}
+      </Modal>
+    </>
   );
 }
