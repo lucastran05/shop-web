@@ -1223,61 +1223,8 @@ hr {
 .account-page {
   max-width: 1000px;
 }
-.account-panel {
-  margin-top: 24px;
-  padding: 0 32px;
-  background: #fff;
-  border: 1px solid #e7ece4;
-  border-radius: 18px;
-}
-.account-section {
-  display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr);
-  gap: 32px;
-  padding: 32px 0;
-}
-.account-section + .account-section {
-  border-top: 1px solid #edf0e9;
-}
-.account-section h2 {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0;
-  color: #294221;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-.account-section h2 .anticon {
-  flex-shrink: 0;
-  color: #468432;
-}
-.account-section-content {
-  min-width: 0;
-}
 .settings-page .ant-select {
   width: 100%;
-}
-.account-address {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid #e7ece4;
-  border-radius: 10px;
-  overflow-wrap: anywhere;
-}
-.account-address .address-actions {
-  margin-bottom: 0;
-}
-@media (max-width: 640px) {
-  .account-panel {
-    padding: 0 20px;
-  }
-  .account-section {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 24px 0;
-  }
 }
 .address-actions {
   display: flex;
