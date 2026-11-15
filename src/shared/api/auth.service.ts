@@ -93,6 +93,21 @@ export class AuthService {
   refresh(): Promise<ApiResponse<TokenPair>> {
     return this.http.refreshTokens();
   }
+  forgotPassword(body: { email: string }): Promise<ApiResponse<SuccessResult>> {
+    return this.http.publicPost("/api/v1/auth/forgot-password", body);
+  }
+  async resetPassword(body: {
+    token: string;
+    password: string;
+    password_confirmation: string;
+  }): Promise<ApiResponse<SuccessResult>> {
+    const response = await this.http.publicPost<ApiResponse<SuccessResult>>(
+      "/api/v1/auth/reset-password",
+      body,
+    );
+    this.http.clearTokens();
+    return response;
+  }
   async logout(options?: RequestOptions): Promise<ApiResponse<SuccessResult>> {
     try {
       return await this.http.post("/api/v1/auth/logout", undefined, options);

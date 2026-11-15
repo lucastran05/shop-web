@@ -6,50 +6,19 @@ import {
   orderStatusGroup,
   canCancelOrder,
 } from "../../../shared/constants/shop";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import {
-  Tabs,
-  Empty,
-  Tag,
-  Button,
-  Modal,
-  Pagination,
-  Spin,
-  Tooltip,
-} from "antd";
-import {
-  ShoppingOutlined,
-  ArrowRightOutlined,
-  EyeOutlined,
-  CloseCircleOutlined,
-  StarOutlined,
-  ClockCircleOutlined,
-  InboxOutlined,
-  TruckOutlined,
-  CheckCircleOutlined,
-  UndoOutlined,
-  CalendarOutlined,
-  WalletOutlined,
-} from "@ant-design/icons";
+import { Button, Modal, Pagination, Spin } from "antd";
 import { useShop } from "../../../shared/shop/useShop";
 import { money } from "../../../shared/utils/format";
 import OrderDetail from "../components/OrderDetail";
+import { progressSteps, statusTone } from "../components/orderStatus";
 import CopyCode from "../../../shared/components/CopyCode";
 import { api } from "../../../shared/api";
 import { App } from "antd";
 import { userError } from "../../../shared/utils/userError";
 import RequestError from "../../../shared/components/RequestError";
 
-const statusAppearance = {
-  "Chờ thanh toán": { icon: <WalletOutlined />, color: "orange" },
-  "Chờ xác nhận": { icon: <ClockCircleOutlined />, color: "gold" },
-  "Đang chuẩn bị hàng": { icon: <InboxOutlined />, color: "cyan" },
-  "Đang giao hàng": { icon: <TruckOutlined />, color: "blue" },
-  "Đã hoàn thành": { icon: <CheckCircleOutlined />, color: "green" },
-  "Đã hủy": { icon: <CloseCircleOutlined />, color: "default" },
-  "Hoàn hàng / Hoàn tiền": { icon: <UndoOutlined />, color: "purple" },
-};
 export default function Orders() {
   const { t } = useTranslation();
   const { timeZone } = usePreferences();
@@ -64,6 +33,19 @@ export default function Orders() {
   const [cancelling, setCancelling] = useState(false);
   const [page, setPage] = useState(1);
   const refreshOrders = s.refreshOrders;
+  const tabsRef = useRef(null);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  useLayoutEffect(() => {
+    const strip = tabsRef.current;
+    const el = strip?.querySelector('[aria-pressed="true"]');
+    if (!el) return;
+    setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    if (
+      el.offsetLeft < strip.scrollLeft ||
+      el.offsetLeft + el.offsetWidth > strip.scrollLeft + strip.clientWidth
+    )
+      strip.scrollTo({ left: el.offsetLeft - 16, behavior: "smooth" });
+  }, [tab, loading, t]);
   const userId = s.user?.id;
   useEffect(() => {
     if (!userId) return;
@@ -106,44 +88,48 @@ export default function Orders() {
       setCancelling(false);
     }
   }
+  const tabs = [
+    { key: "all", label: t("Tất cả"), count: all.length },
+    ...orderStatuses.map((v) => ({
+      key: v,
+      label: t(v),
+      count: all.filter((o) => orderStatusGroup(o.status) === v).length,
+    })),
+  ];
   return (
-    <div className="page orders-page">
-      <div className="orders-heading">
+    <div className="page orders-page bt-orders">
+      <header className="bt-page-head">
         <h1>{t("Đơn mua của bạn")}</h1>
-        <Button href="/#collection" icon={<ArrowRightOutlined />}>
+        <Link className="bt-head-link" to="/#collection">
           {t("Tiếp tục mua sắm")}
-        </Button>
-      </div>
-      <Tabs
-        activeKey={tab}
-        onChange={(value) => {
-          setTab(value);
-          setPage(1);
+        </Link>
+      </header>
+      <div
+        className="bt-tabs bt-orders-tabs"
+        ref={tabsRef}
+        role="group"
+        aria-label={t("Lọc theo trạng thái")}
+        style={{
+          "--ind-left": indicator.left + "px",
+          "--ind-width": indicator.width + "px",
         }}
-        items={[
-          {
-            key: "all",
-            icon: <ShoppingOutlined />,
-            label: (
-              <span className="orders-tab-label">
-                {t("Tất cả")} <span>{all.length}</span>
-              </span>
-            ),
-          },
-          ...orderStatuses.map((v) => ({
-            key: v,
-            icon: statusAppearance[v]?.icon,
-            label: (
-              <span className="orders-tab-label">
-                {t(v)}{" "}
-                <span>
-                  {all.filter((o) => orderStatusGroup(o.status) === v).length}
-                </span>
-              </span>
-            ),
-          })),
-        ]}
-      />
+      >
+        {tabs.map((item) => (
+          <button
+            type="button"
+            key={item.key}
+            aria-pressed={tab === item.key}
+            onClick={() => {
+              setTab(item.key);
+              setPage(1);
+            }}
+          >
+            {item.label}
+            <sup>{item.count}</sup>
+          </button>
+        ))}
+        <span className="bt-tabs-indicator" aria-hidden="true" />
+      </div>
       {loadError && !loading && (
         <RequestError
           error={loadError}
@@ -154,98 +140,122 @@ export default function Orders() {
         />
       )}
       {loading ? (
-        <div className="orders-loading" role="status">
+        <div className="bt-state" role="status">
           <Spin size="large" />
           <p>{t("Đang tải…")}</p>
         </div>
       ) : orders.length ? (
-        orders.slice((currentPage - 1) * 5, currentPage * 5).map((o) => (
-          <section className="order-card" key={o.id}>
-            <div className="order-head">
-              <div className="order-code">
-                <InboxOutlined aria-hidden="true" />
-                <strong title={o.code}>{o.code}</strong>
-                <CopyCode value={o.code} />
-              </div>
-              <Tag {...statusAppearance[orderStatusGroup(o.status)]}>
-                {t(orderStatusGroup(o.status))}
-              </Tag>
-            </div>
-            <div className="order-date">
-              <CalendarOutlined aria-hidden="true" />
-              {formatDateTime(o.createdAt, timeZone)}
-            </div>
-            {o.items.map((p) => {
-              const isDelivered = [
-                "completed",
-                "delivered",
-                "Đã hoàn thành",
-                "Giao thành công",
-              ].includes(o.statusCode || o.status);
-              return (
-                <div className="order-product" key={p.key}>
-                  <img
-                    src={p.image || "/product-placeholder.svg"}
-                    alt={p.name}
-                  />
-                  <div className="order-product-info">
-                    <Link to={"/products/" + p.id}>{p.name}</Link>
-                    <small>
-                      {[p.color, p.variantLabel]
-                        .filter(Boolean)
-                        .map((value) => t(value))
-                        .join(" / ")}{" "}
-                      · {t("Số lượng")}: {p.quantity}
-                    </small>
+        <div className="bt-order-list" key={tab + currentPage}>
+          {orders.slice((currentPage - 1) * 5, currentPage * 5).map((o) => {
+            const group = orderStatusGroup(o.status);
+            const step = progressSteps.indexOf(group);
+            const isDelivered = [
+              "completed",
+              "delivered",
+              "Đã hoàn thành",
+              "Giao thành công",
+            ].includes(o.statusCode || o.status);
+            const canCancel =
+              o.allowed_actions?.includes("cancel") || canCancelOrder(o);
+            return (
+              <article className="bt-order" key={o.id}>
+                <header className="bt-order-head">
+                  <div className="bt-order-id">
+                    <span className="bt-order-code">
+                      <strong title={o.code}>{o.code}</strong>
+                      <CopyCode value={o.code} />
+                    </span>
+                    <time dateTime={o.createdAt}>
+                      {formatDateTime(o.createdAt, timeZone)}
+                    </time>
                   </div>
-                  <b>{money(p.price * p.quantity)}</b>
-                  {isDelivered && (
-                    <Tooltip title={t("Đánh giá")}>
-                      <Link
-                        to={"/products/" + p.id + "#reviews"}
-                        className="order-action-link"
-                        aria-label={t("Đánh giá") + ": " + p.name}
+                  <span
+                    className="bt-status"
+                    style={{ "--tone": statusTone[group] || "#56604f" }}
+                  >
+                    {t(group)}
+                  </span>
+                </header>
+                {(step >= 0 || group === "Chờ thanh toán") && (
+                  <ol
+                    className="bt-track"
+                    aria-label={t("Tiến trình đơn hàng")}
+                  >
+                    {progressSteps.map((name, i) => (
+                      <li
+                        key={name}
+                        className={
+                          i < step
+                            ? "is-done"
+                            : i === step
+                              ? "is-current"
+                              : undefined
+                        }
                       >
-                        <StarOutlined />
-                      </Link>
-                    </Tooltip>
-                  )}
-                </div>
-              );
-            })}
-            <div className="order-bottom">
-              <div className="order-card-total">
-                <span>{t("Tổng tiền")}</span>
-                <strong>{money(o.total)}</strong>
-              </div>
-              <Tooltip title={t("Xem chi tiết")}>
-                <Button
-                  className="order-action"
-                  type="text"
-                  icon={<EyeOutlined />}
-                  aria-label={t("Xem chi tiết")}
-                  onClick={() => setDetail(o)}
-                />
-              </Tooltip>
-              {(o.allowed_actions?.includes("cancel") || canCancelOrder(o)) && (
-                <Tooltip title={t("Hủy đơn")}>
-                  <Button
-                    className="order-action"
-                    type="text"
-                    icon={<CloseCircleOutlined />}
-                    aria-label={t("Hủy đơn")}
-                    danger
-                    onClick={() => setCancel(o)}
-                  />
-                </Tooltip>
-              )}
-            </div>
-          </section>
-        ))
+                        <span>{t(name)}</span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <ul className="bt-order-items">
+                  {o.items.map((p) => (
+                    <li key={p.key}>
+                      <img src={p.image || "/product-placeholder.svg"} alt="" />
+                      <div>
+                        <Link to={"/products/" + p.id}>{p.name}</Link>
+                        <small>
+                          {[p.variantLabel, p.color]
+                            .filter(Boolean)
+                            .map((value) => t(value))
+                            .join(", ")}{" "}
+                          × {p.quantity}
+                        </small>
+                      </div>
+                      <b>{money(p.price * p.quantity)}</b>
+                      {isDelivered && (
+                        <Link
+                          to={"/products/" + p.id + "#reviews"}
+                          className="bt-text-link"
+                          aria-label={t("Đánh giá") + ": " + p.name}
+                        >
+                          {t("Đánh giá")}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <footer className="bt-order-foot">
+                  <div className="bt-order-total">
+                    <span>{t("Tổng tiền")}</span>
+                    <strong>{money(o.total)}</strong>
+                  </div>
+                  <div className="bt-order-actions">
+                    {canCancel && (
+                      <Button danger type="text" onClick={() => setCancel(o)}>
+                        {t("Hủy đơn")}
+                      </Button>
+                    )}
+                    <Button onClick={() => setDetail(o)}>
+                      {t("Xem chi tiết")}
+                    </Button>
+                  </div>
+                </footer>
+              </article>
+            );
+          })}
+        </div>
       ) : !loadError ? (
-        <Empty description={t("Chưa có đơn hàng trong mục này")}>
-          <Link to="/">{t("Tiếp tục mua sắm")}</Link>
-        </Empty>
+        <div className="bt-empty-state">
+          <div className="bt-empty-arch" aria-hidden="true">
+            <img src="/logo/logo.svg" alt="" />
+          </div>
+          <h2>{t("Chưa có đơn hàng trong mục này")}</h2>
+          <Link to="/">
+            <Button type="primary" size="large">
+              {t("Tiếp tục mua sắm")}
+            </Button>
+          </Link>
+        </div>
       ) : null}
       {!loading && (
         <Pagination

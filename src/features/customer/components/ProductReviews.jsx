@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { PictureOutlined, CloseOutlined } from "@ant-design/icons";
 import { api } from "../../../shared/api";
 import { userError } from "../../../shared/utils/userError";
@@ -92,37 +92,6 @@ export default function ProductReviews({ productId }) {
     };
   }, [productId, s.user, refresh]);
 
-  // Kiểm tra lịch sử đơn hàng của người dùng trong hệ thống
-  const { hasPurchased, hasInTransitOrder } = useMemo(() => {
-    if (!s.user || !s.orders || !s.orders.length) {
-      return { hasPurchased: false, hasInTransitOrder: false };
-    }
-    const userOrdersForProduct = s.orders.filter((o) =>
-      o.items?.some((item) => String(item.id) === String(productId)),
-    );
-
-    const inTransit = userOrdersForProduct.some((o) =>
-      [
-        "pending",
-        "confirmed",
-        "processing",
-        "shipping",
-        "shipped",
-        "Chờ xác nhận",
-        "Đã xác nhận",
-        "Đã cọc",
-        "Đang chuẩn bị hàng",
-        "Đã đóng gói",
-        "Đang giao hàng",
-      ].includes(o.statusCode || o.status),
-    );
-
-    return {
-      hasPurchased: userOrdersForProduct.length > 0,
-      hasInTransitOrder: inTransit,
-    };
-  }, [s.user, s.orders, productId]);
-
   // Chỉ hiện form khi backend xác nhận đã mua và nhận hàng thành công.
   const canWriteReview = Boolean(s.user && apiEligibility?.can_review === true);
 
@@ -165,11 +134,26 @@ export default function ProductReviews({ productId }) {
         image_ids: images.map((image) => image.id),
       });
       message.success(t("Gửi đánh giá thành công! Cảm ơn bạn."));
+      // Mỗi sản phẩm chỉ đánh giá một lần: ẩn form ngay, không chờ tải lại
+      setApiEligibility({
+        can_review: false,
+        reason: "already_reviewed",
+        message: "",
+      });
       setImages([]);
       form.resetFields();
       setPage(1);
       setRefresh((value) => value + 1);
     } catch (error) {
+      const reason = error?.payload?.reason;
+      if (
+        ["already_reviewed", "not_purchased", "not_delivered"].includes(reason)
+      )
+        setApiEligibility({
+          can_review: false,
+          reason,
+          message: error.message,
+        });
       message.error(error.message || t(userError(error)));
     } finally {
       setSubmitting(false);
@@ -290,10 +274,9 @@ export default function ProductReviews({ productId }) {
               </div>
             </Form>
           </div>
-        ) : (hasPurchased && hasInTransitOrder) ||
-          apiEligibility?.reason === "not_delivered" ? null : (
-          <></>
-        )}
+        ) : apiEligibility ? (
+          <ReviewNotice reason={apiEligibility.reason} />
+        ) : null}
       </div>
 
       {/* Danh sách đánh giá của những người khác (luôn hiển thị khi xem sản phẩm) */}
@@ -303,6 +286,11 @@ export default function ProductReviews({ productId }) {
             <article className="review-item" key={r.id}>
               <div className="review-author-line">
                 <strong>{r.name}</strong>
+                {s.user &&
+                  (r.id === apiEligibility?.review_id ||
+                    r.author?.id === s.user.id) && (
+                    <span className="review-mine">{t("Đánh giá của bạn")}</span>
+                  )}
               </div>
               <Rate disabled value={r.rating} />
               <time dateTime={r.createdAt}>
@@ -337,5 +325,27 @@ export default function ProductReviews({ productId }) {
         />
       </div>
     </section>
+  );
+}
+
+// Lý do chưa viết được đánh giá, theo kết quả kiểm tra của backend
+function ReviewNotice({ reason }) {
+  const { t } = useTranslation();
+  const text = {
+    already_reviewed: t(
+      "Bạn đã đánh giá sản phẩm này. Mỗi sản phẩm chỉ được đánh giá một lần.",
+    ),
+    not_delivered: t(
+      "Đơn hàng của bạn đang được xử lý. Bạn có thể đánh giá sau khi nhận hàng.",
+    ),
+    not_purchased: t(
+      "Chỉ khách đã mua và nhận hàng mới viết được đánh giá cho sản phẩm này.",
+    ),
+  }[reason];
+  if (!text) return null;
+  return (
+    <p className={"review-notice is-" + reason} role="status">
+      {text}
+    </p>
   );
 }

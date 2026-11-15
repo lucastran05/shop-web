@@ -42,8 +42,15 @@ export interface ReviewSummary {
 export interface ReviewEligibility {
   can_review: boolean;
   reason:
-    "eligible" | "not_logged_in" | "not_purchased" | "not_delivered" | string;
+    | "eligible"
+    | "not_logged_in"
+    | "not_purchased"
+    | "not_delivered"
+    | "already_reviewed"
+    | string;
   message: string;
+  // Có khi reason = "already_reviewed": id đánh giá khách đã viết
+  review_id?: ID;
 }
 export interface ReviewsResponse extends ListResponse<Review> {
   summary: ReviewSummary;

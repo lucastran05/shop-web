@@ -41,6 +41,7 @@ export interface CreateProductRequest {
   name: string;
   category_id: ID;
   description?: string;
+  flower_species?: string[];
   image_ids?: ID[];
   images?: ProductImage[];
   image?: string;
@@ -54,6 +55,9 @@ export interface CreateProductRequest {
 export type UpdateProductRequest = Partial<CreateProductRequest>;
 export class AdminProductsService {
   constructor(private readonly http: HttpClient) {}
+  flowerSpecies(options?: RequestOptions): Promise<ApiResponse<string[]>> {
+    return this.http.get("/api/v1/admin/flower-species", undefined, options);
+  }
   list(
     query?: AdminProductsQuery,
     options?: RequestOptions,

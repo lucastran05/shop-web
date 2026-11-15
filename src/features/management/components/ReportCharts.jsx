@@ -87,10 +87,10 @@ export default function ReportCharts({ rows, orders }) {
               >
                 <defs>
                   <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#79ac61" stopOpacity="0.35" />
+                    <stop offset="0%" stopColor="#3c6a2c" stopOpacity="0.35" />
                     <stop
                       offset="100%"
-                      stopColor="#79ac61"
+                      stopColor="#3c6a2c"
                       stopOpacity="0.02"
                     />
                   </linearGradient>
@@ -104,7 +104,7 @@ export default function ReportCharts({ rows, orders }) {
                         x2="736"
                         y1={y}
                         y2={y}
-                        stroke="#e7ece4"
+                        stroke="rgba(30,42,31,0.1)"
                         strokeDasharray="4 5"
                       />
                       <text x="52" y={y + 4} textAnchor="end">
@@ -122,8 +122,8 @@ export default function ReportCharts({ rows, orders }) {
                 <polyline
                   points={line}
                   fill="none"
-                  stroke="#468432"
-                  strokeWidth="3"
+                  stroke="#1e2a1f"
+                  strokeWidth="2"
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
@@ -147,8 +147,8 @@ export default function ReportCharts({ rows, orders }) {
                           cx={point.x}
                           cy={point.y}
                           r="4.5"
-                          fill="#fff"
-                          stroke="#468432"
+                          fill="#f7f8f1"
+                          stroke="#1e2a1f"
                           strokeWidth="2.5"
                         />
                       </g>

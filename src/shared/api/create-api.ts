@@ -1,3 +1,4 @@
+import { FlowersService } from "./flowers.service";
 import { HttpClient, type HttpClientConfig } from "./http-client";
 import { AuthService } from "./auth.service";
 import { AddressesService } from "./addresses.service";
@@ -28,6 +29,7 @@ export function createApi(config: HttpClientConfig) {
   const http = new HttpClient(config);
   return {
     http,
+    flowers: new FlowersService(http),
     auth: new AuthService(http),
     addresses: new AddressesService(http),
     products: new ProductsService(http),

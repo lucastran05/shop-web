@@ -1,6 +1,7 @@
-import { Button, Divider, Input, InputNumber, Select } from "antd";
+import { Button, Input, Select } from "antd";
 import { useTranslation } from "react-i18next";
 import { money } from "../../../../shared/utils/format";
+import QtyStepper from "../QtyStepper";
 
 function voucherLabel(voucher) {
   if (voucher.discount_type === "percentage") return `${voucher.code} — Giảm ${voucher.discount_value}%`;
@@ -47,65 +48,68 @@ export default function CheckoutSummary({ step, items, totals, onQuantityChange,
   const editable = step === 0;
 
   return (
-    <aside className="panel summary">
+    <aside className="bt-ticket" aria-label={t("Đơn hàng của bạn")}>
       <h2>{t("Đơn hàng của bạn")}</h2>
-      {editable &&
-        items.map((item) => (
-          <div className="mini-product" key={item.key}>
+      <div className="bt-ticket-items">
+        {items.map((item) => (
+          <div className="bt-mini" key={item.key}>
             <img src={item.image} alt="" />
             <div>
               <span className="product-name">{item.name}</span>
-              <small>
-                {t(item.color)} / {t(item.variantLabel)}
-              </small>
-              <small>
-                {t("Đơn giá")}: {money(item.price)}
-              </small>
-              <InputNumber
-                aria-label={t("Số lượng {{name}}", { name: item.name })}
-                precision={0}
-                min={1}
-                max={item.stock}
-                value={item.quantity}
-                disabled={!item.stock}
-                onChange={(value) => onQuantityChange(item.key, value, item.stock)}
-              />
+              <small>{[t(item.variantLabel), t(item.color)].filter(Boolean).join(", ")}</small>
+              {editable ? (
+                <QtyStepper
+                  size="small"
+                  label={t("Số lượng {{name}}", { name: item.name })}
+                  value={item.quantity}
+                  min={1}
+                  max={item.stock}
+                  disabled={!item.stock}
+                  onChange={(value) => onQuantityChange(item.key, value, item.stock)}
+                />
+              ) : (
+                <small>
+                  {money(item.price)} × {item.quantity}
+                </small>
+              )}
             </div>
             <b>{money(item.price * item.quantity)}</b>
           </div>
         ))}
+      </div>
       {editable && <VoucherInput {...voucher} />}
-      <p>
-        <span>{t("Tổng tiền hàng")}</span>
-        <b>{money(subtotal)}</b>
-      </p>
-      <p>
-        <span>{t("Giảm giá")}</span>
-        <b>−{money(off)}</b>
-      </p>
-      <p>
-        <span>{t("Phí giao hàng")}</span>
-        <b>{money(shipping)}</b>
-      </p>
-      <Divider style={{ margin: "22px 0" }} />
-      <p className="total">
-        <span>{t("Tổng cộng")}</span>
-        <b>{money(total)}</b>
-      </p>
-      {step === 1 && (
-        <>
-          <p>
-            <span>{t("Thanh toán ngay")}</span>
-            <b>{money(due)}</b>
-          </p>
-          {total > due && (
-            <p>
-              <span>{t("Thanh toán khi nhận hàng")}</span>
-              <b>{money(total - due)}</b>
-            </p>
-          )}
-        </>
-      )}
+      <dl className="bt-sum">
+        <div>
+          <dt>{t("Tổng tiền hàng")}</dt>
+          <dd>{money(subtotal)}</dd>
+        </div>
+        <div className={off ? "is-off" : undefined}>
+          <dt>{t("Giảm giá")}</dt>
+          <dd>−{money(off)}</dd>
+        </div>
+        <div>
+          <dt>{t("Phí giao hàng")}</dt>
+          <dd>{shipping ? money(shipping) : t("Miễn phí")}</dd>
+        </div>
+        <div className="is-total">
+          <dt>{t("Tổng cộng")}</dt>
+          <dd key={total}>{money(total)}</dd>
+        </div>
+        {step === 1 && (
+          <>
+            <div>
+              <dt>{t("Thanh toán ngay")}</dt>
+              <dd>{money(due)}</dd>
+            </div>
+            {total > due && (
+              <div>
+                <dt>{t("Thanh toán khi nhận hàng")}</dt>
+                <dd>{money(total - due)}</dd>
+              </div>
+            )}
+          </>
+        )}
+      </dl>
     </aside>
   );
 }

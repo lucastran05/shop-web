@@ -1,0 +1,732 @@
+/*
+ * Nhận diện hoa — cùng chất liệu "tạp chí thực vật" với cửa hàng.
+ * Nạp sau FlowerIdentifier.css / FlowerHistory.css và chỉ ghi đè phần hiển thị.
+ */
+.flower-identify-modal {
+  --paper: #edefe4;
+  --paper-2: #e2e6d6;
+  --sheet: #f7f8f1;
+  --ink: #1e2a1f;
+  --ink-2: #56604f;
+  --moss: #3c6a2c;
+  --wing: #6b4a8a;
+  --pollen: #e7c14a;
+  --line: rgba(30, 42, 31, 0.14);
+  --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --arch: 999px 999px 16px 16px;
+  --ease: cubic-bezier(0.2, 0.7, 0.1, 1);
+  font-family: var(--sans);
+  color: var(--ink);
+}
+.flower-identify-modal .ant-modal-container,
+.flower-identify-modal .ant-modal-content {
+  background: var(--paper);
+  border-radius: 28px;
+}
+.flower-identify-modal .ant-modal-header {
+  background: transparent;
+}
+.flower-identify-modal .flower-modal-heading h2 {
+  font-family: var(--serif);
+  font-size: clamp(30px, 3.4vw, 42px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-modal-heading p {
+  max-width: 58ch;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Tab Nhận diện / Lịch sử */
+.flower-identify-modal .flower-tabs.ant-segmented {
+  padding: 3px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: var(--paper-2);
+}
+.flower-identify-modal .flower-tabs .ant-segmented-item,
+.flower-identify-modal .flower-tabs .ant-segmented-thumb {
+  border-radius: 999px;
+}
+.flower-identify-modal .flower-tabs .ant-segmented-item-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Hai cột */
+.flower-identify-modal .flower-workspace {
+  position: relative;
+  gap: 22px;
+  border-radius: 22px;
+  transition: box-shadow 0.2s;
+}
+.flower-identify-modal .flower-workspace.is-dragging {
+  box-shadow: 0 0 0 3px var(--wing);
+}
+.flower-identify-modal .flower-workspace.is-dragging .flower-upload-zone,
+.flower-identify-modal .flower-workspace.is-dragging .flower-photo-stage {
+  background: #ece6f2;
+}
+.flower-identify-modal .flower-source,
+.flower-identify-modal .flower-results {
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: none;
+}
+.flower-identify-modal .flower-section-heading h3 {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-section-heading span {
+  color: var(--ink-2);
+}
+
+/* Khung ảnh hình vòm */
+.flower-identify-modal .flower-upload-zone,
+.flower-identify-modal .flower-photo-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--arch);
+  border: 1px dashed rgba(30, 42, 31, 0.35);
+  background: var(--paper-2);
+  color: var(--ink);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.flower-identify-modal .flower-photo-stage {
+  border-style: solid;
+  border-color: var(--line);
+}
+.flower-identify-modal .flower-upload-zone:hover {
+  border-color: var(--ink);
+  background: #dde2cf;
+}
+.flower-identify-modal .flower-upload-zone strong {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+}
+.flower-identify-modal .flower-upload-zone > span {
+  color: var(--ink-2);
+}
+.flower-identify-modal .flower-hero-icon {
+  background: var(--sheet);
+  color: var(--moss);
+  border-radius: 999px 999px 10px 10px;
+}
+.flower-identify-modal .flower-upload-label {
+  background: var(--ink);
+  color: var(--paper) !important;
+  border-radius: 999px;
+}
+.flower-identify-modal .flower-photo-stage img,
+.flower-identify-modal .flower-photo-stage video {
+  object-fit: cover;
+}
+.flower-identify-modal .flower-change-photo,
+.flower-identify-modal .flower-file-name {
+  border-radius: 999px;
+}
+
+/* Vạch quét khi đang nhận diện */
+.flower-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(231, 193, 74, 0) 40%,
+    rgba(231, 193, 74, 0.55) 49%,
+    #e7c14a 50%,
+    rgba(231, 193, 74, 0) 51%,
+    transparent 100%
+  );
+  background-size: 100% 220%;
+  animation: flower-scan 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  mix-blend-mode: multiply;
+}
+.flower-scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 42, 31, 0.12);
+}
+@keyframes flower-scan {
+  from {
+    background-position: 0 100%;
+  }
+  to {
+    background-position: 0 0%;
+  }
+}
+
+.flower-identify-modal .flower-source-actions .ant-btn {
+  border-radius: 999px;
+}
+
+/* Kết quả: nhãn tiêu bản */
+.flower-identify-modal .flower-result-placeholder h4 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-result-placeholder p {
+  color: var(--ink-2);
+}
+.flower-identify-modal .flower-placeholder-icon {
+  color: var(--moss);
+}
+.flower-identify-modal .flower-match {
+  position: relative;
+  padding: 22px 20px 18px;
+  background: #fbfcf7;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 18px 30px -24px rgba(30, 42, 31, 0.6);
+  animation: flower-label 0.5s var(--ease);
+}
+.flower-identify-modal .flower-match::before {
+  content: "";
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 78px;
+  height: 18px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: rgba(231, 193, 74, 0.55);
+}
+@keyframes flower-label {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(-1deg);
+  }
+}
+.flower-identify-modal .flower-match-name {
+  font-family: var(--serif);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-match-latin {
+  font-family: var(--serif);
+  color: var(--ink-2);
+}
+.flower-identify-modal .flower-tag {
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 0;
+  border-radius: 999px;
+}
+.flower-identify-modal .flower-match-score {
+  background: var(--paper);
+  border: 0;
+  border-radius: 14px;
+}
+.flower-identify-modal .flower-match-score strong {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-match-bar,
+.flower-identify-modal .flower-similar-bar,
+.flower-identify-modal .fh-similar-bar {
+  background: rgba(30, 42, 31, 0.1);
+  border-radius: 999px;
+}
+.flower-identify-modal .flower-match-bar span,
+.flower-identify-modal .flower-similar-bar span,
+.flower-identify-modal .fh-similar-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--moss);
+  animation: flower-grow 0.9s var(--ease);
+  transform-origin: left;
+}
+.flower-identify-modal .is-medium .flower-match-bar span,
+.flower-identify-modal .flower-similar-bar.is-medium span,
+.flower-identify-modal .fh-similar-bar.is-medium span {
+  background: #b7861a;
+}
+.flower-identify-modal .is-low .flower-match-bar span,
+.flower-identify-modal .flower-similar-bar.is-low span,
+.flower-identify-modal .fh-similar-bar.is-low span {
+  background: #8a8f84;
+}
+@keyframes flower-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+.flower-identify-modal .flower-level {
+  border-radius: 999px;
+}
+.flower-identify-modal .flower-match-info h4 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-match-info h4 .anticon {
+  color: var(--wing);
+}
+.flower-identify-modal .flower-match-info a {
+  color: var(--wing);
+}
+
+/* Có trong cửa hàng */
+.flower-shop {
+  margin-top: 16px;
+}
+.flower-shop h4,
+.flower-similar h4 {
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-shop ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.flower-shop a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfcf7;
+  color: var(--ink) !important;
+  transition: border-color 0.2s;
+}
+.flower-shop a:hover {
+  border-color: var(--ink);
+}
+.flower-shop img {
+  width: 40px;
+  height: 48px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 999px 999px 6px 6px;
+  background: var(--paper-2);
+}
+.flower-shop span {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.flower-shop strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  font-size: 14px;
+}
+.flower-shop small {
+  color: var(--ink-2);
+}
+
+/* Loài gần giống */
+.flower-similar {
+  margin-top: 16px;
+}
+.flower-similar ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.flower-similar li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 52px;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+.flower-similar-name {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.flower-similar-name strong {
+  font-weight: 500;
+}
+.flower-similar-name i {
+  font-family: var(--serif);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.flower-similar-bar {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+}
+.flower-similar-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.flower-identify-modal .flower-saved-note {
+  color: var(--moss);
+}
+.flower-identify-modal .flower-privacy {
+  color: var(--ink-2);
+}
+.flower-identify-modal .flower-privacy a {
+  color: var(--wing);
+}
+
+/* Chưa đăng nhập */
+.flower-identify-modal .flower-login h3 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.flower-identify-modal .flower-login p,
+.flower-identify-modal .flower-login small {
+  color: var(--ink-2);
+}
+.flower-identify-modal .flower-login .flower-hero-icon {
+  width: 72px;
+  height: 88px;
+  font-size: 28px;
+  background: var(--paper-2);
+}
+.flower-identify-modal .flower-login-link {
+  background: var(--ink);
+  color: var(--paper) !important;
+  border-radius: 999px;
+}
+.flower-identify-modal .flower-login-link:hover {
+  background: var(--moss);
+}
+
+/* Lịch sử */
+.flower-identify-modal .fh-head {
+  align-items: flex-end;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.fh-summary {
+  display: grid;
+  gap: 2px;
+}
+.fh-summary strong {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.fh-summary span {
+  font-size: 13px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.flower-identify-modal .fh-group + .fh-group {
+  margin-top: 8px;
+}
+.flower-identify-modal .fh-group h4 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 12px;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.flower-identify-modal .fh-group h4::after {
+  content: "";
+  flex: 1;
+  border-top: 1px dashed var(--line);
+}
+.flower-identify-modal .fh-group h4::first-letter {
+  text-transform: uppercase;
+}
+.fh-pages {
+  transition: opacity 0.25s;
+}
+.fh-pages.is-paging {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.fh-pages .fh-grid {
+  margin-top: 18px;
+  animation: bt-fh-in 0.4s var(--ease) both;
+}
+@keyframes bt-fh-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.flower-identify-modal .fh-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px 16px;
+}
+.flower-identify-modal .fh-tile-open {
+  gap: 10px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+.fh-tile-frame {
+  position: relative;
+  display: block;
+  border-radius: var(--arch);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--paper-2);
+}
+.flower-identify-modal .fh-tile-photo {
+  display: grid;
+  aspect-ratio: 4 / 5;
+  border-radius: 0;
+  background: var(--paper-2);
+  color: var(--moss);
+  transition: transform 0.5s var(--ease);
+}
+.flower-identify-modal .fh-tile-open:hover .fh-tile-photo,
+.flower-identify-modal .fh-tile-open:focus-visible .fh-tile-photo {
+  transform: scale(1.04);
+  box-shadow: none;
+}
+.flower-identify-modal .fh-tile-open:focus-visible .fh-tile-frame {
+  outline: 2px solid var(--wing);
+  outline-offset: 3px;
+}
+.flower-identify-modal .fh-tile-open:focus-visible .fh-tile-photo {
+  outline: none;
+}
+.flower-identify-modal .fh-tile-score {
+  top: auto;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--sheet);
+  box-shadow: 0 4px 10px -4px rgba(30, 42, 31, 0.4);
+}
+.flower-identify-modal .fh-tile-score::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--moss);
+}
+.flower-identify-modal .fh-tile-score.is-medium,
+.flower-identify-modal .fh-tile-score.is-low {
+  background: var(--sheet);
+}
+.flower-identify-modal .fh-tile-score.is-medium::before {
+  background: #b7861a;
+}
+.flower-identify-modal .fh-tile-score.is-low::before {
+  background: #8a8f84;
+}
+.flower-identify-modal .fh-tile-body {
+  padding: 0 4px;
+  text-align: center;
+  align-items: center;
+}
+.flower-identify-modal .fh-tile-body strong {
+  max-width: 100%;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-identify-modal .fh-tile-body i {
+  max-width: 100%;
+  font-family: var(--serif);
+  color: var(--ink-2);
+}
+.flower-identify-modal .fh-tile-body small {
+  color: var(--ink-2);
+}
+.flower-identify-modal .fh-tile-delete.ant-btn {
+  top: 14px;
+  right: 50%;
+  transform: translateX(50%);
+  color: var(--ink-2);
+  background: var(--sheet);
+}
+.flower-identify-modal .fh-tile-delete.ant-btn:hover {
+  color: #b3372f !important;
+  background: #fff !important;
+}
+.flower-identify-modal .fh-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.flower-identify-modal .fh-pagination .ant-pagination-item {
+  border-radius: 999px;
+  background: transparent;
+}
+.flower-identify-modal .fh-pagination .ant-pagination-item-active {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.flower-identify-modal .fh-pagination .ant-pagination-item-active a {
+  color: var(--paper) !important;
+}
+.flower-identify-modal .fh-skeleton {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--arch);
+  background: linear-gradient(
+    90deg,
+    var(--paper-2) 25%,
+    var(--sheet) 50%,
+    var(--paper-2) 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* Trống */
+.flower-identify-modal .fh-empty {
+  padding: 36px 16px 44px;
+}
+.flower-identify-modal .fh-empty-icon {
+  width: 72px;
+  height: 88px;
+  border-radius: 999px 999px 10px 10px;
+  background: var(--paper-2);
+  color: var(--moss);
+}
+.flower-identify-modal .fh-empty h3 {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.flower-identify-modal .fh-empty p {
+  color: var(--ink-2);
+}
+
+/* Chi tiết một lần nhận diện */
+.flower-identify-modal .fh-detail-bar {
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.flower-identify-modal .fh-detail-bar .ant-btn {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+}
+.flower-identify-modal .fh-detail-time {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.flower-identify-modal .fh-detail-photo {
+  width: min(100%, 400px);
+  max-height: none;
+  aspect-ratio: 4 / 5;
+  justify-self: center;
+  border-radius: var(--arch);
+  background: var(--paper-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.flower-identify-modal .fh-similar,
+.flower-identify-modal .fh-detail-actions {
+  border-top-color: var(--line);
+}
+.flower-identify-modal .fh-similar h4 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.flower-identify-modal .fh-similar-name strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+.flower-identify-modal .fh-similar-name i {
+  font-family: var(--serif);
+  color: var(--ink-2);
+}
+.flower-identify-modal .fh-similar-score {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 860px) {
+  .flower-identify-modal .fh-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .flower-identify-modal .fh-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+  }
+}
+
+/* Nút máy ảnh trong ô tìm kiếm */
+.bt .flower-camera-trigger.ant-btn {
+  color: var(--wing);
+}
+.bt .flower-camera-trigger.ant-btn:hover {
+  background: #ece6f2 !important;
+  color: #573a72 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flower-scan,
+  .flower-identify-modal .flower-match,
+  .flower-identify-modal .flower-match-bar span,
+  .flower-identify-modal .flower-similar-bar span {
+    animation: none;
+  }
+}
+
+/* Khung vòm cao hơn rộng để ra đúng dáng cửa vòm */
+.flower-identify-modal .flower-upload-zone,
+.flower-identify-modal .flower-photo-stage {
+  aspect-ratio: 1 / 1;
+  height: auto;
+  min-height: 0;
+  max-height: 460px;
+}
+.flower-identify-modal .flower-upload-label {
+  padding: 6px 16px;
+}
+.flower-identify-modal .flower-change-photo {
+  top: auto;
+  bottom: 12px;
+  right: 12px;
+}

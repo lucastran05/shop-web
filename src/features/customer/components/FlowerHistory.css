@@ -1,0 +1,362 @@
+/* Flower identification history: photo grid grouped by day, and a two-column detail view.
+   Same palette as FlowerIdentifier.css; no nested bordered boxes. */
+
+/* Private photo box (list tile, detail and loading placeholder) */
+.fh-photo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f1f6ec 0%, #e6efe0 100%);
+  color: #9cb98d;
+}
+.fh-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fh-photo-placeholder {
+  font-size: 34px;
+  opacity: 0.8;
+}
+.fh-photo.is-loading .fh-photo-placeholder {
+  animation: fh-pulse 1.2s ease-in-out infinite;
+}
+@keyframes fh-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Header row above the groups */
+.fh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.fh-head p {
+  margin: 0;
+  font-size: 13px;
+  color: #6c7766;
+}
+
+/* Day groups */
+.fh-group + .fh-group {
+  margin-top: 22px;
+}
+.fh-group h4 {
+  margin: 14px 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5f8a4c;
+}
+.fh-group h4::first-letter {
+  text-transform: uppercase;
+}
+
+/* Photo grid */
+.fh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 18px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fh-tile {
+  position: relative;
+  min-width: 0;
+}
+.fh-tile-open {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.fh-tile-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.fh-tile-open:hover .fh-tile-photo,
+.fh-tile-open:focus-visible .fh-tile-photo {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(52, 84, 38, 0.16);
+}
+.fh-tile-open:focus-visible {
+  outline: none;
+}
+.fh-tile-open:focus-visible .fh-tile-photo {
+  outline: 2px solid #468432;
+  outline-offset: 2px;
+}
+.fh-tile-score {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(70, 132, 50, 0.92);
+  backdrop-filter: blur(4px);
+}
+.fh-tile-score.is-medium {
+  background: rgba(183, 121, 31, 0.92);
+}
+.fh-tile-score.is-low {
+  background: rgba(192, 83, 58, 0.92);
+}
+.fh-tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 0 2px;
+}
+.fh-tile-body strong {
+  font-size: 14px;
+  color: #243a1c;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fh-tile-body i {
+  font-size: 12px;
+  color: #75816b;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fh-tile-body small {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #9aa294;
+}
+/* Delete button floats on the photo; shown on hover/focus, always on touch screens */
+.fh-tile-delete.ant-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 0;
+  color: #5d6758;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.fh-tile:hover .fh-tile-delete.ant-btn,
+.fh-tile:focus-within .fh-tile-delete.ant-btn {
+  opacity: 1;
+}
+.fh-tile-delete.ant-btn:hover {
+  color: #c0533a !important;
+  background: #fff !important;
+}
+@media (hover: none) {
+  .fh-tile-delete.ant-btn {
+    opacity: 1;
+  }
+}
+.fh-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+/* Loading skeleton tiles */
+.fh-skeleton {
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #eef2ea 25%, #f6f9f3 50%, #eef2ea 75%);
+  background-size: 200% 100%;
+  animation: fh-shimmer 1.3s linear infinite;
+}
+@keyframes fh-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Empty state */
+.fh-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 16px;
+  text-align: center;
+}
+.fh-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: #edf5e9;
+  color: #468432;
+  font-size: 28px;
+}
+.fh-empty h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #243a1c;
+}
+.fh-empty p {
+  max-width: 340px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #72796f;
+}
+
+/* Detail view */
+.fh-detail-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 14px -8px;
+}
+.fh-detail-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #8a9384;
+}
+.fh-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.fh-detail-photo {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 460px;
+  border-radius: 18px;
+  position: sticky;
+  top: 0;
+}
+.fh-detail-photo .fh-photo-placeholder {
+  font-size: 64px;
+}
+.fh-detail-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* Sections after the match card continue its hairline rhythm */
+.fh-similar,
+.fh-detail-actions {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #edf0e9;
+}
+.fh-similar h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #356726;
+}
+.fh-similar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fh-similar li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 44px;
+  align-items: center;
+  gap: 12px;
+}
+.fh-similar-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fh-similar-name strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3f4a39;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fh-similar-name i {
+  font-size: 11px;
+  color: #8a9384;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fh-similar-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: #edf0ea;
+  overflow: hidden;
+}
+.fh-similar-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #468432;
+}
+.fh-similar-bar.is-medium > span {
+  background: #b7791f;
+}
+.fh-similar-bar.is-low > span {
+  background: #c0533a;
+}
+.fh-similar-score {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  color: #5d6758;
+}
+.fh-detail-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-left: -8px;
+  border-top: 0;
+  padding-top: 0;
+}
+
+@media (max-width: 720px) {
+  .fh-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 12px;
+  }
+  .fh-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .fh-detail-photo {
+    aspect-ratio: 4 / 3;
+    max-height: 300px;
+    /* relative, not static: the absolute <img> must stay inside this box */
+    position: relative;
+  }
+}

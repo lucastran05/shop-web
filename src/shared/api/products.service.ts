@@ -49,6 +49,7 @@ export interface ProductSummary {
 }
 export interface Product extends Omit<ProductSummary, "image_url"> {
   description: string;
+  flower_species: string[];
   images: ProductImage[];
   variants: ProductVariant[];
   attributes: ProductAttribute[];
@@ -59,6 +60,7 @@ export interface Product extends Omit<ProductSummary, "image_url"> {
   is_active?: boolean;
 }
 export interface ProductsQuery extends PageQuery {
+  flower_species?: string;
   keyword?: string;
   category_id?: ID;
   min_price?: number;
