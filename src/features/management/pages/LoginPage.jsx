@@ -44,10 +44,14 @@ export default function LoginPage() {
   }
   return (
     <div className="mg-login">
+      <aside className="mg-login-art" aria-hidden="true">
+        <span className="mg-login-name">{shopConfig.name}</span>
+        <div className="mg-login-arch">
+          <img src="/logo/logo.svg" alt="" />
+        </div>
+        <p> </p>
+      </aside>
       <div className="mg-login-card">
-        <span className="mg-brand-mark">
-          <img src="/logo/logo.svg" alt="" width="54" height="48" />
-        </span>
         <p className="mg-eyebrow">{shopConfig.name}</p>
         <h1>Đăng nhập quản lý</h1>
         <Form layout="vertical" onFinish={submit}>
@@ -75,10 +79,10 @@ export default function LoginPage() {
             Đăng nhập
           </Button>
         </Form>
-        <p style={{ marginTop: 16 }}>
+        <div className="mg-login-links">
           <Link to="/forgot-password?from=management">Quên mật khẩu?</Link>
-        </p>
-        <Link to="/">← Về cửa hàng</Link>
+          <Link to="/">Về cửa hàng</Link>
+        </div>
       </div>
     </div>
   );

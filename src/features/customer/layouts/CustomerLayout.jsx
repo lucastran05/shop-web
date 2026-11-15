@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
+  ConfigProvider,
   Badge,
   Button,
   Input,
@@ -33,6 +34,8 @@ import { formatDateTime } from "../../../shared/utils/format";
 import HeaderSearch from "../components/HeaderSearch";
 import ShopMap from "../components/ShopMap";
 import { userError } from "../../../shared/utils/userError";
+import { botanicalTheme } from "../styles/theme";
+import "../styles/botanical.css";
 export default function CustomerLayout() {
   const { t } = useTranslation(),
     shopConfig = useShopConfig(),
@@ -53,6 +56,15 @@ export default function CustomerLayout() {
     [draft, setDraft] = useState(""),
     chatEnd = useRef(null);
   const [chatWidth, setChatWidth] = useState(378);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    // Ngưỡng bật/tắt khác nhau để không nhấp nháy quanh mốc
+    const onScroll = () =>
+      setScrolled((was) => (was ? window.scrollY > 4 : window.scrollY > 24));
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   function resizeChat(width) {
     setChatWidth(Math.min(window.innerWidth, Math.max(320, width)));
   }
@@ -96,235 +108,269 @@ export default function CustomerLayout() {
       setDraft("");
     });
   }
+  const unreadNotices = notices.filter((n) => !n.read).length;
   const notificationContent = (
-    <div className="notification-dropdown">
-      <div className="notification-list">
-        {notices.length ? (
-          notices.map((n) => (
-            <button
-              className="notice"
-              key={n.id}
-              onClick={() => {
-                perform(() => s.readNotification(n.id));
-                setNotice(false);
-                navigate("/orders");
-              }}
-            >
-              {!n.read && <Badge status="processing" />}{" "}
-              {n.key ? t(n.key, n.params) : n.text}
-              {n.createdAt && (
-                <time>{formatDateTime(n.createdAt, timeZone)}</time>
-              )}
-            </button>
-          ))
-        ) : (
-          <Empty description={t("Chưa có thông báo")} />
+    <div className="bt-notices">
+      <header>
+        <h3>{t("Thông báo của bạn")}</h3>
+        {unreadNotices > 0 && (
+          <button type="button" onClick={() => perform(s.readAllNotifications)}>
+            {t("Đánh dấu tất cả đã đọc")}
+          </button>
         )}
-      </div>
-      <Button type="link" onClick={() => perform(s.readAllNotifications)}>
-        {t("Đánh dấu tất cả đã đọc")}
-      </Button>
+      </header>
+      {notices.length ? (
+        <ul>
+          {notices.map((n) => (
+            <li key={n.id}>
+              <button
+                type="button"
+                className={n.read ? undefined : "is-unread"}
+                onClick={() => {
+                  perform(() => s.readNotification(n.id));
+                  setNotice(false);
+                  navigate("/orders");
+                }}
+              >
+                <span className="bt-notice-text">
+                  {n.key ? t(n.key, n.params) : n.text}
+                </span>
+                {n.createdAt && (
+                  <time dateTime={n.createdAt}>
+                    {formatDateTime(n.createdAt, timeZone)}
+                  </time>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="bt-notices-empty">
+          {t("Chưa có thông báo")}
+          <small>{t("Cập nhật về đơn hàng của bạn sẽ hiện ở đây.")}</small>
+        </p>
+      )}
     </div>
   );
+  const cartCount = s.items.reduce((n, i) => n + i.quantity, 0);
   return (
-    <>
-      <header className="header">
-        <Link to="/" className="logo">
-          <img src="/logo/logo.svg" alt="" width="44" height="40" />
-          {shopConfig.name}
-        </Link>
-        <nav>
-          <Link className={location.pathname === "/" ? "active" : ""} to="/">
-            {t("Trang chủ")}
+    <ConfigProvider theme={botanicalTheme}>
+      <div className="bt">
+        <a className="bt-skip" href="#bt-main">
+          {t("Bỏ qua tới nội dung")}
+        </a>
+        <header className={"bt-header" + (scrolled ? " is-scrolled" : "")}>
+          <Link to="/" className="bt-logo">
+            <img src="/logo/logo.svg" alt="" width="40" height="36" />
+            <span>{shopConfig.name}</span>
           </Link>
-          <Link to="/shop-info">{t("Thông tin")}</Link>
-        </nav>
-        <HeaderSearch key={location.pathname + location.search} />
-        <div className="header-actions">
-          {s.user ? (
-            <>
-              <Popover
-                title={t("Thông báo của bạn")}
-                trigger="click"
-                placement="bottomRight"
-                open={notice}
-                onOpenChange={setNotice}
-                content={notificationContent}
-              >
-                <Button aria-label={t("Thông báo")} type="text">
-                  <Badge
-                    count={notices.filter((n) => !n.read).length}
-                    size="small"
-                  >
-                    <BellOutlined />
-                  </Badge>
-                </Button>
-              </Popover>
-              <Dropdown menu={menu} trigger={["click"]}>
-                <Button type="text" icon={<UserOutlined />}>
-                  {s.user.name.split(" ").at(-1)}
-                </Button>
-              </Dropdown>
-            </>
-          ) : (
-            <Button
-              type="text"
-              icon={<UserOutlined />}
-              onClick={() => navigate("/login")}
+          <nav className="bt-nav" aria-label={t("Điều hướng chính")}>
+            <Link
+              className={location.pathname === "/" ? "is-active" : undefined}
+              aria-current={location.pathname === "/" ? "page" : undefined}
+              to="/"
             >
-              {t("Đăng nhập")}
-            </Button>
-          )}
-          {s.user && (
-            <Link to="/cart" aria-label={t("Giỏ hàng")}>
-              <Badge
-                count={s.items.reduce((n, i) => n + i.quantity, 0)}
-                size="small"
-              >
-                <ShoppingOutlined style={{ fontSize: 23 }} />
-              </Badge>
+              {t("Cửa hàng")}
             </Link>
-          )}
-        </div>
-      </header>
-      <main>
-        <Outlet />
-      </main>
-      <footer className="site-footer">
-        <div className="footer-brand">
-          <Link to="/" className="logo">
-            <img src="/logo/logo.svg" alt="" width="44" height="40" />
-            {shopConfig.name}
-          </Link>
-          <p>{t(shopConfig.description)}</p>
-          <div className="footer-socials">
-            {shopConfig.contact.socialLinks.map((link) => (
-              <a
-                key={link.url}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
+            <Link
+              className={
+                location.pathname === "/shop-info" ? "is-active" : undefined
+              }
+              aria-current={
+                location.pathname === "/shop-info" ? "page" : undefined
+              }
+              to="/shop-info"
+            >
+              {t("Thông tin")}
+            </Link>
+          </nav>
+          <HeaderSearch key={location.pathname + location.search} />
+          <div className="bt-actions">
+            {s.user ? (
+              <>
+                <Popover
+                  rootClassName="bt-notice-pop"
+                  arrow={false}
+                  trigger="click"
+                  placement="bottomRight"
+                  open={notice}
+                  onOpenChange={setNotice}
+                  content={notificationContent}
+                >
+                  <Button
+                    aria-label={t("Thông báo")}
+                    type="text"
+                    shape="circle"
+                  >
+                    <Badge count={unreadNotices} size="small">
+                      <BellOutlined />
+                    </Badge>
+                  </Button>
+                </Popover>
+                <Dropdown menu={menu} trigger={["click"]}>
+                  <Button type="text" className="bt-user">
+                    <span className="bt-avatar" aria-hidden="true">
+                      {s.user.name.split(" ").at(-1)?.[0]}
+                    </span>
+                    {s.user.name.split(" ").at(-1)}
+                  </Button>
+                </Dropdown>
+                <Link to="/cart" className="bt-cart" aria-label={t("Giỏ hàng")}>
+                  <ShoppingOutlined aria-hidden="true" />
+                  <span>{t("Giỏ")}</span>
+                  <b key={cartCount}>{cartCount}</b>
+                </Link>
+              </>
+            ) : (
+              <Button
+                type="primary"
+                icon={<UserOutlined />}
+                onClick={() => navigate("/login")}
               >
-                <LinkOutlined aria-hidden="true" /> {link.label}
-              </a>
-            ))}
+                {t("Đăng nhập")}
+              </Button>
+            )}
           </div>
-        </div>
-        <div>
-          <h4>{t("Thông tin khách hàng")}</h4>
-          <Link to="/">{t("Sản phẩm")}</Link>
-          <Link to="/orders">{t("Theo dõi đơn hàng")}</Link>
-          <Link to="/account">{t("Tài khoản")}</Link>
-          <Link to="/settings">{t("Cài đặt")}</Link>
-        </div>
-        <div>
-          <h4>{t("Liên hệ")}</h4>
-          <Link to="/shop-info">{t("Thông tin")}</Link>
-          {shopConfig.contact.address && (
-            <p className="footer-address">
-              <EnvironmentOutlined aria-hidden="true" />{" "}
-              {shopConfig.contact.address}
-            </p>
-          )}
-          {shopConfig.contact.phone && (
-            <a href={"tel:" + shopConfig.contact.phone}>
-              <PhoneOutlined aria-hidden="true" /> {shopConfig.contact.phone}
-            </a>
-          )}
-          {shopConfig.contact.email && (
-            <a href={"mailto:" + shopConfig.contact.email}>
-              <MailOutlined aria-hidden="true" /> {shopConfig.contact.email}
-            </a>
-          )}
-        </div>
-        <div className="footer-location">
-          <h4>{t("Vị trí cửa hàng")}</h4>
-          <ShopMap contact={shopConfig.contact} />
-        </div>
-        <div className="copyright">
-          © {new Date().getFullYear()} {shopConfig.name}
-        </div>
-      </footer>
-      {s.user && (
-        <Tooltip title={t("Chat với shop")}>
-          <Button
-            className="chat-trigger"
-            type="primary"
-            shape="circle"
-            aria-label={t("Chat với shop")}
-            onClick={() => {
-              setChat(true);
-              perform(s.openChat);
-            }}
-          >
-            <Badge count={unreadChat ? 1 : 0} size="small" offset={[-2, 2]}>
-              <MessageOutlined />
-            </Badge>
-          </Button>
-        </Tooltip>
-      )}
-      <Drawer
-        title={t("Trò chuyện với shop")}
-        size={chatWidth}
-        resizable={{ onResize: resizeChat }}
-        styles={{ wrapper: { maxWidth: "100vw" } }}
-        extra={
-          <Tooltip title={chatSizeLabel}>
-            <Button
-              className="chat-resize-toggle"
-              type="text"
-              icon={chatWidth > 400 ? <ShrinkOutlined /> : <ExpandOutlined />}
-              aria-label={chatSizeLabel}
-              onClick={() => resizeChat(chatWidth > 400 ? 378 : 640)}
-            />
-          </Tooltip>
-        }
-        open={chat}
-        onClose={() => {
-          s.closeChat();
-          setChat(false);
-        }}
-        footer={
-          <Space.Compact style={{ width: "100%" }}>
-            <Input
-              aria-label={t("Nội dung tin nhắn")}
-              maxLength={1000}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onPressEnter={(e) => {
-                if (!e.nativeEvent.isComposing) send();
-              }}
-              placeholder={t("Nhập tin nhắn…")}
-            />
-            <Button
-              type="primary"
-              disabled={!draft.trim() || !s.chatConnected}
-              onClick={send}
-            >
-              {t("Gửi")}
-            </Button>
-          </Space.Compact>
-        }
-      >
-        <div className="chat-log">
-          {chatError && <Alert type="error" showIcon title={chatError} />}
-          {!messages.length && <Empty description={t("Chưa có tin nhắn")} />}
-          {messages.map((m) => (
-            <div
-              className={m.from === "shop" ? "bubble" : "bubble mine"}
-              key={m.id}
-            >
-              <p>{m.text}</p>
-              {m.createdAt && (
-                <time dateTime={m.createdAt}>
-                  {formatDateTime(m.createdAt, timeZone)}
-                </time>
-              )}
+        </header>
+        <main id="bt-main">
+          <Outlet />
+        </main>
+        <footer className="bt-footer">
+          <div className="bt-footer-mark">
+            <Link to="/" className="bt-footer-name">
+              {shopConfig.name}
+            </Link>
+            <p>{t(shopConfig.description)}</p>
+            <div className="bt-footer-socials">
+              {shopConfig.contact.socialLinks.map((link) => (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <LinkOutlined aria-hidden="true" /> {link.label}
+                </a>
+              ))}
             </div>
-          ))}
-          <div ref={chatEnd} />
-        </div>
-      </Drawer>
-    </>
+          </div>
+          <div className="bt-footer-col">
+            <h4>{t("Thông tin khách hàng")}</h4>
+            <Link to="/">{t("Sản phẩm")}</Link>
+            <Link to="/orders">{t("Theo dõi đơn hàng")}</Link>
+            <Link to="/account">{t("Tài khoản")}</Link>
+            <Link to="/settings">{t("Cài đặt")}</Link>
+          </div>
+          <div className="bt-footer-col">
+            <h4>{t("Liên hệ")}</h4>
+            <Link to="/shop-info">{t("Thông tin")}</Link>
+            {shopConfig.contact.address && (
+              <p>
+                <EnvironmentOutlined aria-hidden="true" />{" "}
+                {shopConfig.contact.address}
+              </p>
+            )}
+            {shopConfig.contact.phone && (
+              <a href={"tel:" + shopConfig.contact.phone}>
+                <PhoneOutlined aria-hidden="true" /> {shopConfig.contact.phone}
+              </a>
+            )}
+            {shopConfig.contact.email && (
+              <a href={"mailto:" + shopConfig.contact.email}>
+                <MailOutlined aria-hidden="true" /> {shopConfig.contact.email}
+              </a>
+            )}
+          </div>
+          <div className="bt-footer-map">
+            <h4>{t("Vị trí cửa hàng")}</h4>
+            <ShopMap contact={shopConfig.contact} />
+          </div>
+          <div className="bt-footer-legal">
+            © {new Date().getFullYear()} {shopConfig.name}
+          </div>
+        </footer>
+        {s.user && (
+          <Tooltip title={t("Chat với shop")}>
+            <Button
+              className="chat-trigger bt-chat-trigger"
+              type="primary"
+              shape="circle"
+              aria-label={t("Chat với shop")}
+              onClick={() => {
+                setChat(true);
+                perform(s.openChat);
+              }}
+            >
+              <Badge count={unreadChat ? 1 : 0} size="small" offset={[-2, 2]}>
+                <MessageOutlined />
+              </Badge>
+            </Button>
+          </Tooltip>
+        )}
+        <Drawer
+          title={t("Trò chuyện với shop")}
+          rootClassName="bt-chat"
+          size={chatWidth}
+          resizable={{ onResize: resizeChat }}
+          styles={{ wrapper: { maxWidth: "100vw" } }}
+          extra={
+            <Tooltip title={chatSizeLabel}>
+              <Button
+                className="chat-resize-toggle"
+                type="text"
+                icon={chatWidth > 400 ? <ShrinkOutlined /> : <ExpandOutlined />}
+                aria-label={chatSizeLabel}
+                onClick={() => resizeChat(chatWidth > 400 ? 378 : 640)}
+              />
+            </Tooltip>
+          }
+          open={chat}
+          onClose={() => {
+            s.closeChat();
+            setChat(false);
+          }}
+          footer={
+            <Space.Compact style={{ width: "100%" }}>
+              <Input
+                aria-label={t("Nội dung tin nhắn")}
+                maxLength={1000}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onPressEnter={(e) => {
+                  if (!e.nativeEvent.isComposing) send();
+                }}
+                placeholder={t("Nhập tin nhắn…")}
+              />
+              <Button
+                type="primary"
+                disabled={!draft.trim() || !s.chatConnected}
+                onClick={send}
+              >
+                {t("Gửi")}
+              </Button>
+            </Space.Compact>
+          }
+        >
+          <div className="chat-log">
+            {chatError && <Alert type="error" showIcon title={chatError} />}
+            {!messages.length && <Empty description={t("Chưa có tin nhắn")} />}
+            {messages.map((m) => (
+              <div
+                className={m.from === "shop" ? "bubble" : "bubble mine"}
+                key={m.id}
+              >
+                <p>{m.text}</p>
+                {m.createdAt && (
+                  <time dateTime={m.createdAt}>
+                    {formatDateTime(m.createdAt, timeZone)}
+                  </time>
+                )}
+              </div>
+            ))}
+            <div ref={chatEnd} />
+          </div>
+        </Drawer>
+      </div>
+    </ConfigProvider>
   );
 }

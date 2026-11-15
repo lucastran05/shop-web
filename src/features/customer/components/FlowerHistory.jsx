@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Button, Popconfirm } from "antd";
+import { Alert, Button, Pagination, Popconfirm } from "antd";
 import {
   ArrowLeftOutlined,
   ClockCircleOutlined,
@@ -31,18 +31,6 @@ function daysAgo(value) {
   const startOfDay = (date) =>
     new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   return Math.round((startOfDay(new Date()) - startOfDay(new Date(value))) / 86400000);
-}
-
-// Gom các mục (đã sắp mới nhất trước) thành nhóm theo nhãn ngày, giữ nguyên thứ tự.
-function groupByDay(items, labelOf) {
-  const groups = [];
-  for (const item of items) {
-    const label = labelOf(item.createdAt);
-    const last = groups[groups.length - 1];
-    if (last?.label === label) last.items.push(item);
-    else groups.push({ label, items: [item] });
-  }
-  return groups;
 }
 
 export default function FlowerHistory({ onIdentify }) {
@@ -108,7 +96,6 @@ function HistoryGrid({ history, onOpen, onDelete, onClearAll }) {
     if (diff === 0) return t("Hôm nay");
     if (diff === 1) return t("Hôm qua");
     return new Date(value).toLocaleDateString(locale, {
-      weekday: "long",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -117,10 +104,19 @@ function HistoryGrid({ history, onOpen, onDelete, onClearAll }) {
   const formatTime = (value) =>
     new Date(value).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
+  const from = (history.page - 1) * history.pageSize + 1;
+  const to = from + history.items.length - 1;
   return (
     <div className="flower-history">
       <div className="fh-head">
-        <p>{t("Đã lưu {{count}} lần nhận diện", { count: history.total })}</p>
+        <div className="fh-summary">
+          <strong>{t("Đã lưu {{count}} lần nhận diện", { count: history.total })}</strong>
+          {history.total > history.pageSize && (
+            <span>
+              {t("Đang xem {{from}}–{{to}}", { from, to })}
+            </span>
+          )}
+        </div>
         <Popconfirm
           title={t("Xóa toàn bộ lịch sử nhận diện?")}
           okText={t("Xóa tất cả")}
@@ -140,13 +136,12 @@ function HistoryGrid({ history, onOpen, onDelete, onClearAll }) {
         </Popconfirm>
       </div>
 
-      {groupByDay(history.items, dayLabel).map((group) => (
-        <section className="fh-group" key={group.label}>
-          <h4>{group.label}</h4>
-          <ul className="fh-grid">
-            {group.items.map((item) => (
-              <li key={item.id} className="fh-tile">
-                <button type="button" className="fh-tile-open" onClick={() => onOpen(item)}>
+      <div className={"fh-pages" + (history.paging ? " is-paging" : "")} aria-busy={history.paging}>
+        <ul className="fh-grid" key={history.page}>
+          {history.items.map((item) => (
+            <li key={item.id} className="fh-tile">
+              <button type="button" className="fh-tile-open" onClick={() => onOpen(item)}>
+                <span className="fh-tile-frame">
                   <FlowerHistoryImage
                     id={item.id}
                     hasImage={item.hasImage}
@@ -156,34 +151,44 @@ function HistoryGrid({ history, onOpen, onDelete, onClearAll }) {
                   <span className={`fh-tile-score is-${scoreLevel(item.score)}`}>
                     {toPercent(item.score)}
                   </span>
-                  <span className="fh-tile-body">
-                    <strong>{flowerDisplayName(item, lang)}</strong>
-                    <i>{item.scientificName}</i>
-                    <small>{formatTime(item.createdAt)}</small>
-                  </span>
-                </button>
-                <ConfirmDelete onConfirm={() => onDelete(item.id)}>
-                  <Button
-                    shape="circle"
-                    size="small"
-                    className="fh-tile-delete"
-                    icon={<DeleteOutlined />}
-                    aria-label={t("Xóa khỏi lịch sử")}
-                    loading={history.deleting === item.id}
-                  />
-                </ConfirmDelete>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+                </span>
+                <span className="fh-tile-body">
+                  <strong>{flowerDisplayName(item, lang)}</strong>
+                  <i>{item.scientificName}</i>
+                  <small>
+                    {dayLabel(item.createdAt)}, {formatTime(item.createdAt)}
+                  </small>
+                </span>
+              </button>
+              <ConfirmDelete onConfirm={() => onDelete(item.id)}>
+                <Button
+                  shape="circle"
+                  size="small"
+                  className="fh-tile-delete"
+                  icon={<DeleteOutlined />}
+                  aria-label={t("Xóa khỏi lịch sử")}
+                  loading={history.deleting === item.id}
+                />
+              </ConfirmDelete>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      {history.hasMore && (
-        <div className="fh-more">
-          <Button onClick={history.loadMore} loading={history.loadingMore}>
-            {t("Xem thêm")}
-          </Button>
-        </div>
+      {history.total > history.pageSize && (
+        <Pagination
+          className="fh-pagination"
+          current={history.page}
+          pageSize={history.pageSize}
+          total={history.total}
+          showSizeChanger={false}
+          onChange={(next) => {
+            history.goToPage(next);
+            document
+              .querySelector(".flower-history")
+              ?.scrollIntoView({ block: "start", behavior: "smooth" });
+          }}
+        />
       )}
     </div>
   );
@@ -218,7 +223,6 @@ function HistoryDetail({ item, deleting, onBack, onDelete }) {
           hasImage={item.hasImage}
           alt={t("Ảnh hoa đã nhận diện")}
           className="fh-detail-photo"
-          fit="contain"
         />
         <div className="fh-detail-info">
           <FlowerMatch candidate={item} />
@@ -266,7 +270,7 @@ function HistoryDetail({ item, deleting, onBack, onDelete }) {
 function HistorySkeleton() {
   return (
     <div className="fh-grid" aria-busy="true">
-      {Array.from({ length: 6 }, (_, i) => (
+      {Array.from({ length: 8 }, (_, i) => (
         <span key={i} className="fh-skeleton" />
       ))}
     </div>

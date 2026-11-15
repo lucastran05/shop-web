@@ -1,11 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Alert, App, Button, Form, Input, Select } from "antd";
-import {
-  GlobalOutlined,
-  ShoppingOutlined,
-  LockOutlined,
-} from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { usePreferences } from "../../../shared/preferences/usePreferences";
 import { getDeviceTimeZone } from "../../../shared/utils/format";
@@ -41,40 +36,66 @@ export default function SettingsPage() {
       setSaving(false);
     }
   }
+  const language = i18n.resolvedLanguage === "en" ? "en" : "vi";
+  const choice = (value, current, onPick, label) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={value === current}
+      key={value}
+      onClick={() => onPick(value)}
+    >
+      {label}
+    </button>
+  );
   return (
-    <div className="page account-page settings-page">
-      <h1>{t("Cài đặt")}</h1>
-      <p className="muted">
-        {t("Các tùy chọn hiển thị được lưu trên trình duyệt này.")}
-      </p>
-      <div className="account-panel">
-        <section
-          className="account-section"
-          aria-labelledby="settings-display-heading"
-        >
-          <h2 id="settings-display-heading">
-            <GlobalOutlined aria-hidden="true" />
-            {t("Ngôn ngữ & thời gian")}
-          </h2>
-          <div className="account-section-content">
-            <Form layout="vertical">
-              <Form.Item label={t("Ngôn ngữ")} htmlFor="settings-language">
-                <Select
-                  aria-label={t("Ngôn ngữ")}
-                  id="settings-language"
-                  style={{ width: "100%" }}
-                  value={i18n.resolvedLanguage === "en" ? "en" : "vi"}
-                  onChange={(lng) => i18n.changeLanguage(lng)}
-                  options={[
-                    { value: "vi", label: "Tiếng Việt" },
-                    { value: "en", label: "English" },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item
-                label={t("Múi giờ hiển thị")}
-                htmlFor="settings-timezone"
+    <div className="page account-page settings-page bt-settings">
+      <header className="bt-page-head">
+        <h1>{t("Cài đặt")}</h1>
+        <p>{t("Các tùy chọn hiển thị được lưu trên trình duyệt này.")}</p>
+      </header>
+      <div className="bt-settings-layout">
+        <nav className="bt-settings-nav" aria-label={t("Mục cài đặt")}>
+          <a href="#settings-display-heading">{t("Ngôn ngữ & thời gian")}</a>
+          <a href="#settings-shopping-heading">{t("Tùy chọn mua sắm")}</a>
+          <a href="#settings-password-heading">{t("Đổi mật khẩu")}</a>
+        </nav>
+        <div className="bt-settings-body">
+          <section
+            className="bt-settings-section"
+            aria-labelledby="settings-display-heading"
+          >
+            <h2 id="settings-display-heading">{t("Ngôn ngữ & thời gian")}</h2>
+            <div className="bt-setting-row">
+              <div>
+                <h3>{t("Ngôn ngữ")}</h3>
+                <p>{t("Đổi ngay, không cần tải lại trang.")}</p>
+              </div>
+              <div
+                className="bt-choice"
+                role="radiogroup"
+                aria-label={t("Ngôn ngữ")}
               >
+                {choice(
+                  "vi",
+                  language,
+                  (lng) => i18n.changeLanguage(lng),
+                  "Tiếng Việt",
+                )}
+                {choice(
+                  "en",
+                  language,
+                  (lng) => i18n.changeLanguage(lng),
+                  "English",
+                )}
+              </div>
+            </div>
+            <div className="bt-setting-row">
+              <div>
+                <h3>{t("Múi giờ hiển thị")}</h3>
+                <p>{t("Dùng cho giờ đặt hàng, thông báo và tin nhắn.")}</p>
+              </div>
+              <div className="bt-setting-control">
                 <Select
                   aria-label={t("Múi giờ hiển thị")}
                   id="settings-timezone"
@@ -96,127 +117,130 @@ export default function SettingsPage() {
                     ]),
                   ].map((z) => ({ value: z, label: z }))}
                 />
-              </Form.Item>
-              <Button
-                type="link"
-                onClick={() => setTimeZone(getDeviceTimeZone())}
-              >
-                {t("Dùng múi giờ thiết bị")}
-              </Button>
-            </Form>
-          </div>
-        </section>
-        <section
-          className="account-section"
-          aria-labelledby="settings-shopping-heading"
-        >
-          <h2 id="settings-shopping-heading">
-            <ShoppingOutlined aria-hidden="true" />
-            {t("Tùy chọn mua sắm")}
-          </h2>
-          <div className="account-section-content">
-            <Form layout="vertical">
-              <Form.Item label={t("Sắp xếp mặc định")} htmlFor="settings-sort">
-                <Select
-                  id="settings-sort"
-                  value={catalogPreferences.defaultSort}
-                  onChange={(defaultSort) =>
-                    setCatalogPreferences({
-                      ...catalogPreferences,
-                      defaultSort,
-                    })
-                  }
-                  options={[
-                    { value: "popular", label: t("Nổi bật nhất") },
-                    { value: "low", label: t("Giá tăng dần") },
-                    { value: "high", label: t("Giá giảm dần") },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item
-                label={t("Số sản phẩm mỗi trang")}
-                htmlFor="settings-page-size"
-              >
-                <Select
-                  id="settings-page-size"
-                  value={catalogPreferences.pageSize}
-                  onChange={(pageSize) =>
-                    setCatalogPreferences({ ...catalogPreferences, pageSize })
-                  }
-                  options={[6, 12, 24].map((value) => ({
-                    value,
-                    label: t("{{count}} sản phẩm", { count: value }),
-                  }))}
-                />
-              </Form.Item>
-            </Form>
-          </div>
-        </section>
-        <section
-          className="account-section"
-          aria-labelledby="settings-password-heading"
-        >
-          <h2 id="settings-password-heading">
-            <LockOutlined aria-hidden="true" />
-            {t("Đổi mật khẩu")}
-          </h2>
-          <div className="account-section-content">
-            {user ? (
-              <>
-                <Form
-                  form={passwordForm}
-                  layout="vertical"
-                  onFinish={changePassword}
-                  disabled={saving}
+                <Button
+                  type="link"
+                  onClick={() => setTimeZone(getDeviceTimeZone())}
                 >
-                  <Form.Item
-                    name="current"
-                    label={t("Mật khẩu hiện tại")}
-                    rules={[
-                      { required: true, message: t("Nhập mật khẩu hiện tại") },
-                    ]}
-                  >
-                    <Input.Password autoComplete="current-password" />
-                  </Form.Item>
-                  <Form.Item
-                    name="next"
-                    label={t("Mật khẩu mới")}
-                    rules={[
-                      { required: true, message: t("Nhập mật khẩu mới") },
-                      { min: 8, message: t("Tối thiểu 8 ký tự") },
-                    ]}
-                  >
-                    <Input.Password autoComplete="new-password" />
-                  </Form.Item>
-                  <Form.Item
-                    name="confirm"
-                    label={t("Nhập lại mật khẩu mới")}
-                    dependencies={["next"]}
-                    rules={[
-                      { required: true, message: t("Nhập lại mật khẩu") },
-                      ({ getFieldValue }) => ({
-                        validator(_, value) {
-                          return !value || value === getFieldValue("next")
-                            ? Promise.resolve()
-                            : Promise.reject(
-                                new Error(t("Mật khẩu không khớp")),
-                              );
-                        },
+                  {t("Dùng múi giờ thiết bị")}
+                </Button>
+              </div>
+            </div>
+          </section>
+
+          <section
+            className="bt-settings-section"
+            aria-labelledby="settings-shopping-heading"
+          >
+            <h2 id="settings-shopping-heading">{t("Tùy chọn mua sắm")}</h2>
+            <div className="bt-setting-row">
+              <div>
+                <h3>{t("Sắp xếp mặc định")}</h3>
+                <p>{t("Thứ tự sản phẩm khi bạn mở cửa hàng.")}</p>
+              </div>
+              <div
+                className="bt-choice"
+                role="radiogroup"
+                aria-label={t("Sắp xếp mặc định")}
+              >
+                {[
+                  ["popular", t("Nổi bật nhất")],
+                  ["low", t("Giá tăng dần")],
+                  ["high", t("Giá giảm dần")],
+                ].map(([value, label]) =>
+                  choice(
+                    value,
+                    catalogPreferences.defaultSort,
+                    (defaultSort) =>
+                      setCatalogPreferences({
+                        ...catalogPreferences,
+                        defaultSort,
                       }),
-                    ]}
-                  >
-                    <Input.Password autoComplete="new-password" />
-                  </Form.Item>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    icon={<LockOutlined />}
-                    loading={saving}
-                  >
-                    {t("Đổi mật khẩu")}
-                  </Button>
-                </Form>
-              </>
+                    label,
+                  ),
+                )}
+              </div>
+            </div>
+            <div className="bt-setting-row">
+              <div>
+                <h3>{t("Số sản phẩm mỗi trang")}</h3>
+              </div>
+              <div
+                className="bt-choice"
+                role="radiogroup"
+                aria-label={t("Số sản phẩm mỗi trang")}
+              >
+                {[6, 12, 24].map((value) =>
+                  choice(
+                    value,
+                    catalogPreferences.pageSize,
+                    (pageSize) =>
+                      setCatalogPreferences({
+                        ...catalogPreferences,
+                        pageSize,
+                      }),
+                    t("{{count}} sản phẩm", { count: value }),
+                  ),
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section
+            className="bt-settings-section"
+            aria-labelledby="settings-password-heading"
+          >
+            <h2 id="settings-password-heading">{t("Đổi mật khẩu")}</h2>
+            {user ? (
+              <Form
+                className="bt-password-form"
+                form={passwordForm}
+                layout="vertical"
+                onFinish={changePassword}
+                disabled={saving}
+              >
+                <Form.Item
+                  name="current"
+                  label={t("Mật khẩu hiện tại")}
+                  rules={[
+                    { required: true, message: t("Nhập mật khẩu hiện tại") },
+                  ]}
+                >
+                  <Input.Password autoComplete="current-password" />
+                </Form.Item>
+                <Form.Item
+                  name="next"
+                  label={t("Mật khẩu mới")}
+                  rules={[
+                    { required: true, message: t("Nhập mật khẩu mới") },
+                    { min: 8, message: t("Tối thiểu 8 ký tự") },
+                  ]}
+                >
+                  <Input.Password autoComplete="new-password" />
+                </Form.Item>
+                <Form.Item
+                  name="confirm"
+                  label={t("Nhập lại mật khẩu mới")}
+                  dependencies={["next"]}
+                  rules={[
+                    { required: true, message: t("Nhập lại mật khẩu") },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        return !value || value === getFieldValue("next")
+                          ? Promise.resolve()
+                          : Promise.reject(new Error(t("Mật khẩu không khớp")));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password autoComplete="new-password" />
+                </Form.Item>
+                <p className="bt-hint-left">
+                  {t("Đổi xong bạn sẽ cần đăng nhập lại.")}
+                </p>
+                <Button type="primary" htmlType="submit" loading={saving}>
+                  {t("Đổi mật khẩu")}
+                </Button>
+              </Form>
             ) : (
               <Alert
                 type="info"
@@ -227,8 +251,8 @@ export default function SettingsPage() {
                 }
               />
             )}
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );

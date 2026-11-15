@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Navigate, Link, useSearchParams } from "react-router-dom";
-import { App, Empty, Form, Spin, Steps } from "antd";
+import { App, Button, Form, Spin } from "antd";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
@@ -71,6 +71,15 @@ export default function Checkout() {
   const [addressForm] = Form.useForm();
   const [form] = Form.useForm();
   const submitted = useRef(false);
+  const firstStep = useRef(true);
+  useEffect(() => {
+    // Đổi bước thì đưa người dùng về đầu thanh tiến trình
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    document.querySelector(".bt-steps")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [step]);
   const pendingOrder = useRef(null);
   // Khóa "mã|tạm tính|phí ship" của lần kiểm tra voucher gần nhất, tránh gọi API lặp
   const lastValidatedVoucherKey = useRef("");
@@ -116,7 +125,17 @@ export default function Checkout() {
       .then(({ data }) => {
         if (!active) return;
         setAddresses(data);
-        setAddressId(s.user.default_address_id || data.find((address) => address.is_default)?.id || data[0]?.id);
+        const chosenId = s.user.default_address_id || data.find((address) => address.is_default)?.id || data[0]?.id;
+        setAddressId(chosenId);
+        // Sổ địa chỉ tải sau khi form đã hiện: điền sẵn người nhận từ địa chỉ mặc định vào các ô còn trống
+        const chosen = data.find((address) => address.id === chosenId);
+        if (chosen) {
+          const current = form.getFieldsValue(["name", "phone"]);
+          form.setFieldsValue({
+            name: current.name?.trim() ? current.name : chosen.recipient_name,
+            phone: current.phone?.trim() ? current.phone : chosen.recipient_phone,
+          });
+        }
       })
       .catch((error) => {
         if (active) showError(error, "Không thể tải sổ địa chỉ");
@@ -124,7 +143,7 @@ export default function Checkout() {
     return () => {
       active = false;
     };
-  }, [s.user, showError]);
+  }, [s.user, showError, form]);
 
   // Mua ngay: tải sản phẩm và biến thể từ URL
   useEffect(() => {
@@ -352,6 +371,11 @@ export default function Checkout() {
   function selectAddress(id) {
     setAddressId(id);
     const address = addresses.find((item) => item.id === id);
+    if (!address) {
+      // "Nhập địa chỉ khác": để trống ô địa chỉ cho người dùng tự nhập
+      form.setFieldsValue({ address: "" });
+      return;
+    }
     form.setFieldsValue({ name: address.recipient_name, phone: address.recipient_phone, address: address.full_address });
   }
 
@@ -382,16 +406,26 @@ export default function Checkout() {
   if (!placed && !items.length)
     return (
       <div className="page">
-        <Empty description={t("Chưa chọn sản phẩm để đặt hàng")}>
-          <Link to="/cart">{t("Về giỏ hàng")}</Link>
-        </Empty>
+        <div className="bt-empty-state">
+          <div className="bt-empty-arch" aria-hidden="true">
+            <img src="/logo/logo.svg" alt="" />
+          </div>
+          <h2>{t("Chưa chọn sản phẩm để đặt hàng")}</h2>
+          <Link to="/cart">
+            <Button type="primary" size="large">
+              {t("Về giỏ hàng")}
+            </Button>
+          </Link>
+        </div>
       </div>
     );
 
   const defaultAddress = addresses.find((address) => address.id === addressId);
   return (
-    <div className="page">
-      <h1>{t("Đặt hàng")}</h1>
+    <div className="page bt-checkout-page">
+      <header className="bt-page-head">
+        <h1>{t("Đặt hàng")}</h1>
+      </header>
       <AddressModal
         open={addingAddress}
         form={addressForm}
@@ -399,16 +433,23 @@ export default function Checkout() {
         onClose={() => setAddingAddress(false)}
         onSaved={addressSaved}
       />
-      <Steps
-        className="checkout-steps"
-        current={step}
-        items={[{ title: t("Thông tin khách hàng") }, { title: t("Thanh toán") }, { title: t("Kết quả đặt hàng") }]}
-      />
+      <ol className="bt-steps" aria-label={t("Các bước đặt hàng")}>
+        {[t("Thông tin khách hàng"), t("Thanh toán"), t("Kết quả đặt hàng")].map((title, i) => (
+          <li
+            key={title}
+            className={i < step ? "is-done" : i === step ? "is-current" : undefined}
+            aria-current={i === step ? "step" : undefined}
+          >
+            <span className="bt-step-num">{i < step ? "✓" : i + 1}</span>
+            <span className="bt-step-title">{title}</span>
+          </li>
+        ))}
+      </ol>
       {placed ? (
         <OrderReceipt order={placed} paymentSession={paymentSession} onOrderUpdate={updatePlaced} />
       ) : (
-        <div className="two-column">
-          <section className="panel">
+        <div className="bt-checkout-grid">
+          <section className="bt-form-card" key={step}>
             {step === 0 ? (
               <RecipientForm
                 form={form}
@@ -429,7 +470,9 @@ export default function Checkout() {
                 onSelectAddress={selectAddress}
                 onAddAddress={openAddressModal}
                 onFinish={(values) => {
-                  setRecipient(values);
+                  // Đã chọn địa chỉ đã lưu thì lấy địa chỉ đó, ô nhập tay đang ẩn
+                  const saved = delivery === "ship" && addresses.find((address) => address.id === addressId);
+                  setRecipient(saved ? { ...values, address: saved.full_address } : values);
                   setStep(1);
                 }}
               />

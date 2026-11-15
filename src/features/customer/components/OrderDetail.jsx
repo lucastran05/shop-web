@@ -1,5 +1,4 @@
-import { Button, Modal, Tag, Timeline } from "antd";
-import { CloseOutlined, StarOutlined } from "@ant-design/icons";
+import { Button, Modal, Timeline } from "antd";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { usePreferences } from "../../../shared/preferences/usePreferences";
@@ -11,50 +10,78 @@ import {
 } from "../../../shared/constants/shop";
 import CopyCode from "../../../shared/components/CopyCode";
 import PaymentPanel from "./PaymentPanel";
+import { progressSteps, statusTone } from "./orderStatus";
 
 export default function OrderDetail({ order, onClose, onCancel }) {
   const { t } = useTranslation();
   const { timeZone } = usePreferences();
   const received = ["delivered", "completed"].includes(order?.statusCode);
   const cancellable = canCancelOrder(order);
+  const group = order ? orderStatusGroup(order.status) : "";
+  const step = progressSteps.indexOf(group);
   return (
     <Modal
       open={!!order}
-      title={t("Chi tiết đơn")}
+      title={
+        order ? (
+          <div className="od-title">
+            <small>{t("Chi tiết đơn")}</small>
+            <span className="od-code">
+              <strong>{order.code}</strong>
+              <CopyCode value={order.code} />
+            </span>
+            <span className="od-meta">
+              <span
+                className="bt-status"
+                style={{ "--tone": statusTone[group] || "#56604f" }}
+              >
+                {t(group)}
+              </span>
+              <time dateTime={order.createdAt}>
+                {t("Đặt lúc")} {formatDateTime(order.createdAt, timeZone)}
+              </time>
+            </span>
+          </div>
+        ) : (
+          t("Chi tiết đơn")
+        )
+      }
       width={1080}
       className="order-detail-modal"
+      rootClassName="bt-od"
       onCancel={onClose}
       footer={
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
+        <div className="od-footer">
           <div>
             {cancellable && onCancel && (
-              <Button danger onClick={() => onCancel(order)}>
+              <Button danger type="text" onClick={() => onCancel(order)}>
                 {t("Hủy đơn")}
               </Button>
             )}
           </div>
-          <Button icon={<CloseOutlined />} onClick={onClose}>
-            {t("Đóng")}
-          </Button>
+          <Button onClick={onClose}>{t("Đóng")}</Button>
         </div>
       }
     >
       {order && (
         <>
-          <div className="order-detail-heading">
-            <Tag color={order.statusCode === "cancelled" ? "default" : "green"}>
-              {t(orderStatusGroup(order.status))}
-            </Tag>
-            <span>{formatDateTime(order.createdAt, timeZone)}</span>
-            <CopyCode value={order.code} />
-          </div>
+          {step >= 0 || group === "Chờ thanh toán" ? (
+            <ol
+              className="bt-track od-track"
+              aria-label={t("Tiến trình đơn hàng")}
+            >
+              {progressSteps.map((name, i) => (
+                <li
+                  key={name}
+                  className={
+                    i < step ? "is-done" : i === step ? "is-current" : undefined
+                  }
+                >
+                  <span>{t(name)}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
           <div className="order-detail-grid">
             <div className="order-detail-main">
               <section className="order-detail-section">
@@ -69,21 +96,19 @@ export default function OrderDetail({ order, onClose, onCancel }) {
                       <div>
                         <Link to={`/products/${item.id}`}>{item.name}</Link>
                         <small>
-                          {[item.color, item.variantLabel]
+                          {[item.variantLabel, item.color]
                             .filter(Boolean)
                             .map((value) => t(value))
-                            .join(" / ")}{" "}
-                          · {t("Số lượng")}: {item.quantity}
+                            .join(", ")}
                         </small>
                         <small>
-                          {t("Đơn giá")}: {money(item.price)}
+                          {money(item.price)} × {item.quantity}
                         </small>
                         {received && (
                           <Link
                             className="order-review-btn"
                             to={`/products/${item.id}#reviews`}
                           >
-                            <StarOutlined aria-hidden="true" />{" "}
                             {t("Viết đánh giá")}
                           </Link>
                         )}
@@ -95,13 +120,15 @@ export default function OrderDetail({ order, onClose, onCancel }) {
               </section>
               <section className="order-detail-section">
                 <h3>{t("Thông tin giao nhận")}</h3>
-                <strong>{order.recipient.name}</strong>
-                <p>{order.recipient.phone}</p>
-                <p>
-                  {order.delivery === "pickup"
-                    ? t("Tại cửa hàng")
-                    : order.recipient.address}
-                </p>
+                <div className="od-address">
+                  <strong>{order.recipient.name}</strong>
+                  <span>{order.recipient.phone}</span>
+                  <span>
+                    {order.delivery === "pickup"
+                      ? t("Tại cửa hàng")
+                      : order.recipient.address}
+                  </span>
+                </div>
                 {(order.note || order.recipient.note) && (
                   <p className="order-detail-note">
                     {t("Ghi chú")}: {order.note || order.recipient.note}
@@ -188,7 +215,7 @@ export default function OrderDetail({ order, onClose, onCancel }) {
               </section>
             </div>
             <aside className="order-detail-summary">
-              <section className="order-detail-section">
+              <section className="order-detail-section od-ticket">
                 <h3>{t("Thanh toán")}</h3>
                 <dl className="order-detail-facts">
                   <div>

@@ -2,7 +2,7 @@ import Button from "../components/ManagementButton";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { Select, Space, Table, Empty, Progress } from "antd";
-import { ArrowRightOutlined, TrophyOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined } from "@ant-design/icons";
 import { useManagement } from "../hooks/useManagement";
 import { orderColumns } from "../components/orderColumns";
 
@@ -24,7 +24,6 @@ export default function DashboardPage() {
   const { rows, orders, topProducts } = buildDashboardData(s.orders, year);
   return (
     <>
-      <h1 className="mg-dashboard-title">Tổng quan kinh doanh</h1>
       <Stats orders={s.orders} products={s.products} showToday />
       <div className="mg-dashboard-period">
         <div>
@@ -45,9 +44,7 @@ export default function DashboardPage() {
       >
         <div className="mg-chart-heading">
           <div>
-            <h2>
-              <TrophyOutlined /> Sản phẩm bán chạy
-            </h2>
+            <h2>Sản phẩm bán chạy</h2>
             <p>Top 5 theo số lượng trong đơn hoàn thành · Năm {year}</p>
           </div>
         </div>
@@ -65,7 +62,7 @@ export default function DashboardPage() {
                     )}
                     showInfo={false}
                     size="small"
-                    strokeColor="#79a962"
+                    strokeColor="#3c6a2c"
                   />
                 </div>
                 <span className="mg-top-quantity">

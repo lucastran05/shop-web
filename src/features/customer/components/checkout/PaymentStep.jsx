@@ -1,5 +1,5 @@
 import { Button, Radio } from "antd";
-import { CreditCardOutlined, QrcodeOutlined, WalletOutlined } from "@ant-design/icons";
+import { QrcodeOutlined, WalletOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { money } from "../../../../shared/utils/format";
 
@@ -23,11 +23,17 @@ export default function PaymentStep({
   return (
     <>
       <h2>{t("Kiểm tra thông tin")}</h2>
-      <p>
-        {recipient.name} · {recipient.phone}
-      </p>
-      <p>{delivery === "ship" ? recipient.address : t("Nhận tại cửa hàng")}</p>
-      {recipient.note && <p>{recipient.note}</p>}
+      <div className="bt-review">
+        <div>
+          <strong>{recipient.name}</strong>
+          <span>{recipient.phone}</span>
+          <span>{delivery === "ship" ? recipient.address : t("Nhận tại cửa hàng")}</span>
+          {recipient.note && <em>{recipient.note}</em>}
+        </div>
+        <Button type="link" onClick={onBack}>
+          {t("Sửa")}
+        </Button>
+      </div>
       {depositRates.length > 0 && (
         <>
           <h3>{t("Hình thức thanh toán")}</h3>
@@ -66,13 +72,6 @@ export default function PaymentStep({
             <small>{t("Quét mã bằng ứng dụng ngân hàng")}</small>
           </span>
         </Radio>
-        <Radio value="card">
-          <CreditCardOutlined />
-          <span>
-            <strong>{t("Thẻ")}</strong>
-            <small>{t("Thanh toán qua cổng ngân hàng")}</small>
-          </span>
-        </Radio>
       </Radio.Group>
       {deposit && (
         <p>
@@ -80,8 +79,10 @@ export default function PaymentStep({
         </p>
       )}
       <div className="buy-actions">
-        <Button onClick={onBack}>{t("Quay lại")}</Button>
-        <Button type="primary" onClick={onSubmit} loading={submitting}>
+        <Button size="large" onClick={onBack}>
+          {t("Quay lại")}
+        </Button>
+        <Button size="large" type="primary" onClick={onSubmit} loading={submitting}>
           {t("Xác nhận đặt hàng")}
         </Button>
       </div>

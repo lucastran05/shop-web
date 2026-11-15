@@ -18,6 +18,10 @@ import FlowerMatch from "./FlowerMatch";
 import FlowerIcon from "./FlowerIcon";
 import FlowerHistory from "./FlowerHistory";
 import { useFlowerCamera } from "./useFlowerCamera";
+import { mapProductSummary } from "../../../shared/adapters/productAdapter";
+import { flowerDisplayName, scoreLevel } from "../../../shared/utils/flowerNames";
+import { money } from "../../../shared/utils/format";
+import "./flower-botanical.css";
 
 // Nội dung popup "Nhận diện hoa".
 //
@@ -132,6 +136,42 @@ function IdentifyPanel({ visible, stopCameraRef }) {
     inputRef.current?.click();
   }
 
+  // Dán ảnh (Ctrl+V) khi đang mở tab Nhận diện
+  useEffect(() => {
+    if (!visible) return;
+    function onPaste(event) {
+      const image = [...(event.clipboardData?.files || [])].find((item) =>
+        item.type.startsWith("image/"),
+      );
+      if (image) {
+        event.preventDefault();
+        choosePhoto(image);
+      }
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  });
+
+  // Kéo thả ảnh vào khung
+  const [dragging, setDragging] = useState(false);
+  const dropProps = {
+    onDragOver: (event) => {
+      if ([...event.dataTransfer.types].includes("Files")) {
+        event.preventDefault();
+        setDragging(true);
+      }
+    },
+    onDragLeave: (event) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false);
+    },
+    onDrop: (event) => {
+      event.preventDefault();
+      setDragging(false);
+      const image = event.dataTransfer.files?.[0];
+      if (image) choosePhoto(image);
+    },
+  };
+
   // Chọn ảnh mới (từ máy hoặc từ camera): xóa kết quả cũ và hủy request đang chạy.
   function choosePhoto(next) {
     requestRef.current?.abort();
@@ -203,7 +243,7 @@ function IdentifyPanel({ visible, stopCameraRef }) {
           event.target.value = ""; // cho phép chọn lại đúng file vừa chọn
         }}
       />
-      <div className="flower-workspace">
+      <div className={"flower-workspace" + (dragging ? " is-dragging" : "")} {...dropProps}>
         <PhotoSource
           videoRef={camera.videoRef}
           cameraOpen={camera.isOpen}
@@ -284,6 +324,7 @@ function PhotoSource({
         title={t("Đổi ảnh")}
       >
         <img src={preview} alt={t("Ảnh hoa đã chọn")} />
+        {busy && <span className="flower-scan" aria-hidden="true" />}
         <span className="flower-file-name">{file.name}</span>
         <span className="flower-change-photo">
           <UploadOutlined /> {t("Đổi ảnh")}
@@ -297,7 +338,7 @@ function PhotoSource({
           <UploadOutlined />
         </span>
         <strong>{t("Thêm ảnh một bông hoa")}</strong>
-        <span>{t("Chọn ảnh từ điện thoại hoặc máy tính")}</span>
+        <span>{t("Chọn ảnh, kéo thả vào đây hoặc dán bằng Ctrl+V")}</span>
         <span className="flower-upload-label">{t("Chọn ảnh")}</span>
       </button>
     );
@@ -370,6 +411,8 @@ function ResultPanel({ busy, error, candidates, saved, onPickFile }) {
     content = (
       <>
         <FlowerMatch candidate={best} />
+        <ShopMatches species={best.scientificName} />
+        {candidates.length > 1 && <SimilarList candidates={candidates.slice(1, 4)} />}
         {saved && (
           <p className="flower-saved-note">
             <CheckCircleOutlined /> {t("Đã lưu")}
@@ -398,6 +441,78 @@ function ResultPanel({ busy, error, candidates, saved, onPickFile }) {
       </div>
       {error && <Alert type="error" showIcon title={t(error)} />}
       {content}
+    </section>
+  );
+}
+
+// Các loài gần giống khác từ cùng lần nhận diện
+function SimilarList({ candidates }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <section className="flower-similar">
+      <h4>{t("Các loài gần giống")}</h4>
+      <ul>
+        {candidates.map((item) => {
+          const name = flowerDisplayName(item, i18n.resolvedLanguage);
+          return (
+            <li key={item.scientificName}>
+              <span className="flower-similar-name">
+                <strong>{name}</strong>
+                {name !== item.scientificName && <i>{item.scientificName}</i>}
+              </span>
+              <span className={`flower-similar-bar is-${scoreLevel(item.score)}`} aria-hidden="true">
+                <span style={{ width: `${Math.max(item.score * 100, 3)}%` }} />
+              </span>
+              <span className="flower-similar-score">{(item.score * 100).toFixed(1)}%</span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+// Sản phẩm trong shop có gắn loài hoa vừa nhận diện
+function ShopMatches({ species }) {
+  const { t } = useTranslation();
+  const { user } = useShop();
+  const [state, setState] = useState({ species: "", items: [] });
+  useEffect(() => {
+    if (!species) return;
+    const controller = new AbortController();
+    api.products
+      .list({ flower_species: species, limit: 4 }, { signal: controller.signal })
+      .then(({ data }) =>
+        setState({
+          species,
+          items: data
+            .map(mapProductSummary)
+            .filter((p) => p.visibility !== "hidden" && (p.visibility !== "private" || user)),
+        }),
+      )
+      .catch(() => {
+        if (!controller.signal.aborted) setState({ species, items: [] });
+      });
+    return () => controller.abort();
+  }, [species, user]);
+  const items = state.species === species ? state.items : [];
+  if (!items.length) return null;
+  return (
+    <section className="flower-shop">
+      <h4>{t("Có trong cửa hàng")}</h4>
+      <ul>
+        {items.map((p) => (
+          <li key={p.id}>
+            <Link to={"/products/" + p.id}>
+              <img src={p.image} alt="" />
+              <span>
+                <strong>{p.name}</strong>
+                <small>{money(p.price)}</small>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

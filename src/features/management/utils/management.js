@@ -21,7 +21,20 @@ export function filterInventory(rows, { query = "", status, min, max }) {
       (max == null || row.stock <= max),
   );
 }
-export function todayRevenue(orders, now = new Date()) {
+// Đơn không còn tính vào doanh thu
+const VOID_STATUSES = ["cancelled", "returned", "refunded"];
+const VOID_LABELS = ["Đã hủy", "Hoàn hàng", "Hoàn tiền"];
+function isVoidOrder(order) {
+  return (
+    VOID_STATUSES.includes(order.statusCode) ||
+    VOID_LABELS.includes(order.status) ||
+    order.paymentStatus === "refunded"
+  );
+}
+
+// Doanh thu hôm nay: tổng tiền các đơn đặt trong hôm nay (giờ Việt Nam),
+// bỏ đơn đã hủy, hoàn hàng hoặc hoàn tiền.
+export function todayOrders(orders, now = new Date()) {
   const formatDay = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
     year: "numeric",
@@ -29,17 +42,17 @@ export function todayRevenue(orders, now = new Date()) {
     day: "2-digit",
   });
   const today = formatDay.format(now);
-  return orders.reduce((total, order) => {
-    if (order.status !== "Đã hoàn thành") return total;
-    const completedAt =
-      order.completedAt ||
-      order.history?.findLast((event) => event.text === "Đã hoàn thành")?.at ||
-      order.createdAt;
-    const date = new Date(completedAt);
-    return !Number.isNaN(date.getTime()) && formatDay.format(date) === today
-      ? total + order.total
-      : total;
-  }, 0);
+  return orders.filter((order) => {
+    if (isVoidOrder(order)) return false;
+    const date = new Date(order.createdAt);
+    return !Number.isNaN(date.getTime()) && formatDay.format(date) === today;
+  });
+}
+export function todayRevenue(orders, now = new Date()) {
+  return todayOrders(orders, now).reduce(
+    (total, order) => total + Number(order.total || 0),
+    0,
+  );
 }
 export { statusFlow } from "../constants/management";
 export function nextStatuses(order) {

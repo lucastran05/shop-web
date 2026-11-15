@@ -15,6 +15,8 @@ import SettingsPage from "../pages/SettingsPage";
 import VouchersPage from "../pages/VouchersPage";
 import UsersPage from "../pages/UsersPage";
 import "../styles/management.css";
+import "../styles/admin-botanical.css";
+import { adminTheme } from "../styles/adminTheme";
 
 function AccountsRoute() {
   return useManagement().session?.role === "admin" ? (
@@ -29,17 +31,7 @@ function AccountsRoute() {
 }
 export default function ManagementRoutes() {
   return (
-    <ConfigProvider
-      theme={{
-        token: { fontSize: 15, lineHeight: 1.6, controlHeight: 40 },
-        components: {
-          Input: { controlHeight: 40, inputFontSize: 15 },
-          InputNumber: { controlHeight: 40, inputFontSize: 15 },
-          Select: { controlHeight: 40, fontSize: 15 },
-          Button: { controlHeight: 40, contentFontSize: 15 },
-        },
-      }}
-    >
+    <ConfigProvider theme={adminTheme}>
       <ManagementProvider>
         <Routes>
           <Route path="login" element={<LoginPage />} />

@@ -1,9 +1,13 @@
 import CopyCode from "../../../shared/components/CopyCode";
-import { Tag } from "antd";
 import { statusColors } from "../constants/management";
 import { money } from "../../../shared/utils/format";
 export const statusTag = (status) => (
-  <Tag color={statusColors[status]}>{status}</Tag>
+  <span
+    className="mg-status"
+    style={{ "--tone": statusColors[status] || "#56604f" }}
+  >
+    {status}
+  </span>
 );
 export const orderColumns = [
   {

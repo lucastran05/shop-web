@@ -115,8 +115,12 @@ export default function HeaderSearch() {
         className="flower-identify-modal"
         title={
           <div className="flower-modal-heading">
-            <span>{t("TÌM HOA BẰNG HÌNH ẢNH")}</span>
             <h2>{t("Nhận diện hoa")}</h2>
+            <p>
+              {t(
+                "Chụp hoặc tải ảnh một bông hoa để biết tên và tìm sản phẩm có loài hoa đó.",
+              )}
+            </p>
           </div>
         }
         open={identifyOpen}

@@ -57,13 +57,13 @@ export function buildDashboardData(orders, year) {
 }
 
 const statusColors = {
-  "Chờ thanh toán": "#ed8936",
-  "Chờ xác nhận": "#e6a23c",
-  "Đang chuẩn bị hàng": "#36a3a8",
-  "Đang giao hàng": "#4b87d5",
-  "Đã hoàn thành": "#468432",
-  "Đã hủy": "#b7bdc5",
-  "Hoàn hàng / Hoàn tiền": "#9b78bc",
+  "Chờ thanh toán": "#e7a64a",
+  "Chờ xác nhận": "#e7c14a",
+  "Đang chuẩn bị hàng": "#5f9aa0",
+  "Đang giao hàng": "#5b84b8",
+  "Đã hoàn thành": "#3c6a2c",
+  "Đã hủy": "#c4c8bc",
+  "Hoàn hàng / Hoàn tiền": "#8a6aa8",
 };
 export function orderBreakdown(orders) {
   const counts = new Map();

@@ -63,6 +63,25 @@ export default function ManagementLayout() {
       "/management/messages": "mg-main-messages",
       "/management/settings": "mg-main-settings",
     }[pathname] || "";
+  const section = pathname.replace(/^\/management\/?/, "").split("/")[0];
+  const current = navigation.find(([path]) => path === section);
+  const currentGroup = navigationGroups.find((group) =>
+    group.paths.includes(section),
+  );
+  const firstName = s.session?.name?.trim().split(/\s+/).at(-1) || "";
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      hour: "numeric",
+      hourCycle: "h23",
+      timeZone: "Asia/Ho_Chi_Minh",
+    }).format(new Date()),
+  );
+  const greeting =
+    hour < 11
+      ? "Chào buổi sáng"
+      : hour < 18
+        ? "Chào buổi chiều"
+        : "Chào buổi tối";
   if (!s.session) return <Navigate to="/management/login" replace />;
   const navLink = ([path, label, Icon]) => (
     <Tooltip key={path} title={label} placement="right">
@@ -92,21 +111,14 @@ export default function ManagementLayout() {
         </span>
         <span className="mg-brand-text">
           <span className="mg-brand-name">{shopConfig.name}</span>
-          <small>QUẢN LÝ CỬA HÀNG</small>
+          <small>Quản lý cửa hàng</small>
         </span>
       </Link>
       <nav aria-label="Menu quản trị">
         {navLink(navigation[0])}
         {navigationGroups.map((group) => (
-          <details
-            className="mg-nav-group"
-            key={`${pathname}-${compact}-${group.label}`}
-            open={
-              compact ||
-              group.paths.some((path) => pathname === `/management/${path}`)
-            }
-          >
-            <summary>{group.label}</summary>
+          <div className="mg-nav-group" key={group.label}>
+            <span className="mg-nav-heading">{group.label}</span>
             {navigation
               .filter(
                 ([path]) =>
@@ -114,7 +126,7 @@ export default function ManagementLayout() {
                   (s.session.role === "admin" || path !== "users"),
               )
               .map(navLink)}
-          </details>
+          </div>
         ))}
       </nav>
     </>
@@ -151,51 +163,64 @@ export default function ManagementLayout() {
               aria-label="Mở menu"
               onClick={() => setMobile(true)}
             />
+            <div className="mg-page-title">
+              <small>
+                {current && section
+                  ? currentGroup?.label || "Quản lý"
+                  : `${greeting}, ${firstName}`}
+              </small>
+              <h1>{current ? current[1] : "Quản lý"}</h1>
+            </div>
           </div>
-          <Dropdown
-            trigger={["click"]}
-            placement="bottomRight"
-            menu={{
-              items: [
-                {
-                  key: "storefront",
-                  icon: <ExportOutlined />,
-                  label: <Link to="/">Xem cửa hàng</Link>,
-                },
-                { type: "divider" },
-                {
-                  key: "logout",
-                  icon: <LogoutOutlined />,
-                  label: "Đăng xuất",
-                  danger: true,
-                  onClick: () =>
-                    s
-                      .setSession(null)
-                      .catch((error) => message.error(userError(error))),
-                },
-              ],
-            }}
-          >
-            <button
-              type="button"
-              className="mg-profile"
-              aria-label="Menu tài khoản"
-              aria-haspopup="menu"
+          <div className="mg-header-actions">
+            <Link className="mg-storefront-link" to="/">
+              <ExportOutlined aria-hidden="true" /> Xem cửa hàng
+            </Link>
+            <Dropdown
+              trigger={["click"]}
+              placement="bottomRight"
+              menu={{
+                items: [
+                  {
+                    key: "storefront",
+                    icon: <ExportOutlined />,
+                    label: <Link to="/">Xem cửa hàng</Link>,
+                  },
+                  { type: "divider" },
+                  {
+                    key: "logout",
+                    icon: <LogoutOutlined />,
+                    label: "Đăng xuất",
+                    danger: true,
+                    onClick: () =>
+                      s
+                        .setSession(null)
+                        .catch((error) => message.error(userError(error))),
+                  },
+                ],
+              }}
             >
-              <Avatar style={{ background: "#eef5e9", color: "#468432" }}>
-                {s.session.name?.trim().charAt(0).toUpperCase()}
-              </Avatar>
-              <span>
-                <strong>{s.session.name}</strong>
-                <small>
-                  {s.session.role === "admin"
-                    ? "Quản trị viên"
-                    : "Quản lý cửa hàng"}
-                </small>
-              </span>
-              <DownOutlined aria-hidden="true" />
-            </button>
-          </Dropdown>
+              <button
+                type="button"
+                className="mg-profile"
+                aria-label="Menu tài khoản"
+                aria-haspopup="menu"
+              >
+                <Avatar style={{ background: "#6b4a8a", color: "#fff" }}>
+                  {s.session.name?.trim().charAt(0).toUpperCase()}
+                </Avatar>
+                <span>
+                  <strong>{s.session.name}</strong>
+                  <small>
+                    {s.session.role === "admin"
+                      ? "Quản trị viên"
+                      : "Quản lý cửa hàng"}
+                  </small>
+                </span>
+                <DownOutlined aria-hidden="true" />
+              </button>
+            </Dropdown>
+          </div>
         </header>
         <main className={`mg-main ${contentClass}`}>
           {s.error && (
