@@ -1703,7 +1703,6 @@
 .bt .ant-card,
 .bt .order-card,
 .bt .auth-page,
-.bt .account-panel,
 .bt .shop-contact-panel,
 .bt .shop-location-panel,
 .bt .filters {
@@ -2215,6 +2214,126 @@
   margin: 0 0 14px;
   font-size: 13px;
   color: var(--ink-2);
+}
+
+/* ------------------------------ Tài khoản ----------------------------- */
+.bt-account-form {
+  max-width: 420px;
+  margin-top: 14px;
+}
+.bt-account-form .ant-form-item-extra {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.bt-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+.bt .bt-settings-section .bt-section-head h2 {
+  margin: 0;
+}
+.bt-account .bt-state {
+  padding: 32px 0;
+}
+.bt-address-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bt-address {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 20px;
+  align-items: start;
+  padding: 18px 0;
+  border-top: 1px dashed var(--line);
+  overflow-wrap: anywhere;
+}
+.bt-address:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+.bt-address-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.bt-address-who strong {
+  font-weight: 600;
+}
+.bt-address-who > span:not(.bt-address-badge) {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.bt-address-badge {
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-size: 12px;
+}
+.bt-address-body p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.bt-address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.bt .bt-address-actions .ant-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.bt .bt-address-actions .ant-btn:not(.ant-btn-dangerous) {
+  color: var(--ink-2);
+}
+.bt .bt-address-actions .ant-btn:not(.ant-btn-dangerous):hover {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.bt-account-empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 28px 0 12px;
+  text-align: center;
+}
+.bt-account-empty .bt-empty-arch {
+  width: 112px;
+  height: 140px;
+  margin-bottom: 14px;
+  padding: 28px 18px 14px;
+}
+.bt-account-empty h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+}
+.bt-account-empty p {
+  margin: 0 0 14px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+@media (max-width: 640px) {
+  .bt-address {
+    grid-template-columns: 1fr;
+  }
+  .bt-address-actions {
+    justify-content: flex-start;
+    margin-left: -12px;
+  }
 }
 
 /* ------------------------------ Thông báo ----------------------------- */

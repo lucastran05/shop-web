@@ -52,7 +52,6 @@ export default function SettingsPage() {
     <div className="page account-page settings-page bt-settings">
       <header className="bt-page-head">
         <h1>{t("Cài đặt")}</h1>
-        <p>{t("Các tùy chọn hiển thị được lưu trên trình duyệt này.")}</p>
       </header>
       <div className="bt-settings-layout">
         <nav className="bt-settings-nav" aria-label={t("Mục cài đặt")}>
