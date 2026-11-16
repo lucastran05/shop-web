@@ -18,7 +18,6 @@ import {
   ShoppingOutlined,
   UserOutlined,
   BellOutlined,
-  MessageOutlined,
   EnvironmentOutlined,
   PhoneOutlined,
   MailOutlined,
@@ -33,6 +32,7 @@ import { usePreferences } from "../../../shared/preferences/usePreferences";
 import { formatDateTime } from "../../../shared/utils/format";
 import HeaderSearch from "../components/HeaderSearch";
 import ShopMap from "../components/ShopMap";
+import ChatLauncher from "../components/ChatLauncher";
 import { userError } from "../../../shared/utils/userError";
 import { botanicalTheme } from "../styles/theme";
 import "../styles/botanical.css";
@@ -289,24 +289,18 @@ export default function CustomerLayout() {
             © {new Date().getFullYear()} {shopConfig.name}
           </div>
         </footer>
-        {s.user && (
-          <Tooltip title={t("Chat với shop")}>
-            <Button
-              className="chat-trigger bt-chat-trigger"
-              type="primary"
-              shape="circle"
-              aria-label={t("Chat với shop")}
-              onClick={() => {
-                setChat(true);
-                perform(s.openChat);
-              }}
-            >
-              <Badge count={unreadChat ? 1 : 0} size="small" offset={[-2, 2]}>
-                <MessageOutlined />
-              </Badge>
-            </Button>
-          </Tooltip>
-        )}
+      <ChatLauncher
+        key={s.user?.id || s.user?.email || "guest"}
+        unread={unreadChat}
+        onShopChat={() => {
+          if (!s.user) {
+            navigate("/login");
+            return;
+          }
+          setChat(true);
+          perform(s.openChat);
+        }}
+      />
         <Drawer
           title={t("Trò chuyện với shop")}
           rootClassName="bt-chat"
@@ -331,16 +325,25 @@ export default function CustomerLayout() {
           }}
           footer={
             <Space.Compact style={{ width: "100%" }}>
-              <Input
-                aria-label={t("Nội dung tin nhắn")}
-                maxLength={1000}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onPressEnter={(e) => {
-                  if (!e.nativeEvent.isComposing) send();
-                }}
-                placeholder={t("Nhập tin nhắn…")}
-              />
+            <Input.TextArea
+              autoSize={{ minRows: 2, maxRows: 2 }}
+              style={{
+                resize: "none",
+                overflowY: "auto",
+                overflowWrap: "anywhere",
+              }}
+              aria-label={t("Nội dung tin nhắn")}
+              maxLength={1000}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onPressEnter={(e) => {
+                if (!e.nativeEvent.isComposing && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              placeholder={t("Nhập tin nhắn…")}
+            />
               <Button
                 type="primary"
                 disabled={!draft.trim() || !s.chatConnected}
