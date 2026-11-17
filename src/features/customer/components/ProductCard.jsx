@@ -12,7 +12,7 @@ function cardBadge(p, t, showFeatured) {
   return null;
 }
 
-export default function ProductCard({ p, showFeatured = true }) {
+export default function ProductCard({ p, showFeatured = true, onClick }) {
   const { t } = useTranslation();
   const badge = cardBadge(p, t, showFeatured);
   const onSale = p.oldPrice > p.price;
@@ -20,6 +20,7 @@ export default function ProductCard({ p, showFeatured = true }) {
     <Link
       to={"/products/" + p.id}
       className={"bt-card" + (!p.stock ? " is-out" : "")}
+      onClick={onClick}
     >
       <div className="bt-card-arch">
         {p.image ? (

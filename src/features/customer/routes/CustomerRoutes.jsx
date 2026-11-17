@@ -12,6 +12,7 @@ import SettingsPage from "../pages/SettingsPage.jsx";
 import AuthPage from "../pages/AuthPage.jsx";
 import PasswordRecoveryPage from "../pages/PasswordRecoveryPage.jsx";
 import { Result, Button } from "antd";
+import DiscoveryPage from "../../discovery/DiscoveryPage.jsx";
 
 export default function CustomerRoutes() {
   const { t } = useTranslation();
@@ -19,6 +20,7 @@ export default function CustomerRoutes() {
     <Routes>
       <Route element={<CustomerLayout />}>
         <Route index element={<CatalogPage />} />
+        <Route path="kham-pha" element={<DiscoveryPage />} />
         <Route
           path="identify-flower"
           element={<Navigate to="/?identify=flower" replace />}

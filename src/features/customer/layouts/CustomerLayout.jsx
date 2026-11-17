@@ -162,7 +162,7 @@ export default function CustomerLayout() {
         <header className={"bt-header" + (scrolled ? " is-scrolled" : "")}>
           <Link to="/" className="bt-logo">
             <img src="/logo/logo.svg" alt="" width="40" height="36" />
-            <span>{shopConfig.name}</span>
+            <span>{s.shopInfo?.name || shopConfig.name}</span>
           </Link>
           <nav className="bt-nav" aria-label={t("Điều hướng chính")}>
             <Link
@@ -171,6 +171,13 @@ export default function CustomerLayout() {
               to="/"
             >
               {t("Cửa hàng")}
+            </Link>
+            <Link
+              className={location.pathname === "/kham-pha" ? "is-active" : undefined}
+              aria-current={location.pathname === "/kham-pha" ? "page" : undefined}
+              to="/kham-pha"
+            >
+              {t("Khoảnh khắc")}
             </Link>
             <Link
               className={
@@ -238,7 +245,7 @@ export default function CustomerLayout() {
         <footer className="bt-footer">
           <div className="bt-footer-mark">
             <Link to="/" className="bt-footer-name">
-              {shopConfig.name}
+              {s.shopInfo?.name || shopConfig.name}
             </Link>
             <p>{t(shopConfig.description)}</p>
             <div className="bt-footer-socials">
@@ -286,7 +293,7 @@ export default function CustomerLayout() {
             <ShopMap contact={shopConfig.contact} />
           </div>
           <div className="bt-footer-legal">
-            © {new Date().getFullYear()} {shopConfig.name}
+            © {new Date().getFullYear()} {s.shopInfo?.name || shopConfig.name}
           </div>
         </footer>
         {s.user && (
