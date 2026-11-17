@@ -603,6 +603,14 @@
   color: var(--ink-2);
   font-size: 13px;
 }
+/* Hoa bán theo cành: ảnh một cành rất cao, cắt theo khung vòm sẽ mất bông hoặc mất gốc */
+.bt-card-arch.is-stem img,
+.bt-plate-arch img.is-stem,
+.bt-zoom.is-stem .ant-image-img,
+.bt-pd-thumbs.is-stem img {
+  object-fit: contain;
+  padding: 6% 12%;
+}
 .bt-badge {
   position: absolute;
   left: 50%;

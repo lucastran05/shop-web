@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { money } from "../../../shared/utils/format";
@@ -14,6 +15,8 @@ function cardBadge(p, t, showFeatured) {
 
 export default function ProductCard({ p, showFeatured = true }) {
   const { t } = useTranslation();
+  // Ảnh một cành hoa cao hơn khung vòm nhiều: hiện trọn ảnh thay vì cắt mất bông hoặc gốc
+  const [tall, setTall] = useState(false);
   const badge = cardBadge(p, t, showFeatured);
   const onSale = p.oldPrice > p.price;
   return (
@@ -21,9 +24,21 @@ export default function ProductCard({ p, showFeatured = true }) {
       to={"/products/" + p.id}
       className={"bt-card" + (!p.stock ? " is-out" : "")}
     >
-      <div className="bt-card-arch">
+      <div
+        className={"bt-card-arch" + (p.sold_by_stem || tall ? " is-stem" : "")}
+      >
         {p.image ? (
-          <img src={p.image} alt={p.name} loading="lazy" />
+          <img
+            src={p.image}
+            alt={p.name}
+            loading="lazy"
+            onLoad={(event) =>
+              setTall(
+                event.currentTarget.naturalHeight >
+                  event.currentTarget.naturalWidth * 1.3,
+              )
+            }
+          />
         ) : (
           <span className="bt-card-noimg">{t("Chưa có ảnh sản phẩm")}</span>
         )}

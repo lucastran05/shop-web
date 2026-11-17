@@ -1,5 +1,5 @@
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Button,
   Select,
@@ -9,7 +9,7 @@ import {
   Alert,
   Badge,
 } from "antd";
-import { SlidersOutlined } from "@ant-design/icons";
+import { FormatPainterOutlined, SlidersOutlined } from "@ant-design/icons";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShop } from "../../../shared/shop/useShop";
@@ -25,6 +25,7 @@ export default function Catalog() {
   const { t } = useTranslation(),
     { products, categories, catalogLoading, catalogError, user } = useShop(),
     shopConfig = useShopConfig(),
+    navigate = useNavigate(),
     [params, setParams] = useSearchParams();
   const { catalogPreferences, setCatalogPreferences } = usePreferences();
   const filters = getCatalogFilters(params, catalogPreferences.defaultSort);
@@ -111,6 +112,13 @@ export default function Catalog() {
           <p className="bt-count">
             {t("{{count}} sản phẩm", { count: list.length })}
           </p>
+          <Button
+            className="bt-bq-cta"
+            icon={<FormatPainterOutlined />}
+            onClick={() => navigate("/custom-bouquet")}
+          >
+            {t("Tự tạo bó hoa")}
+          </Button>
           {search && (
             <p className="bt-search-note">
               {t("Kết quả tìm kiếm cho: {{query}}", { query: search })}{" "}

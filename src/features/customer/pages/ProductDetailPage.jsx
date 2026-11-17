@@ -171,7 +171,10 @@ function ProductView({ p, relatedProducts }) {
       <div className="bt-pd">
         <div className="bt-pd-gallery">
           {pictures.length > 1 && (
-            <div className="bt-pd-thumbs" aria-label={t("Ảnh sản phẩm")}>
+            <div
+              className={"bt-pd-thumbs" + (p.sold_by_stem ? " is-stem" : "")}
+              aria-label={t("Ảnh sản phẩm")}
+            >
               {pictures.map((image, i) => (
                 <button
                   type="button"
@@ -185,7 +188,10 @@ function ProductView({ p, relatedProducts }) {
               ))}
             </div>
           )}
-          <div className="bt-zoom" ref={stageRef}>
+          <div
+            className={"bt-zoom" + (p.sold_by_stem ? " is-stem" : "")}
+            ref={stageRef}
+          >
             {pictures[picture] ? (
               <Image
                 key={pictures[picture]}

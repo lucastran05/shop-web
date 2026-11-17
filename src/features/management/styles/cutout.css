@@ -1,0 +1,98 @@
+.mg-cutout {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.mg-cutout-panel {
+  display: grid;
+  gap: 16px;
+}
+.mg-cutout-group {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid rgba(30, 42, 31, 0.12);
+  border-radius: 14px;
+}
+.mg-cutout-group h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.mg-cutout-group label {
+  display: block;
+  font-size: 13px;
+}
+.mg-cutout-group label b {
+  float: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.mg-cutout-group .ant-slider {
+  margin: 6px 4px 0;
+}
+.mg-cutout-switch {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+}
+.mg-cutout-preview {
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 16px;
+}
+.mg-cutout-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mg-cutout-stage {
+  display: grid;
+  place-items: center;
+  min-height: 420px;
+  max-height: calc(100vh - 220px);
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(30, 42, 31, 0.12);
+  border-radius: 14px;
+}
+.mg-cutout-stage canvas {
+  max-width: 100%;
+  max-height: calc(100vh - 260px);
+  object-fit: contain;
+  touch-action: none;
+}
+.mg-cutout-stage.is-painting canvas {
+  cursor: crosshair;
+}
+.mg-cutout-stage.is-checker {
+  background: conic-gradient(#e6e6e6 25%, #fff 0 50%, #e6e6e6 0 75%, #fff 0) 0
+    0 / 20px 20px;
+}
+.mg-cutout-stage.is-white {
+  background: #fff;
+}
+.mg-cutout-stage.is-paper {
+  background: #efe7d6;
+}
+.mg-cutout-stage.is-dark {
+  background: #1e2a1f;
+}
+.mg-cutout-hint {
+  margin: 0;
+  color: rgba(30, 42, 31, 0.65);
+  font-size: 12.5px;
+}
+
+@media (max-width: 900px) {
+  .mg-cutout {
+    grid-template-columns: 1fr;
+  }
+  .mg-cutout-preview {
+    position: static;
+    order: -1;
+  }
+}

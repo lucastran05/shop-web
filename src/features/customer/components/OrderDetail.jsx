@@ -10,6 +10,7 @@ import {
 } from "../../../shared/constants/shop";
 import CopyCode from "../../../shared/components/CopyCode";
 import PaymentPanel from "./PaymentPanel";
+import BouquetComponents from "./BouquetComponents";
 import { progressSteps, statusTone } from "./orderStatus";
 
 export default function OrderDetail({ order, onClose, onCancel }) {
@@ -94,17 +95,28 @@ export default function OrderDetail({ order, onClose, onCancel }) {
                         alt={item.name}
                       />
                       <div>
-                        <Link to={`/products/${item.id}`}>{item.name}</Link>
-                        <small>
-                          {[item.variantLabel, item.color]
-                            .filter(Boolean)
-                            .map((value) => t(value))
-                            .join(", ")}
-                        </small>
+                        {item.id ? (
+                          <Link to={`/products/${item.id}`}>{item.name}</Link>
+                        ) : (
+                          <strong>{t(item.name)}</strong>
+                        )}
+                        {item.item_type === "custom_bouquet" ? (
+                          <BouquetComponents
+                            components={item.components}
+                            style={item.style}
+                          />
+                        ) : (
+                          <small>
+                            {[item.variantLabel, item.color]
+                              .filter(Boolean)
+                              .map((value) => t(value))
+                              .join(", ")}
+                          </small>
+                        )}
                         <small>
                           {money(item.price)} × {item.quantity}
                         </small>
-                        {received && (
+                        {received && item.id && (
                           <Link
                             className="order-review-btn"
                             to={`/products/${item.id}#reviews`}

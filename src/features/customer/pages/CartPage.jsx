@@ -6,6 +6,7 @@ import { useShopConfig } from "../../../shared/shop/useShopConfig";
 import { money } from "../../../shared/utils/format";
 import { userError } from "../../../shared/utils/userError";
 import QtyStepper from "../components/QtyStepper";
+import BouquetComponents from "../components/BouquetComponents";
 
 export default function Cart() {
   const { t } = useTranslation();
@@ -20,6 +21,11 @@ export default function Cart() {
     setCart(update).catch((error) => message.error(t(userError(error))));
   const patch = (key, data) =>
     saveCart((old) => old.map((x) => (x.key === key ? { ...x, ...data } : x)));
+  // Bó hoa tự tạo không có trang sản phẩm: mở trang tự tạo và liệt kê từng loại cành
+  const isBouquet = (p) => p.itemType === "custom_bouquet";
+  const lineHref = (p) =>
+    isBouquet(p) ? "/custom-bouquet" : "/products/" + p.id;
+  const lineName = (p) => (isBouquet(p) ? t(p.name) : p.name);
   if (!user) return <Navigate to="/login?next=/cart" replace />;
 
   const freeFrom = commerce?.freeShippingFrom || 0;
@@ -69,25 +75,42 @@ export default function Cart() {
                 key={p.key}
               >
                 <Checkbox
-                  aria-label={t("Chọn {{name}}", { name: p.name })}
+                  aria-label={t("Chọn {{name}}", { name: lineName(p) })}
                   checked={p.selected}
                   onChange={(e) => patch(p.key, { selected: e.target.checked })}
                 />
-                <Link to={"/products/" + p.id} className="bt-line-img">
-                  <img src={p.image} alt={p.name} />
+                <Link
+                  to={lineHref(p)}
+                  className={"bt-line-img" + (isBouquet(p) ? " is-stem" : "")}
+                >
+                  <img src={p.image} alt={lineName(p)} />
                 </Link>
                 <div className="bt-line-info">
-                  <Link to={"/products/" + p.id}>
-                    <h3>{p.name}</h3>
+                  <Link to={lineHref(p)}>
+                    <h3>{lineName(p)}</h3>
                   </Link>
-                  <p>
-                    {[t(p.variantLabel), t(p.color)].filter(Boolean).join(", ")}
-                  </p>
+                  {isBouquet(p) ? (
+                    <BouquetComponents
+                      components={p.components}
+                      style={p.style}
+                    />
+                  ) : (
+                    <p>
+                      {[t(p.variantLabel), t(p.color)]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  )}
+                  {isBouquet(p) && !p.available && (
+                    <p className="bt-line-warn">
+                      {t("Một số hoa trong bó đã hết hoặc ngừng bán")}
+                    </p>
+                  )}
                   <span className="bt-line-unit">{money(p.price)}</span>
                 </div>
                 <QtyStepper
                   size="small"
-                  label={t("Số lượng {{name}}", { name: p.name })}
+                  label={t("Số lượng {{name}}", { name: lineName(p) })}
                   value={p.quantity}
                   min={1}
                   max={p.stock}
@@ -99,7 +122,7 @@ export default function Cart() {
                 <button
                   type="button"
                   className="bt-line-remove"
-                  aria-label={t("Xóa {{name}}", { name: p.name })}
+                  aria-label={t("Xóa {{name}}", { name: lineName(p) })}
                   onClick={() =>
                     saveCart((old) => old.filter((x) => x.key !== p.key))
                   }

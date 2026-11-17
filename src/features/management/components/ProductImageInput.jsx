@@ -4,6 +4,41 @@ import { App, Image, Space, Upload } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import Button from "./ManagementButton";
 import { api } from "../../../shared/api";
+import {
+  applyMask,
+  borderPalette,
+  computeMask,
+  contentBounds,
+  looksLikeFakeChecker,
+} from "../utils/backgroundRemoval";
+
+// Ảnh "PNG trong suốt" tải trên mạng thường có ô caro vẽ sẵn thay vì nền trong suốt thật:
+// xóa nền đó và cắt sát hình ngay trên canvas trước khi tải lên
+function removeFakeChecker(canvas) {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const palette = borderPalette(image);
+  if (!looksLikeFakeChecker(palette)) return false;
+  const { alpha } = computeMask(image, { palette });
+  const result = applyMask(image, alpha, palette);
+  const bounds = contentBounds(result);
+  if (!bounds) return false;
+  ctx.putImageData(
+    new ImageData(result.data, result.width, result.height),
+    0,
+    0,
+  );
+  const cropped = ctx.getImageData(
+    bounds.x,
+    bounds.y,
+    bounds.width,
+    bounds.height,
+  );
+  canvas.width = bounds.width;
+  canvas.height = bounds.height;
+  ctx.putImageData(cropped, 0, 0);
+  return true;
+}
 
 export default function ProductImageInput({
   value,
@@ -34,6 +69,7 @@ export default function ProductImageInput({
         .getContext("2d")
         .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       bitmap.close();
+      const cleaned = removeFakeChecker(canvas);
       const blob = await new Promise((resolve, reject) =>
         canvas.toBlob(
           (result) =>
@@ -55,7 +91,11 @@ export default function ProductImageInput({
       if (!uploadedImage?.url)
         throw new Error("Backend không trả về URL ảnh sản phẩm.");
       onChange?.(uploadedImage.url);
-      message.success("Đã tải ảnh sản phẩm");
+      message.success(
+        cleaned
+          ? "Đã tải ảnh và tự xóa nền ô caro vẽ sẵn trong ảnh"
+          : "Đã tải ảnh sản phẩm",
+      );
     } catch (error) {
       message.error(
         userError(error) || "Không tải được ảnh. Vui lòng thử lại.",

@@ -51,7 +51,10 @@ export default function HomeHero({ shopName, description, products }) {
               key={p.id}
               src={p.image}
               alt=""
-              className={i === active ? "is-shown" : undefined}
+              className={
+                (i === active ? "is-shown" : "") +
+                (p.sold_by_stem ? " is-stem" : "")
+              }
               loading={i === 0 ? "eager" : "lazy"}
             />
           ))}

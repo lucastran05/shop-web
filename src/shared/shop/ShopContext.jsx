@@ -195,7 +195,9 @@ export function ShopProvider({ children }) {
     listAll((query) => api.chatAndNotifications.notifications(query))
       .then((rows) => {
         if (active)
-          setNotifications(rows.map((item) => mapNotification(item, user.email)));
+          setNotifications(
+            rows.map((item) => mapNotification(item, user.email)),
+          );
       })
       .catch(() => {});
     return () => {
@@ -330,7 +332,12 @@ export function ShopProvider({ children }) {
   function mapCartItems(cartResponse) {
     return cartResponse.data.items.map((item) => ({
       key: item.id,
+      // Bó hoa tự tạo: id = null, thành phần nằm trong components; mọi thao tác sửa/xóa đi theo key
       id: item.product_id,
+      itemType: item.item_type || "product",
+      components: item.components || [],
+      style: item.style || null,
+      available: item.is_available !== false,
       variantId: item.variant_id,
       name: item.product_name,
       variantLabel: item.variant_label,
@@ -406,7 +413,12 @@ export function ShopProvider({ children }) {
   }, [userId, isManagement]);
   async function add(product, variantId, quantity) {
     const variant = product.variants.find((item) => item.id === variantId);
-    if (!user || !Number.isInteger(quantity) || quantity < 1 || !(variant?.stock_quantity > 0))
+    if (
+      !user ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      !(variant?.stock_quantity > 0)
+    )
       throw new Error("Invalid cart item");
     applyServerCart(
       await api.cart.add({
@@ -415,6 +427,25 @@ export function ShopProvider({ children }) {
         quantity,
       }),
     );
+  }
+  // CART05: chỉ gửi thành phần, kiểu gói và số bó; giá do backend tính
+  async function addBouquet(components, style = {}, quantity = 1) {
+    if (!user) throw new Error("Login required");
+    const response = await api.cart.addBouquet({
+      items: components.map(
+        ({ product_id, variant_id, stems, stem_length }) => ({
+          product_id,
+          variant_id,
+          stems,
+          ...(stem_length ? { stem_length } : {}),
+        }),
+      ),
+      quantity,
+      ...(style.wrap ? { wrap: style.wrap } : {}),
+      ...(style.height ? { height: style.height } : {}),
+    });
+    applyServerCart(response);
+    return response.data;
   }
   function updateCartItem(id, patch) {
     const current = items.find((item) => item.key === id);
@@ -427,7 +458,9 @@ export function ShopProvider({ children }) {
       );
       return Promise.resolve();
     }
-    return api.cart.update(id, { quantity: patch.quantity }).then(applyServerCart);
+    return api.cart
+      .update(id, { quantity: patch.quantity })
+      .then(applyServerCart);
   }
   function removeCartItem(id) {
     return api.cart.remove(id).then(applyServerCart);
@@ -480,6 +513,7 @@ export function ShopProvider({ children }) {
         setCart,
         refreshCart,
         add,
+        addBouquet,
         updateCartItem,
         removeCartItem,
         user,
