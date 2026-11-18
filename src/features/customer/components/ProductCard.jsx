@@ -13,7 +13,7 @@ function cardBadge(p, t, showFeatured) {
   return null;
 }
 
-export default function ProductCard({ p, showFeatured = true }) {
+export default function ProductCard({ p, showFeatured = true, onClick }) {
   const { t } = useTranslation();
   // Ảnh một cành hoa cao hơn khung vòm nhiều: hiện trọn ảnh thay vì cắt mất bông hoặc gốc
   const [tall, setTall] = useState(false);
@@ -23,6 +23,7 @@ export default function ProductCard({ p, showFeatured = true }) {
     <Link
       to={"/products/" + p.id}
       className={"bt-card" + (!p.stock ? " is-out" : "")}
+      onClick={onClick}
     >
       <div
         className={"bt-card-arch" + (p.sold_by_stem || tall ? " is-stem" : "")}

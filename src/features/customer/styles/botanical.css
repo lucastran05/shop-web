@@ -276,12 +276,15 @@
 .bt-specimen-list a.is-active .bt-specimen-name {
   color: var(--moss-deep);
 }
-.bt-hero-jump {
+.bt-hero-jump,
+.bt-hero-discovery {
   display: inline-flex;
   align-items: center;
+  border-radius: 999px;
+}
+.bt-hero-jump {
   height: 50px;
   padding: 0 26px;
-  border-radius: 999px;
   background: var(--moss);
   color: #fff !important;
   font-weight: 500;
@@ -289,6 +292,22 @@
 }
 .bt-hero-jump:hover {
   background: var(--moss-deep);
+}
+.bt-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.bt-hero-discovery {
+  min-height: 50px;
+  padding: 0 22px;
+  border: 1px solid var(--moss);
+  color: var(--moss-deep);
+  font-weight: 600;
+}
+.bt-hero-discovery:hover {
+  background: var(--paper-2);
 }
 
 .bt-plate {

@@ -39,9 +39,14 @@ export default function HomeHero({ shopName, description, products }) {
             ))}
           </ul>
         )}
-        <a className="bt-hero-jump" href="#collection">
-          {t("Xem tất cả sản phẩm")}
-        </a>
+        <div className="bt-hero-actions">
+          <a className="bt-hero-jump" href="#collection">
+            {t("Xem tất cả sản phẩm")}
+          </a>
+          <Link className="bt-hero-discovery" to="/kham-pha#bm-worlds">
+            {t("Tìm hoa theo AI")}
+          </Link>
+        </div>
       </div>
 
       <figure className="bt-plate" aria-hidden={!current}>
