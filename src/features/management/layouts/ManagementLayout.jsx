@@ -29,6 +29,7 @@ import {
   SettingOutlined,
   DownOutlined,
   TagsOutlined,
+  ScissorOutlined,
 } from "@ant-design/icons";
 import { useShopConfig } from "../../../shared/shop/useShopConfig";
 import { useManagement } from "../hooks/useManagement";
@@ -38,6 +39,7 @@ const navigation = [
   ["products", "Sản phẩm", InboxOutlined],
   ["categories", "Danh mục", DatabaseOutlined],
   ["inventory", "Kho hàng", ShopOutlined],
+  ["cutout", "Tách nền ảnh", ScissorOutlined],
   ["payments", "Thanh toán", WalletOutlined],
   ["vouchers", "Voucher", TagsOutlined],
   ["messages", "Tin nhắn", MessageOutlined],
@@ -46,7 +48,7 @@ const navigation = [
 ];
 const navigationGroups = [
   { label: "Bán hàng", paths: ["orders", "payments", "vouchers"] },
-  { label: "Sản phẩm & kho", paths: ["products", "categories", "inventory"] },
+  { label: "Sản phẩm & kho", paths: ["products", "categories", "inventory", "cutout"] },
   { label: "Khách hàng", paths: ["messages", "users"] },
   { label: "Hệ thống", paths: ["settings"] },
 ];

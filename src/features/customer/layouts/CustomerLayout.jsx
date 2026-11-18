@@ -174,6 +174,17 @@ export default function CustomerLayout() {
             </Link>
             <Link
               className={
+                location.pathname === "/custom-bouquet" ? "is-active" : undefined
+              }
+              aria-current={
+                location.pathname === "/custom-bouquet" ? "page" : undefined
+              }
+              to="/custom-bouquet"
+            >
+              {t("Tự tạo bó hoa")}
+            </Link>
+            <Link
+              className={
                 location.pathname === "/shop-info" ? "is-active" : undefined
               }
               aria-current={

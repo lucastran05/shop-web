@@ -274,6 +274,8 @@ export function ManagementProvider({ children }) {
       ],
       is_active: active,
       is_pinned: product.featured,
+      sold_by_stem: Boolean(product.sold_by_stem),
+      stem_head_size: product.stem_head_size,
       allow_deposit: product.deposit,
       deposit_rate: product.depositRate,
       variants: product.variants.map((variant) => ({
@@ -423,6 +425,7 @@ export function ManagementProvider({ children }) {
         setSession,
         products,
         setProducts,
+        loadProducts,
         saveProduct,
         removeProducts,
         categories: categoryRows.map((row) => row.name),

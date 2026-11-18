@@ -28,6 +28,15 @@ export interface ProductAttribute {
   label: string;
   value: string;
 }
+/** Original Pexels photo of a stem and its attribution (set by `npm run import:stems`). */
+export interface StemPhoto {
+  url: string;
+  pexels_id: number;
+  photographer: string;
+  photographer_url: string;
+  pexels_url: string;
+  background_removed: boolean;
+}
 export interface ProductVariant {
   id: ID;
   label: string;
@@ -36,6 +45,9 @@ export interface ProductVariant {
   price: number;
   old_price: number | null;
   stock_quantity: number;
+  /** Transparent PNG of a single stem, used by the custom bouquet preview. */
+  stem_image?: string | null;
+  stem_photo?: StemPhoto | null;
 }
 export interface ProductSummary {
   id: ID;
@@ -46,6 +58,8 @@ export interface ProductSummary {
   old_price: number | null;
   stock_quantity: number;
   is_pinned: boolean;
+  /** Sold per stem (price = one stem); used to build custom bouquets. */
+  sold_by_stem?: boolean;
 }
 export interface Product extends Omit<ProductSummary, "image_url"> {
   description: string;
@@ -67,6 +81,7 @@ export interface ProductsQuery extends PageQuery {
   max_price?: number;
   in_stock?: boolean;
   is_pinned?: boolean;
+  sold_by_stem?: boolean;
   sort?: "price_asc" | "price_desc" | "newest" | "popular";
 }
 export interface ProductsResponse extends ListResponse<ProductSummary> {

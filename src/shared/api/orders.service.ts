@@ -12,7 +12,12 @@ import type {
   PaymentMode,
   Recipient,
 } from "./checkout.service";
-import type { LineItem } from "./cart.service";
+import type {
+  BouquetComponent,
+  BouquetStyle,
+  CartItemType,
+  LineItem,
+} from "./cart.service";
 import { pathId, type HttpClient, type RequestOptions } from "./http-client";
 
 export type OrderStatus =
@@ -57,6 +62,13 @@ export interface CreatedOrder extends OrderCore {
   currency: string;
   removed_cart_item_ids: ID[];
 }
+/** Custom bouquet lines have product_id null and a snapshot of their stems in components. */
+export interface OrderLineItem extends Omit<LineItem, "product_id"> {
+  product_id: ID | null;
+  item_type?: CartItemType;
+  components?: BouquetComponent[];
+  style?: BouquetStyle | null;
+}
 export interface OrderSummary extends OrderCore {
   item_count: number;
   items_preview: Pick<
@@ -89,7 +101,7 @@ export interface Order extends OrderCore {
   amount_due_now: number;
   currency: string;
   recipient: Recipient;
-  items: LineItem[];
+  items: OrderLineItem[];
   shipment: Shipment | null;
   history: OrderHistory[];
   allowed_actions: OrderAction[];

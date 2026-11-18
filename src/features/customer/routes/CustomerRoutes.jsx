@@ -5,6 +5,7 @@ import CustomerLayout from "../layouts/CustomerLayout";
 import CatalogPage from "../pages/CatalogPage.jsx";
 import ProductDetailPage from "../pages/ProductDetailPage.jsx";
 import CartPage from "../pages/CartPage.jsx";
+import CustomBouquetPage from "../pages/CustomBouquetPage.jsx";
 import CheckoutPage from "../pages/CheckoutPage.jsx";
 import OrdersPage from "../pages/OrdersPage.jsx";
 import AccountPage from "../pages/AccountPage.jsx";
@@ -26,6 +27,7 @@ export default function CustomerRoutes() {
         <Route path="shop-info" element={<ShopInfoPage />} />
         <Route path="products/:id" element={<ProductDetailPage />} />
         <Route path="cart" element={<CartPage />} />
+        <Route path="custom-bouquet" element={<CustomBouquetPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="settings" element={<SettingsPage />} />

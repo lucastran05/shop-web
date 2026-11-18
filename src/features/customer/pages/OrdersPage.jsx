@@ -202,7 +202,11 @@ export default function Orders() {
                     <li key={p.key}>
                       <img src={p.image || "/product-placeholder.svg"} alt="" />
                       <div>
-                        <Link to={"/products/" + p.id}>{p.name}</Link>
+                        {p.id ? (
+                          <Link to={"/products/" + p.id}>{p.name}</Link>
+                        ) : (
+                          <strong>{t(p.name)}</strong>
+                        )}
                         <small>
                           {[p.variantLabel, p.color]
                             .filter(Boolean)
@@ -212,7 +216,7 @@ export default function Orders() {
                         </small>
                       </div>
                       <b>{money(p.price * p.quantity)}</b>
-                      {isDelivered && (
+                      {isDelivered && p.id && (
                         <Link
                           to={"/products/" + p.id + "#reviews"}
                           className="bt-text-link"

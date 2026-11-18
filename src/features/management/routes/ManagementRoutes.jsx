@@ -8,6 +8,7 @@ import DashboardPage from "../pages/DashboardPage";
 import ProductsPage from "../pages/ProductsPage";
 import CategoriesPage from "../pages/CategoriesPage";
 import InventoryPage from "../pages/InventoryPage";
+import CutoutPage from "../pages/CutoutPage";
 import OrdersPage from "../pages/OrdersPage";
 import PaymentsPage from "../pages/PaymentsPage";
 import MessagesPage from "../pages/MessagesPage";
@@ -40,6 +41,7 @@ export default function ManagementRoutes() {
             <Route path="products" element={<ProductsPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="inventory" element={<InventoryPage />} />
+            <Route path="cutout" element={<CutoutPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="vouchers" element={<VouchersPage />} />

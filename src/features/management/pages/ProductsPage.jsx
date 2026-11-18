@@ -71,6 +71,8 @@ export default function ProductsPage() {
             flower_species: [],
             visibility: "public",
             featured: false,
+            sold_by_stem: false,
+            stem_head_size: 100,
             deposit: false,
             depositRate: 50,
             variants: [
@@ -344,6 +346,21 @@ export default function ProductsPage() {
                   valuePropName="checked"
                 >
                   <Switch />
+                </Form.Item>
+                <Form.Item
+                  name="sold_by_stem"
+                  label="Bán theo cành"
+                  valuePropName="checked"
+                  tooltip="Mỗi biến thể là một màu, giá là giá một cành. Hoa này hiện ở trang Tự tạo bó hoa."
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  name="stem_head_size"
+                  label="Cỡ bông (%)"
+                  tooltip="So với hoa hồng (100%). Hướng dương ~145, baby ~70. Chỉ dùng để vẽ bó xem trước."
+                >
+                  <InputNumber min={30} max={300} step={5} precision={0} />
                 </Form.Item>
                 <Form.Item
                   name="deposit"

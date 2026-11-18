@@ -1,0 +1,451 @@
+.bt-bq-head {
+  margin: 8px 0 32px;
+  max-width: 720px;
+}
+.bt-bq-eyebrow {
+  margin: 0 0 6px;
+  color: var(--moss);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.bt .bt-bq-head h1 {
+  margin: 0;
+  font-size: clamp(40px, 5.4vw, 68px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+.bt-bq-head > p:last-child {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+  font-size: 16px;
+}
+
+.bt-bq-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: clamp(24px, 3.5vw, 48px);
+  align-items: start;
+}
+.bt-bq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 22px;
+}
+
+/* Thẻ hoa */
+.bt-bq-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  transition:
+    box-shadow 0.25s var(--ease),
+    transform 0.25s var(--ease);
+}
+.bt-bq-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px -24px rgba(30, 42, 31, 0.45);
+}
+.bt-bq-card-photo {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 4.4;
+  background: radial-gradient(
+    120% 90% at 50% 15%,
+    #fbfcf6 0%,
+    var(--paper-2) 75%
+  );
+}
+.bt-bq-card-photo img {
+  position: absolute;
+  inset: 8% 10% 0;
+  width: 80%;
+  height: 92%;
+  object-fit: contain;
+  object-position: 50% 100%;
+  filter: drop-shadow(0 10px 12px rgba(30, 42, 31, 0.18));
+  transition: transform 0.4s var(--ease);
+}
+.bt-bq-card:hover .bt-bq-card-photo img {
+  transform: scale(1.03);
+}
+.bt-bq-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px 18px;
+}
+.bt .bt-bq-card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.bt-bq-desc {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.bt-bq-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bt-bq-swatches button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.bt-bq-swatches button[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--paper);
+}
+.bt-bq-swatches button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bt-bq-swatches span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(30, 42, 31, 0.2);
+}
+.bt-bq-swatches b {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--moss);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.bt-bq-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 0 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bt-bq-price small {
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+.bt-bq-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+}
+.bt-bq-actions .ant-btn {
+  flex: 1;
+}
+.bt-bq-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.bt-bq-icon.is-small {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+.bt-bq-icon:hover {
+  border-color: currentColor;
+  color: #a8262d;
+}
+.bt-bq-credit {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.bt-bq-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* Cột bó hoa */
+.bt-bq-summary {
+  position: sticky;
+  top: 84px;
+  padding: 24px 24px 26px;
+  background: var(--sheet);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 24px 40px -32px rgba(30, 42, 31, 0.5);
+}
+.bt .bt-bq-summary h2 {
+  margin: 0 0 14px;
+  font-size: 26px;
+}
+.bt-bq-stage {
+  position: relative;
+  margin: 0 0 12px;
+}
+.bt-bq-stage canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 840 / 1040;
+  border-radius: 220px 220px 18px 18px;
+  background: radial-gradient(90% 70% at 50% 35%, #fdfdf8 0%, #e4e9d8 100%);
+}
+.bt-bq-stage figcaption {
+  margin-top: 6px;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-style: italic;
+  text-align: center;
+}
+.bt-bq-placeholder {
+  position: absolute;
+  inset: 34% 14% auto;
+  margin: 0;
+  color: var(--ink-2);
+  text-align: center;
+}
+.bt-bq-warn {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--pollen);
+  background: #fbf3d9;
+  font-size: 13px;
+}
+.bt-bq-list {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.bt-bq-list li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.bt-bq-list img {
+  width: 40px;
+  height: 50px;
+  object-fit: cover;
+  object-position: 50% 0;
+  border-radius: 999px 999px 8px 8px;
+  background: var(--paper-2);
+}
+.bt-bq-list span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+.bt-bq-list strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bt-bq-list small {
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+/* Thanh trượt chiều dài cành của riêng một loại hoa trong bó */
+.bt-bq-length {
+  display: block;
+  grid-column: 1 / -1;
+  margin: 0 2px 2px;
+}
+/* Ghi đè quy tắc chung .bt-bq-list span (đang xếp dọc) để nhãn và số cm nằm cùng hàng */
+.bt-bq-list .bt-bq-length > span {
+  flex-direction: row;
+  justify-content: space-between;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.bt-bq-length b {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.bt-bq-length .ant-slider {
+  margin: 0 6px 4px;
+}
+.bt-bq-list em {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.bt-bq-summary .ant-btn-primary {
+  margin-top: 12px;
+}
+
+/* Chọn giấy gói và dáng bó */
+.bt-bq-style {
+  margin-bottom: 6px;
+}
+.bt-bq-wraps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+.bt-bq-wraps button {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.bt-bq-wraps button[aria-checked="true"] {
+  border-color: var(--moss);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--moss);
+}
+.bt-bq-wrap-chip {
+  height: 26px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(30, 42, 31, 0.15);
+}
+.bt-bq-wraps b {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.bt-bq-wraps small {
+  color: var(--ink-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+/* Tiêu đề kèm số đo ở bên phải, vd "Chiều dài cành   55 cm" */
+.bt .bt-bq-subhead b {
+  float: right;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.bt-bq-style .ant-slider {
+  margin: 2px 8px 22px;
+}
+.bt-bq-heights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bt-bq-heights button {
+  flex: 1;
+  min-width: 92px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.bt-bq-heights button[aria-checked="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Dòng bó hoa ở giỏ hàng và đơn hàng */
+.bt-bq-parts {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+.bt-bq-parts > li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+}
+.bt-bq-parts small {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bt-bq-parts > li.is-style {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-2);
+}
+.bt-bq-parts > li.is-off {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+/* Ảnh đại diện dòng bó là ảnh một cành: hiện trọn thay vì cắt theo khung */
+.bt-line-img.is-stem img {
+  object-fit: contain;
+  padding: 6% 10%;
+}
+.bt-line-warn {
+  margin: 4px 0 0;
+  color: #a8262d;
+  font-size: 13px;
+}
+.bt-bq-cta {
+  margin-left: auto;
+}
+
+@media (max-width: 960px) {
+  .bt-bq-layout {
+    grid-template-columns: 1fr;
+  }
+  .bt-bq-summary {
+    position: static;
+    order: -1;
+  }
+  .bt-bq-stage canvas {
+    max-width: 380px;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 560px) {
+  .bt-bq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .bt-bq-card-body {
+    padding: 12px;
+  }
+  .bt .bt-bq-card h2 {
+    font-size: 18px;
+  }
+  .bt-bq-desc {
+    display: none;
+  }
+}
