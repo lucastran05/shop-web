@@ -4,15 +4,16 @@ Frontend React/Vite/Ant Design gồm trang mua hàng, trang khám phá hoa và k
 
 ## Chạy và kiểm tra
 
-Khởi động API ở http://localhost:5000 trước khi chạy Vite. Trong `shop-web`:
+Trong repo tổng, chạy `node scripts/setup-env.mjs` tại thư mục gốc để tạo đủ ba file env; lệnh giữ nguyên các file đã có. Khởi động hạ tầng và API theo [README gốc](../README.md#phát-triển-riêng-từng-ứng-dụng). Sau đó, trong `shop-web`:
 
 ```powershell
-Copy-Item .env.example .env.local
-npm.cmd install
+npm.cmd ci
 npm.cmd run dev
 ```
 
 Mở http://localhost:5173. `.env.example` đặt `VITE_API_BASE_URL=/` để request dùng cùng origin; `vite.config.js` proxy `/api`, `/admin`, `/uploads` đến `VITE_API_PROXY_TARGET`, mặc định http://localhost:5000. Docker dùng Nginx ở http://localhost:8080 với cùng các đường dẫn proxy. Chỉ đặt cấu hình công khai trong biến `VITE_*`, vì chúng được đưa vào bundle frontend.
+
+Nếu clone riêng repo frontend, tạo env bằng `Copy-Item .env.example .env.local` trong PowerShell hoặc `cp .env.example .env.local` trên Linux/macOS trước khi chạy. Cần một backend hoạt động ở địa chỉ proxy đã cấu hình.
 
 ```powershell
 npm.cmd run typecheck

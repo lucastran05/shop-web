@@ -5,6 +5,7 @@ import { Alert, App, Button, Slider } from "antd";
 import { CloseOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { api } from "../../../shared/api";
 import { useShop } from "../../../shared/shop/useShop";
+import { loadBouquetFlowers } from "../../../shared/utils/bouquetFlowers.js";
 import { money } from "../../../shared/utils/format";
 import { userError } from "../../../shared/utils/userError";
 import QtyStepper from "../components/QtyStepper";
@@ -52,32 +53,6 @@ async function loadOptions() {
   return data;
 }
 
-async function loadFlowers() {
-  const { data } = await api.products.list({ sold_by_stem: true, limit: 100 });
-  const details = await Promise.all(
-    data.map((item) => api.products.get(item.id)),
-  );
-  return details.map(({ data: product }) => ({
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    options: product.variants.map((variant) => ({
-      key: keyOf(product.id, variant.id),
-      product_id: product.id,
-      variant_id: variant.id,
-      name: product.name,
-      // Biến thể không đặt màu (vd sản phẩm chỉ có một loại) thì lấy tên biến thể làm nhãn
-      color: variant.color || variant.label || "",
-      price: Number(variant.price) || 0,
-      stock: Number(variant.stock_quantity) || 0,
-      // Một ảnh cho mỗi màu: ảnh cành nếu có, không thì ảnh của biến thể (cùng ảnh admin thấy)
-      headSize: (Number(product.stem_head_size) || 100) / 100,
-      stemImage: variant.stem_image || variant.image || "",
-      photo: variant.stem_photo || null,
-      thumb: variant.stem_image || variant.image || "/product-placeholder.svg",
-    })),
-  }));
-}
 
 function PhotoCredit({ photo }) {
   const { t } = useTranslation();
@@ -211,7 +186,7 @@ export default function CustomBouquetPage() {
 
   useEffect(() => {
     let active = true;
-    loadFlowers()
+    loadBouquetFlowers(api.products)
       .then(
         (flowers) =>
           active && setCatalog({ loading: false, error: null, flowers }),

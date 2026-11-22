@@ -4,6 +4,7 @@ import CopyCode from "../../../shared/components/CopyCode";
 import ExpandableText from "../../../shared/components/ExpandableText";
 import { orderColumns, statusTag } from "../components/orderColumns";
 import OrderRowActions from "../components/OrderRowActions";
+import BouquetComponents from "../../customer/components/BouquetComponents";
 import { useState } from "react";
 import {
   DeleteOutlined,
@@ -489,7 +490,19 @@ export default function OrdersPage() {
                     <ExpandableText text={name} maxLength={40} />
                   ),
                 },
-                { title: "Biến thể", dataIndex: "variantLabel" },
+                {
+                  title: "Biến thể",
+                  dataIndex: "variantLabel",
+                  render: (label, item) =>
+                    item.item_type === "custom_bouquet" ? (
+                      <BouquetComponents
+                        components={item.components}
+                        style={item.style}
+                      />
+                    ) : (
+                      label
+                    ),
+                },
                 { title: "Số lượng", dataIndex: "quantity" },
                 { title: "Đơn giá", dataIndex: "price", render: money },
               ]}

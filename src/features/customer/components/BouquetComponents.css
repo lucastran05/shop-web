@@ -1,0 +1,27 @@
+.bt-bq-parts {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+.bt-bq-parts > li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+}
+.bt-bq-parts small {
+  color: var(--ink-2, #68716a);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.bt-bq-parts > li.is-style {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line, #e4e8df);
+  color: var(--ink-2, #68716a);
+}
+.bt-bq-parts > li.is-off {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
