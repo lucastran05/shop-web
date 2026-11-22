@@ -9,7 +9,7 @@ export default function RequestError({ error, onRetry }) {
     <Result
       className="request-error"
       icon={
-        <img src="/logo/logo.svg" alt="Bloomora" width="112" height="100" />
+        <img src="/logo/logo.svg" alt="Blumora" width="112" height="100" />
       }
       title={t(userError(error))}
       subTitle={t("Không thể tải dữ liệu lúc này. Thử lại để tiếp tục.")}

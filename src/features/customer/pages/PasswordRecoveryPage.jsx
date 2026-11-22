@@ -55,7 +55,7 @@ export default function PasswordRecoveryPage({ reset = false }) {
           <img
             className="auth-logo"
             src="/logo/logo.svg"
-            alt="Bloomora"
+            alt="Blumora"
             width="800"
             height="800"
           />

@@ -1,5 +1,5 @@
 export const shopConfig = {
-  name: "ABC Shop",
+  name: "Blumora",
   description: "Cửa hàng trực tuyến",
   storagePrefix: "abc-shop-v1",
   contact: { address: "", phone: "", email: "", mapUrl: "", socialLinks: [] },

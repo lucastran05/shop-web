@@ -1,4 +1,4 @@
-# ABC Shop — frontend
+# Blumora — frontend
 
 React + Vite + Ant Design, dùng API thật của `shop-api`. Giữ giao diện customer và manager/admin hiện có, sắp xếp source theo feature.
 
