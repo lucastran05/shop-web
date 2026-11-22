@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import "./BouquetComponents.css";
 import { money } from "../../../shared/utils/format";
 
 // Danh sách cành và kiểu gói của một bó tự tạo, giá lấy đúng theo backend trả về
